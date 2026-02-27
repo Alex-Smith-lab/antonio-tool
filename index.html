@@ -3,16 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antonio Annotation | 2D Tool</title>
+    <title>Antonio Annotation | 3D Tool</title>
     
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.all.min.js"></script>
-
     <style>
-        body { font-family: sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; }
-        header { background: #202124; color: #34A853; width: 100%; padding: 15px; text-align: center; border-bottom: 3px solid #FBBC05; }
-        .workspace { margin: 20px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        #target-image { max-width: 100%; height: auto; display: block; }
+        body { font-family: sans-serif; margin: 0; background: #202124; color: white; display: flex; flex-direction: column; align-items: center; }
+        header { background: #1a1a1a; width: 100%; padding: 10px; text-align: center; border-bottom: 2px solid #34A853; }
+        .workspace { margin: 10px; position: relative; border: 2px solid #4285F4; }
+        
+        /* The image container */
+        #annotation-container {
+            position: relative;
+            cursor: crosshair;
+        }
+        
+        #target-image {
+            display: block;
+            max-width: 1000px; /* Adjust size */
+            height: auto;
+        }
+
+        /* Styling for the 3D Cuboid Canvas */
+        #overlay-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none; /* Let clicks pass through to image initially */
+        }
+
         .toolbar { margin: 10px; display: flex; gap: 10px; }
         button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
         .save-btn { background: #4285F4; color: white; }
@@ -23,39 +40,110 @@
 
 <header>
     <h1>ANTONIO ANNOTATION</h1>
-    <p style="color: white; margin: 0;">2D Bounding Box Image Tagging</p>
+    <p style="margin: 0; color: #FBBC05;">3D Cuboid Bounding Box Tool</p>
 </header>
 
 <div class="workspace">
-    <img id="target-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Tokyo_Skyline_2014-04.jpg/1200px-Tokyo_Skyline_2014-04.jpg">
+    <div id="annotation-container">
+        <img id="target-image" src="https://raw.githubusercontent.com/Alex-Smith-lab/antonio-tool/main/scene.jpg">
+        <canvas id="overlay-canvas"></canvas>
+    </div>
 </div>
 
 <div class="toolbar">
-    <button class="save-btn" onclick="exportData()">Download JSON</button>
+    <button class="save-btn" onclick="exportData()">Download 3D Data (JSON)</button>
     <button class="clear-btn" onclick="resetAll()">Clear All</button>
 </div>
 
 <script>
-    // Initialize the 2D Annotation tool
-    const anno = Annotorious.init({
-        image: 'target-image',
-        widgets: ['COMMENT']
+    // --- 3D Cuboid Logic ---
+    const image = document.getElementById('target-image');
+    const canvas = document.getElementById('overlay-canvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('annotation-container');
+
+    let cuboids = [];
+    let isDrawing = false;
+    let currentCuboid = null;
+
+    // Adjust canvas size to match image
+    image.onload = () => {
+        canvas.width = image.width;
+        canvas.height = image.height;
+    };
+
+    container.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        currentCuboid = {
+            frontFace: [{x, y}],
+            backFace: []
+        };
     });
 
-    // Function to download the annotation coordinates
+    container.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Update front face (for simplicity, a rectangle)
+        currentCuboid.frontFace[1] = {x, y};
+        drawCuboids();
+    });
+
+    container.addEventListener('mouseup', () => {
+        isDrawing = false;
+        cuboids.push(currentCuboid);
+        currentCuboid = null;
+    });
+
+    function drawCuboids() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 2;
+
+        cuboids.forEach(drawSingleCuboid);
+        if (currentCuboid) drawSingleCuboid(currentCuboid);
+    }
+
+    function drawSingleCuboid(cuboid) {
+        // Very basic 2D representation of 3D
+        if (cuboid.frontFace.length < 2) return;
+        
+        const f = cuboid.frontFace;
+        const x = Math.min(f[0].x, f[1].x);
+        const y = Math.min(f[0].y, f[1].y);
+        const w = Math.abs(f[0].x - f[1].x);
+        const h = Math.abs(f[0].y - f[1].y);
+
+        ctx.strokeRect(x, y, w, h);
+        // Add perspective lines for 3D effect
+        ctx.strokeRect(x+10, y-10, w, h);
+        ctx.beginPath();
+        ctx.moveTo(x,y); ctx.lineTo(x+10, y-10);
+        ctx.moveTo(x+w,y); ctx.lineTo(x+w+10, y-10);
+        ctx.moveTo(x,y+h); ctx.lineTo(x+10, y+h-10);
+        ctx.moveTo(x+w,y+h); ctx.lineTo(x+w+10, y+h-10);
+        ctx.stroke();
+    }
+
+    // --- Export Data ---
     function exportData() {
-        const annotations = anno.getAnnotations();
-        const blob = new Blob([JSON.stringify(annotations, null, 2)], {type : 'application/json'});
-        const url = window.URL.createObjectURL(blob);
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cuboids));
         const a = document.createElement('a');
-        a.href = url;
-        a.download = 'antonio_annotations.json';
+        a.href = dataStr;
+        a.download = 'antonio_3d_data.json';
         a.click();
     }
 
     function resetAll() {
-        if(confirm("Delete all annotations?")) {
-            anno.setAnnotations([]);
+        if(confirm("Delete all cuboids?")) {
+            cuboids = [];
+            drawCuboids();
         }
     }
 </script>
