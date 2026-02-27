@@ -3,147 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antonio Annotation | 3D Tool</title>
+    <title>Antonio Annotation | 2D Vehicle Tool</title>
     
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.all.min.js"></script>
+
     <style>
-        body { font-family: sans-serif; margin: 0; background: #202124; color: white; display: flex; flex-direction: column; align-items: center; }
-        header { background: #1a1a1a; width: 100%; padding: 10px; text-align: center; border-bottom: 2px solid #34A853; }
-        .workspace { margin: 10px; position: relative; border: 2px solid #4285F4; }
-        
-        /* The image container */
-        #annotation-container {
-            position: relative;
-            cursor: crosshair;
-        }
-        
-        #target-image {
-            display: block;
-            max-width: 1000px; /* Adjust size */
-            height: auto;
+        html, body {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Segoe UI', sans-serif;
+            background: #000000; color: white;
+            display: flex; flex-direction: column;
         }
 
-        /* Styling for the 3D Cuboid Canvas */
-        #overlay-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none; /* Let clicks pass through to image initially */
+        header {
+            background: #1a1a1a; padding: 10px; text-align: center;
+            border-bottom: 2px solid #34A853; flex-shrink: 0;
         }
 
-        .toolbar { margin: 10px; display: flex; gap: 10px; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        /* Main layout: Workspace + Sidebar */
+        .main-layout {
+            display: flex; flex-grow: 1; overflow: hidden;
+        }
+
+        .workspace {
+            flex-grow: 1; display: flex; justify-content: center;
+            align-items: center; background: #000; padding: 20px;
+            overflow: auto;
+        }
+
+        #target-image { max-width: 100%; height: auto; display: block; }
+
+        /* Right Sidebar Panel */
+        .sidebar {
+            width: 300px; background: #1a1a1a; border-left: 1px solid #333;
+            display: flex; flex-direction: column; flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 15px; background: #252525; font-weight: bold;
+            border-bottom: 1px solid #333; color: #FBBC05;
+        }
+
+        .annotation-list {
+            flex-grow: 1; overflow-y: auto; padding: 10px;
+        }
+
+        .log-entry {
+            background: #2b2b2b; margin-bottom: 8px; padding: 10px;
+            border-radius: 4px; font-size: 12px; border-left: 3px solid #4285F4;
+        }
+
+        .toolbar {
+            padding: 15px; background: #1a1a1a; display: flex;
+            justify-content: center; gap: 10px; border-top: 1px solid #333;
+        }
+
+        button { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
         .save-btn { background: #4285F4; color: white; }
         .clear-btn { background: #EA4335; color: white; }
+
+        /* Custom Label Styling */
+        .a9s-annotationlayer .a9s-annotation .a9s-inner { stroke: #00ff00 !important; stroke-width: 2; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>ANTONIO ANNOTATION</h1>
-    <p style="margin: 0; color: #FBBC05;">3D Cuboid Bounding Box Tool</p>
+    <h1 style="margin:0; font-size: 20px;">ANTONIO ANNOTATION</h1>
+    <p style="margin: 0; color: #FBBC05; font-size: 12px;">2D Vehicle Labeling Tool</p>
 </header>
 
-<div class="workspace">
-    <div id="annotation-container">
+<div class="main-layout">
+    <div class="workspace">
         <img id="target-image" src="https://raw.githubusercontent.com/Alex-Smith-lab/antonio-tool/main/scene.jpg">
-        <canvas id="overlay-canvas"></canvas>
+    </div>
+
+    <div class="sidebar">
+        <div class="sidebar-header">ACTIVITY LOG & LABELS</div>
+        <div id="log" class="annotation-list">
+            <div class="log-entry" style="border-left-color: #34A853;">Session started. Ready for annotation.</div>
+        </div>
     </div>
 </div>
 
 <div class="toolbar">
-    <button class="save-btn" onclick="exportData()">Download 3D Data (JSON)</button>
+    <div style="color: #aaa; margin-right: 20px; align-self: center;">
+        Labels: <b>Car, Truck, Bike, Bus</b>
+    </div>
+    <button class="save-btn" onclick="exportData()">Download 2D JSON</button>
     <button class="clear-btn" onclick="resetAll()">Clear All</button>
 </div>
 
 <script>
-    // --- 3D Cuboid Logic ---
-    const image = document.getElementById('target-image');
-    const canvas = document.getElementById('overlay-canvas');
-    const ctx = canvas.getContext('2d');
-    const container = document.getElementById('annotation-container');
-
-    let cuboids = [];
-    let isDrawing = false;
-    let currentCuboid = null;
-
-    // Adjust canvas size to match image
-    image.onload = () => {
-        canvas.width = image.width;
-        canvas.height = image.height;
-    };
-
-    container.addEventListener('mousedown', (e) => {
-        isDrawing = true;
-        const rect = container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        currentCuboid = {
-            frontFace: [{x, y}],
-            backFace: []
-        };
+    // Initialize Annotorious
+    const anno = Annotorious.init({
+        image: 'target-image',
+        widgets: [
+            { widget: 'COMMENT', editable: 'clickable' },
+            { widget: 'TAG', vocabulary: [ 'Car', 'Truck', 'Bike', 'Bus', 'Pedestrian' ] }
+        ]
     });
 
-    container.addEventListener('mousemove', (e) => {
-        if (!isDrawing) return;
-        const rect = container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+    const logEl = document.getElementById('log');
 
-        // Update front face (for simplicity, a rectangle)
-        currentCuboid.frontFace[1] = {x, y};
-        drawCuboids();
-    });
-
-    container.addEventListener('mouseup', () => {
-        isDrawing = false;
-        cuboids.push(currentCuboid);
-        currentCuboid = null;
-    });
-
-    function drawCuboids() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = '#00ff00';
-        ctx.lineWidth = 2;
-
-        cuboids.forEach(drawSingleCuboid);
-        if (currentCuboid) drawSingleCuboid(currentCuboid);
+    // Helper to add to sidebar log
+    function addLog(action, user = "You") {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        const time = new Date().toLocaleTimeString();
+        entry.innerHTML = `<strong>${user}</strong> [${time}]: ${action}`;
+        logEl.prepend(entry);
     }
 
-    function drawSingleCuboid(cuboid) {
-        // Very basic 2D representation of 3D
-        if (cuboid.frontFace.length < 2) return;
-        
-        const f = cuboid.frontFace;
-        const x = Math.min(f[0].x, f[1].x);
-        const y = Math.min(f[0].y, f[1].y);
-        const w = Math.abs(f[0].x - f[1].x);
-        const h = Math.abs(f[0].y - f[1].y);
+    // --- TRACKING EDITS ---
+    anno.on('createAnnotation', (annotation) => {
+        addLog("Created a new box.");
+    });
 
-        ctx.strokeRect(x, y, w, h);
-        // Add perspective lines for 3D effect
-        ctx.strokeRect(x+10, y-10, w, h);
-        ctx.beginPath();
-        ctx.moveTo(x,y); ctx.lineTo(x+10, y-10);
-        ctx.moveTo(x+w,y); ctx.lineTo(x+w+10, y-10);
-        ctx.moveTo(x,y+h); ctx.lineTo(x+10, y+h-10);
-        ctx.moveTo(x+w,y+h); ctx.lineTo(x+w+10, y+h-10);
-        ctx.stroke();
-    }
+    anno.on('updateAnnotation', (annotation, previous) => {
+        addLog("Edited/Moved a box.");
+    });
 
-    // --- Export Data ---
+    anno.on('deleteAnnotation', (annotation) => {
+        addLog("Deleted a box.");
+    });
+
+    // --- EXPORT & SAVE ---
     function exportData() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cuboids));
-        const a = document.createElement('a');
-        a.href = dataStr;
-        a.download = 'antonio_3d_data.json';
-        a.click();
+        const annotations = anno.getAnnotations();
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(annotations, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "antonio_2d_labels.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        addLog("Exported JSON file.");
     }
 
     function resetAll() {
-        if(confirm("Delete all cuboids?")) {
-            cuboids = [];
-            drawCuboids();
+        if(confirm("This will delete all current work. Continue?")) {
+            anno.setAnnotations([]);
+            addLog("Cleared all annotations.");
         }
     }
 </script>
