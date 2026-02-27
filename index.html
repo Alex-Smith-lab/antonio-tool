@@ -14,6 +14,20 @@ body{
     height:100vh;
     overflow:hidden;
 }
+body.homepage {
+    background:#007bff;
+    color:white;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+}
+.homepage input, .homepage button {
+    padding:10px;
+    margin:5px;
+    border-radius:5px;
+    border:none;
+    font-size:16px;
+}
 
 #leftPanel{
     width:250px;
@@ -119,7 +133,15 @@ button{
 </style>
 </head>
 
-<body>
+<body id="bodyElement">
+
+<!-- HOMEPAGE LOGIN -->
+<div id="homepage" class="homepage" style="display:none;">
+    <h1>Welcome to Antana Tool</h1>
+    <input type="email" id="homepageEmail" placeholder="Enter your email">
+    <input type="text" id="homepageName" placeholder="Full Name (for Sign Up)">
+    <button onclick="homepageLogin()">Enter</button>
+</div>
 
 <div id="currentUser"></div>
 
@@ -130,6 +152,7 @@ button{
 <hr>
 <h3>Users</h3>
 <button class="blue" onclick="showUserPopup()">Add Coworker</button>
+<button class="green" onclick="showAccessRequests()" style="background:#00ffff;">Pending Requests</button>
 <div id="userList"></div>
 </div>
 
@@ -155,7 +178,7 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <div id="annotationList"></div>
 </div>
 
-<!-- Label Selection Popup -->
+<!-- POPUPS -->
 <div id="labelPopup">
 <select id="labelSelect">
 <option>Car</option>
@@ -167,7 +190,6 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <button onclick="applyLabel()">Apply</button>
 </div>
 
-<!-- Coworker Account Creation Popup -->
 <div id="userPopup">
 <h4>Create Coworker</h4>
 <input type="text" id="newUsername" placeholder="Full Name"><br><br>
@@ -176,20 +198,11 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <button class="red" onclick="closeUserPopup()">Cancel</button>
 </div>
 
-<!-- Assign Image Popup -->
 <div id="assignPopup">
 <h4>Assign Image</h4>
 <select id="assignUserSelect"></select><br><br>
 <button class="green" onclick="assignImage()">Assign</button>
 <button class="red" onclick="closeAssignPopup()">Cancel</button>
-</div>
-
-<!-- Login/Sign Up Popup -->
-<div id="loginPopup">
-<h4>Login or Sign Up</h4>
-<input type="email" id="loginEmail" placeholder="Email"><br><br>
-<input type="text" id="loginName" placeholder="Full Name (for Sign Up)"><br><br>
-<button class="green" onclick="loginOrSignup()">Submit</button>
 </div>
 
 <script>
@@ -205,22 +218,23 @@ const labelSelect=document.getElementById("labelSelect");
 
 const userPopup=document.getElementById("userPopup");
 const assignPopup=document.getElementById("assignPopup");
-const loginPopup=document.getElementById("loginPopup");
 const userListDiv=document.getElementById("userList");
 const assignUserSelect=document.getElementById("assignUserSelect");
 
 const newUsername=document.getElementById("newUsername");
 const newUserEmail=document.getElementById("newUserEmail");
 
-const loginEmail=document.getElementById("loginEmail");
-const loginName=document.getElementById("loginName");
+const homepageDiv=document.getElementById("homepage");
+const homepageEmail=document.getElementById("homepageEmail");
+const homepageName=document.getElementById("homepageName");
 const currentUserDiv=document.getElementById("currentUser");
+const bodyElement=document.getElementById("bodyElement");
 
 let dataset=JSON.parse(localStorage.getItem("dataset"))||{};
 let imagesMeta=JSON.parse(localStorage.getItem("imagesMeta"))||{};
 let users=JSON.parse(localStorage.getItem("users"))||[];
-let currentImage=null;
 let currentUser=null;
+let currentImage=null;
 let img=new Image();
 
 let scale=1, originX=0, originY=0;
@@ -230,13 +244,8 @@ let selectedIndex=-1;
 let resizeCorner=null;
 let panStartX, panStartY;
 
-const labelColors={
-Car:"#ff3b3b",
-Bus:"#00ff99",
-Truck:"#3399ff",
-Pedestrian:"#ffff00",
-Train:"#ff00ff"
-};
+const labelColors={Car:"#ff3b3b",Bus:"#00ff99",Truck:"#3399ff",Pedestrian:"#ffff00",Train:"#ff00ff"};
+const adminEmail="antonymbali96@gmail.com";
 
 /* ---------- SAVE DATA ---------- */
 function saveData(){
@@ -246,34 +255,75 @@ function saveData(){
     localStorage.setItem("currentUser",JSON.stringify(currentUser));
 }
 
-/* ---------- USER LOGIN ---------- */
-function showLogin(){
-    loginEmail.value="";
-    loginName.value="";
-    loginPopup.style.display="block";
-}
+/* ---------- HOMEPAGE LOGIN ---------- */
+function showHomepage(){ homepageDiv.style.display="flex"; bodyElement.classList.add("homepage"); }
 
-function loginOrSignup(){
-    const email=loginEmail.value.trim();
-    const name=loginName.value.trim();
+function homepageLogin(){
+    const email=homepageEmail.value.trim();
+    const name=homepageName.value.trim();
     if(!email) return alert("Email required");
-
     let user=users.find(u=>u.email===email);
     if(user){
-        if(user.status==="waitlist") return alert("You are on waitlist. Access denied.");
+        if(user.status==="waitlist") { alert("You are on waitlist. Access denied."); currentUser=user; currentUserDiv.innerText=user.name+" (Waitlist)"; return; }
         currentUser=user;
-        currentUserDiv.innerText="Logged in: "+currentUser.name;
-    }else{
+        currentUserDiv.innerText=currentUser.name;
+        startTool();
+    } else {
         if(!name) return alert("Name required for signup");
-        let newUser={name, email, status:"waitlist"};
+        let newUser={name,email,status:"waitlist"};
         users.push(newUser);
         currentUser=newUser;
-        alert("Account created. Wait for admin approval.");
-        currentUserDiv.innerText="Logged in: "+currentUser.name+" (Waitlist)";
+        currentUserDiv.innerText=name+" (Waitlist)";
+        alert("Account created. Waiting for admin approval.");
+        saveData();
     }
-    saveData();
-    loginPopup.style.display="none";
-    renderUserList();
+}
+
+/* ---------- START TOOL ---------- */
+function startTool(){
+    homepageDiv.style.display="none";
+    bodyElement.classList.remove("homepage");
+    currentUserDiv.innerText=currentUser.name;
+}
+
+/* ---------- ADMIN ACCESS REQUESTS ---------- */
+function showAccessRequests(){
+    if(!currentUser || currentUser.email!==adminEmail) return alert("Access denied");
+    let requests=users.filter(u=>u.status==="waitlist");
+    if(requests.length===0) return alert("No pending requests");
+    let msg="Pending Access Requests:\n";
+    requests.forEach(u=> msg+=u.name+" ("+u.email+")\n");
+    if(confirm(msg+"\nApprove all?")){
+        requests.forEach(u=> u.status="approved");
+        saveData();
+        alert("All waitlist users approved.");
+        renderUserList();
+    }
+}
+
+/* ---------- USER MANAGEMENT ---------- */
+function showUserPopup(){
+    if(!currentUser || currentUser.email!==adminEmail) return alert("Access denied");
+    newUsername.value=""; newUserEmail.value="";
+    userPopup.style.display="block";
+}
+function closeUserPopup(){ userPopup.style.display="none"; }
+function addCoworker(){
+    const name=newUsername.value.trim();
+    const email=newUserEmail.value.trim();
+    if(!name || !email) return alert("Name and email required");
+    if(users.find(u=>u.email===email)) return alert("Email already exists");
+    users.push({name,email,status:"waitlist"});
+    saveData(); renderUserList(); closeUserPopup();
+}
+function renderUserList(){
+    userListDiv.innerHTML="";
+    users.forEach(u=>{
+        const div=document.createElement("div");
+        div.className="user-item";
+        div.innerText=`${u.name} (${u.status})`;
+        userListDiv.appendChild(div);
+    });
 }
 
 /* ---------- IMAGE UPLOAD ---------- */
@@ -284,14 +334,13 @@ imageLoader.addEventListener("change",e=>{
         reader.onload=ev=>{
             imagesMeta[file.name]={src:ev.target.result,complete:false,assignee:null};
             dataset[file.name]=dataset[file.name]||[];
-            saveData();
-            renderImageList();
+            saveData(); renderImageList();
         };
         reader.readAsDataURL(file);
     });
 });
 
-/* ---------- RENDER IMAGE LIST ---------- */
+/* ---------- RENDER & LOAD ---------- */
 function renderImageList(){
     imageList.innerHTML="";
     for(let name in imagesMeta){
@@ -305,50 +354,14 @@ function renderImageList(){
         imageList.appendChild(div);
     }
 }
-
-/* ---------- LOAD IMAGE ---------- */
 function loadImage(name){
     if(currentUser && currentUser.status!=="approved") return alert("Access denied");
     currentImage=name;
     img.src=imagesMeta[name].src;
     img.onload=()=>{
-        canvas.width=img.width;
-        canvas.height=img.height;
-        scale=1; originX=0; originY=0;
-        redraw();
-        updateSidebar();
+        canvas.width=img.width; canvas.height=img.height; scale=1; originX=0; originY=0;
+        redraw(); updateSidebar();
     };
-}
-
-/* ---------- USER MANAGEMENT ---------- */
-function showUserPopup(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    newUsername.value="";
-    newUserEmail.value="";
-    userPopup.style.display="block";
-}
-
-function closeUserPopup(){ userPopup.style.display="none"; }
-
-function addCoworker(){
-    const name=newUsername.value.trim();
-    const email=newUserEmail.value.trim();
-    if(!name || !email) return alert("Name and email required");
-    if(users.find(u=>u.email===email)) return alert("Email already exists");
-    users.push({name,email,status:"waitlist"});
-    saveData();
-    renderUserList();
-    closeUserPopup();
-}
-
-function renderUserList(){
-    userListDiv.innerHTML="";
-    users.forEach(u=>{
-        const div=document.createElement("div");
-        div.className="user-item";
-        div.innerText=`${u.name} (${u.status})`;
-        userListDiv.appendChild(div);
-    });
 }
 
 /* ---------- ASSIGNMENT ---------- */
@@ -357,83 +370,36 @@ function showAssignPopup(){
     if(!currentImage) return alert("Select an image first.");
     assignUserSelect.innerHTML="";
     users.filter(u=>u.status==="approved").forEach(u=>{
-        const option=document.createElement("option");
-        option.value=u.name; option.innerText=u.name;
+        const option=document.createElement("option"); option.value=u.name; option.innerText=u.name;
         assignUserSelect.appendChild(option);
     });
     assignPopup.style.display="block";
 }
-
 function closeAssignPopup(){ assignPopup.style.display="none"; }
-
 function assignImage(){
     const assignee=assignUserSelect.value;
-    if(currentImage){
-        imagesMeta[currentImage].assignee=assignee;
-        saveData();
-        renderImageList();
-    }
+    if(currentImage){ imagesMeta[currentImage].assignee=assignee; saveData(); renderImageList(); }
     closeAssignPopup();
 }
 
-/* ---------- LABELING & CANVAS ---------- */
-// Keep all your existing canvas, draw, resize, pan, label, delete, clear, markComplete, redraw code exactly as before
-// Example for applyLabel, deleteSelected, clearCurrent, markComplete, updateSidebar
+/* ---------- CANVAS & LABEL ---------- */
+function applyLabel(){ if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+dataset[currentImage][selectedIndex].label=labelSelect.value; popup.style.display="none"; saveData(); redraw(); updateSidebar();}
+function deleteSelected(){ if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+if(selectedIndex!==-1){ dataset[currentImage].splice(selectedIndex,1); selectedIndex=-1; saveData(); redraw(); updateSidebar(); }}
+function clearCurrent(){ if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+dataset[currentImage]=[]; saveData(); redraw(); updateSidebar();}
+function markComplete(){ if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+if(currentImage){ imagesMeta[currentImage].complete=true; saveData(); renderImageList(); }}
+function updateSidebar(){ annotationList.innerHTML=""; if(!currentImage) return;
+dataset[currentImage].forEach(box=>{ const div=document.createElement("div"); div.className="annotation-item";
+div.style.borderLeft="5px solid "+labelColors[box.label]; div.innerText=box.label; annotationList.appendChild(div);});}
 
-function applyLabel(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    dataset[currentImage][selectedIndex].label=labelSelect.value;
-    popup.style.display="none";
-    saveData();
-    redraw();
-    updateSidebar();
-}
-
-function deleteSelected(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    if(selectedIndex!==-1){
-        dataset[currentImage].splice(selectedIndex,1);
-        selectedIndex=-1;
-        saveData();
-        redraw();
-        updateSidebar();
-    }
-}
-
-function clearCurrent(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    dataset[currentImage]=[];
-    saveData();
-    redraw();
-    updateSidebar();
-}
-
-function markComplete(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    if(currentImage){
-        imagesMeta[currentImage].complete=true;
-        saveData();
-        renderImageList();
-    }
-}
-
-function updateSidebar(){
-    annotationList.innerHTML="";
-    if(!currentImage) return;
-    dataset[currentImage].forEach(box=>{
-        const div=document.createElement("div");
-        div.className="annotation-item";
-        div.style.borderLeft="5px solid "+labelColors[box.label];
-        div.innerText=box.label;
-        annotationList.appendChild(div);
-    });
-}
-
-/* ---------- INITIAL RENDER ---------- */
+/* ---------- INITIALIZE ---------- */
 currentUser=JSON.parse(localStorage.getItem("currentUser"));
-if(!currentUser) showLogin();
-else currentUserDiv.innerText="Logged in: "+currentUser.name+ (currentUser.status==="waitlist"?" (Waitlist)":"");
-
+if(!currentUser) showHomepage();
+else if(currentUser.status==="waitlist"){ showHomepage(); alert("You are on waitlist. Access denied."); }
+else startTool();
 renderImageList();
 renderUserList();
 
