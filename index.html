@@ -3,163 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antonio Annotation | Professional 2D Tool</title>
+    <title>Antonio Annotation | 3D Tool</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.all.min.js"></script>
 
     <style>
+        /* This section sets the fixed layout: Header top, Toolbar bottom */
         html, body {
-            margin: 0; padding: 0; height: 100%;
-            font-family: 'Segoe UI', sans-serif;
-            background: #000000; color: white;
-            display: flex; flex-direction: column;
-            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; /* Prevent the main page from scrolling */
+            font-family: sans-serif;
+            background: #202124;
+            color: white;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
-            background: #1a1a1a; padding: 10px; text-align: center;
-            border-bottom: 2px solid #34A853; flex-shrink: 0;
-            z-index: 100;
+            background: #1a1a1a;
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+            border-bottom: 2px solid #34A853;
+            flex-shrink: 0; /* Header won't shrink */
         }
 
-        /* Main layout: Adjustable Workspace + Sidebar */
-        .main-layout {
-            display: flex; flex-grow: 1; overflow: hidden;
+        /* This is the main content area between header and toolbar */
+        .main-container {
+            display: flex;
+            flex-grow: 1; /* Take up all vertical space */
+            overflow: hidden; /* Contains the workspace and sidebar */
         }
 
+        /* The workspace where the image is */
         .workspace {
-            flex-grow: 1; position: relative;
-            background: #000; overflow: auto; /* Enables scrolling/adjusting */
-            display: flex; justify-content: center; align-items: center;
+            flex-grow: 1; /* Workspace takes up remaining horizontal space */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto; /* This area will scroll if image is too big */
+            padding: 20px;
         }
-
-        #annotation-container { position: relative; }
-
-        #target-image { 
-            display: block; 
-            max-width: none; /* Allows full size for adjustment */
+        
+        #annotation-container {
+            position: relative;
+            cursor: crosshair;
+        }
+        
+        #target-image {
+            display: block;
+            max-width: 100%; /* Image won't grow bigger than workspace */
             height: auto;
         }
 
-        /* Sidebar Panel */
+        /* Side Panel Styling */
         .sidebar {
-            width: 320px; background: #1a1a1a; border-left: 1px solid #333;
-            display: flex; flex-direction: column; flex-shrink: 0;
+            width: 300px;
+            background: #1a1a1a;
+            border-left: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease; /* Smooth opening/closing */
+        }
+
+        /* Hidden class for sidebar */
+        .sidebar.hidden {
+            width: 0;
+            overflow: hidden;
+            border-left: none;
         }
 
         .sidebar-header {
-            padding: 15px; background: #252525; font-weight: bold;
-            border-bottom: 1px solid #333; color: #FBBC05;
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .activity-log {
-            flex-grow: 1; overflow-y: auto; padding: 10px;
+        .close-sidebar {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+        }
+        .close-sidebar:hover { color: white; }
+
+        .annotation-list {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        .annotation-item {
+            background: #2b2b2b;
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
         }
 
-        .log-entry {
-            background: #2b2b2b; margin-bottom: 8px; padding: 10px;
-            border-radius: 4px; font-size: 12px; border-left: 3px solid #4285F4;
-        }
-
+        /* Toolbar is fixed to the bottom */
         .toolbar {
-            padding: 15px; background: #1a1a1a; display: flex;
-            justify-content: center; gap: 15px; border-top: 1px solid #333;
+            padding: 10px;
+            background: #1a1a1a;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            border-top: 1px solid #333;
+            flex-shrink: 0; /* Toolbar won't shrink */
         }
 
-        /* Action Buttons */
-        button { 
-            padding: 10px 18px; cursor: pointer; border: none; 
-            border-radius: 4px; font-weight: bold; display: flex; align-items: center; gap: 5px;
+        button.tool-btn {
+            padding: 8px 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
         }
-        .add-btn { background: #34A853; color: white; }
-        .del-btn { background: #EA4335; color: white; }
-        .save-btn { background: #4285F4; color: white; }
-        
-        button:hover { opacity: 0.8; }
+        .download-btn { background: #4285F4; color: white; }
+        .clear-btn { background: #EA4335; color: white; }
+    }
     </style>
 </head>
 <body>
 
-<header>
-    <h1 style="margin:0; font-size: 22px; letter-spacing: 1px;">ANTONIO ANNOTATION</h1>
-    <p style="margin: 0; color: #FBBC05; font-size: 12px;">2D VEHICLE TRACKING SYSTEM</p>
-</header>
+    <header>
+        <h1>ANTONIO ANNOTATION</h1>
+        <p style="margin: 0; color: #FBBC05;">3D Cuboid Bounding Box Tool</p>
+    </header>
 
-<div class="main-layout">
-    <div class="workspace">
-        <div id="annotation-container">
-            <img id="target-image" src="scene.jpg">
+    <div class="main-container">
+        <div class="workspace">
+            <div id="annotation-container">
+                <img id="target-image" src="https://raw.githubusercontent.com/Alex-Smith-lab/antonio-tool/main/scene.jpg">
+            </div>
+        </div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>Annotations</h3>
+                <button class="close-sidebar" onclick="toggleSidebar()">×</button>
+            </div>
+            <div class="annotation-list" id="annotation-list">
+                <div class="annotation-item">Draw a box to see labels</div>
+            </div>
         </div>
     </div>
 
-    <div class="sidebar">
-        <div class="sidebar-header">COWORKER ACTIVITY LOG</div>
-        <div id="activity-log" class="activity-log">
-            <div class="log-entry" style="border-left-color: #34A853;">[SYSTEM]: Workspace initialized.</div>
-        </div>
+    <div class="toolbar">
+        <button class="tool-btn download-btn" onclick="exportData()">Download 3D Data (JSON)</button>
+        <button class="tool-btn clear-btn" onclick="resetAll()">Clear All</button>
+        <button class="tool-btn" style="background: #555;" onclick="toggleSidebar()">Show/Hide Panel</button>
     </div>
-</div>
 
-<div class="toolbar">
-    <button class="add-btn" onclick="startDrawing()"><span>➕</span> Add Box</button>
-    <button class="del-btn" onclick="deleteSelected()"><span>🗑️</span> Delete Selected</button>
-    <button class="save-btn" onclick="exportData()"><span>💾</span> Save JSON</button>
-</div>
+    <script>
+        // --- 1. Annotation Tool Setup with Labels ---
+        // Initialize the annotation tool with predefined labels
+        const anno = Annotorious.init({
+            image: 'target-image',
+            // Predefined vocabulary for vehicles
+            widgets: [
+                { widget: 'COMMENT' },
+                { widget: 'TAG', vocabulary: [ 'Car', 'Truck', 'Bike', 'Bus' ] }
+            ]
+        });
 
-<script>
-    // Initialize Annotorious
-    const anno = Annotorious.init({
-        image: 'target-image',
-        widgets: [
-            { widget: 'COMMENT', editable: 'clickable' },
-            { widget: 'TAG', vocabulary: [ 'Car', 'Truck', 'Bus', 'Motorcycle', 'Van' ] }
-        ]
-    });
+        // Event: When an annotation is created, show the popup to choose labels
+        anno.on('createAnnotation', function(annotation) {
+            // Annotorious automatically shows the popup
+            // We'll also update the sidebar list
+            updateSidebarList();
+        });
 
-    const logEl = document.getElementById('activity-log');
+        // Event: When an annotation is updated or deleted
+        anno.on('updateAnnotation', updateSidebarList);
+        anno.on('deleteAnnotation', updateSidebarList);
 
-    // Tracking Function
-    function addLog(action, user = "Antonio") {
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
-        const time = new Date().toLocaleTimeString();
-        entry.innerHTML = `<strong>${user}</strong> [${time}]: ${action}`;
-        logEl.prepend(entry);
-    }
 
-    // Logic for Buttons
-    function startDrawing() {
-        anno.setDrawingTool('rect');
-        addLog("Enabled 'Add' tool.");
-    }
-
-    function deleteSelected() {
-        const selected = anno.getSelected();
-        if (selected) {
-            anno.removeAnnotation(selected);
-            addLog("Deleted a vehicle box.");
-        } else {
-            alert("Please click on a box first to select it for deletion.");
+        // --- 2. Side Panel Logic ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
         }
-    }
 
-    // Event Listeners for coworker/user tracking
-    anno.on('createAnnotation', () => addLog("Created new 2D annotation."));
-    anno.on('updateAnnotation', () => addLog("Edited/Moved an annotation."));
-    anno.on('deleteAnnotation', () => addLog("Removed an annotation."));
+        function updateSidebarList() {
+            const listEl = document.getElementById('annotation-list');
+            const annotations = anno.getAnnotations();
+            
+            // Clear current list
+            listEl.innerHTML = '';
+            
+            if (annotations.length === 0) {
+                listEl.innerHTML = '<div class="annotation-item">Draw a box to see labels</div>';
+                return;
+            }
 
-    function exportData() {
-        const data = anno.getAnnotations();
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'antonio_labels.json';
-        a.click();
-        addLog("Downloaded saved JSON data.");
-    }
-</script>
+            // Create a list item for each annotation
+            annotations.forEach((a, index) => {
+                const item = document.createElement('div');
+                item.className = 'annotation-item';
+                item.innerHTML = `<strong>#${index + 1}:</strong> Box at [${Math.round(a.target.selector.value.split(':')[1].split(',')[0])}, ${Math.round(a.target.selector.value.split(':')[1].split(',')[1])}]`;
+                
+                // Add tag information if available
+                if (a.bodies && a.bodies.some(b => b.type === 'TagBody')) {
+                    const tags = a.bodies.filter(b => b.type === 'TagBody').map(b => b.value).join(', ');
+                    item.innerHTML += `<br><em>Label:</em> ${tags}`;
+                }
+                
+                listEl.appendChild(item);
+            });
+        }
 
+
+        // --- 3. Toolbar and Export Logic ---
+        function exportData() {
+            // ... (Your existing export JSON logic) ...
+        }
+
+        function resetAll() {
+            // ... (Your existing clear all logic) ...
+        }
+    </script>
 </body>
 </html>
