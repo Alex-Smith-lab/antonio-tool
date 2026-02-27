@@ -1,157 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Antonio Annotation Tool</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: white;
+    display: flex;
+}
+
+#main {
+    flex: 3;
+    text-align: center;
+    padding: 20px;
+}
+
+#sidebar {
+    flex: 1;
+    background: #1e1e1e;
+    padding: 15px;
+    overflow-y: auto;
+    border-left: 2px solid #333;
+}
+
+canvas {
+    border: 2px solid #555;
+    cursor: crosshair;
+    margin-top: 10px;
+}
+
+button {
+    margin: 5px;
+    padding: 8px 12px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.green { background: #28a745; color: white; }
+.red { background: #dc3545; color: white; }
+.blue { background: #007bff; color: white; }
+.gray { background: #6c757d; color: white; }
+
+.annotation-item {
+    background: #2c2c2c;
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="main">
+    <h2>Antonio Annotation Tool</h2>
+
+    <input type="file" id="imageLoader" accept="image/*"><br>
+
+    <button class="green" onclick="enableDraw()">Add Annotation</button>
+    <button class="red" onclick="deleteLast()">Delete Last</button>
+    <button class="gray" onclick="clearAll()">Clear All</button>
+    <button class="blue" onclick="downloadJSON()">Download JSON</button>
+
+    <br>
+    <canvas id="canvas"></canvas>
+</div>
+
+<div id="sidebar">
+    <h3>Annotations</h3>
+    <div id="annotationList"></div>
+</div>
+
 <script>
-    // ----------------------------------
-    // SITE CHECK (Optional but useful)
-    // ----------------------------------
-    if (!window.location.href.includes('alex-smith-lab.github.io/antonio-tool')) {
-        console.warn("Antonio Tool loaded outside official site.");
-    } else {
-        console.log("Antonio Tool running from official site.");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const imageLoader = document.getElementById("imageLoader");
+const annotationList = document.getElementById("annotationList");
+
+let img = new Image();
+let annotations = [];
+let drawing = false;
+let startX, startY;
+let currentRect = null;
+let drawMode = false;
+
+imageLoader.addEventListener("change", function(e) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        img.onload = function() {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+        }
+        img.src = event.target.result;
     }
+    reader.readAsDataURL(e.target.files[0]);
+});
 
-    // ----------------------------------
-    // INITIALIZE ANNOTORIOUS
-    // ----------------------------------
-    const anno = Annotorious.init({
-        image: 'target-image',
-        widgets: [
-            { widget: 'COMMENT', editable: true },
-            { widget: 'TAG', vocabulary: ['Car', 'Truck', 'Bus', 'Motorcycle', 'Pedestrian'] }
-        ]
-    });
+function enableDraw() {
+    drawMode = true;
+}
 
-    // ----------------------------------
-    // LABEL COLOR MAP
-    // ----------------------------------
-    const labelColors = {
-        Car: '#34A853',
-        Truck: '#4285F4',
-        Bus: '#FBBC05',
-        Motorcycle: '#EA4335',
-        Pedestrian: '#AA66CC'
+canvas.addEventListener("mousedown", function(e) {
+    if (!drawMode) return;
+    drawing = true;
+    const rect = canvas.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+});
+
+canvas.addEventListener("mousemove", function(e) {
+    if (!drawing) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    redraw();
+
+    const width = mouseX - startX;
+    const height = mouseY - startY;
+
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(startX, startY, width, height);
+
+    currentRect = {
+        x: startX,
+        y: startY,
+        width: width,
+        height: height
     };
+});
 
-    // ----------------------------------
-    // DYNAMIC COLOR PER LABEL
-    // ----------------------------------
-    anno.setStyle(function(annotation) {
+canvas.addEventListener("mouseup", function() {
+    if (drawing && currentRect) {
+        annotations.push(currentRect);
+        updateSidebar();
+    }
+    drawing = false;
+    currentRect = null;
+});
 
-        const tagBody = annotation.bodies.find(b =>
-            b.purpose === 'tagging'
-        );
+function redraw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
 
-        const label = tagBody ? tagBody.value : null;
-        const color = labelColors[label] || '#FFFFFF';
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 2;
 
-        return {
-            stroke: color,
-            strokeWidth: 2,
-            fill: color,
-            fillOpacity: 0.15
-        };
+    annotations.forEach(rect => {
+        ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
     });
+}
 
-    // ----------------------------------
-    // ENABLE ANNOTATION MODE ON LOAD
-    // ----------------------------------
-    anno.setDrawingTool('rect');
-    anno.setDrawingEnabled(true);
-
-    let drawingActive = true;
-    document.querySelector('.add-btn').style.background = "#FBBC05";
-
-    // ----------------------------------
-    // ZOOM
-    // ----------------------------------
-    let scale = 1;
-    const container = document.getElementById('annotation-container');
-    const viewport = document.getElementById('zoom-viewport');
-
-    viewport.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        scale = Math.min(Math.max(0.5, scale + delta), 4);
-        container.style.transform = `scale(${scale})`;
-    }, { passive: false });
-
-    // ----------------------------------
-    // SIDEBAR LOGIC
-    // ----------------------------------
-    const logEl = document.getElementById('activity-log');
-
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('hidden');
-    }
-
-    function addLog(action, user = "Antonio") {
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
-        const time = new Date().toLocaleTimeString();
-        entry.innerHTML = `<strong>${user}</strong> [${time}]: ${action}`;
-        logEl.prepend(entry);
-    }
-
-    // ----------------------------------
-    // ANNOTATION MODE TOGGLE
-    // ----------------------------------
-    function startDrawing() {
-        drawingActive = !drawingActive;
-
-        if (drawingActive) {
-            anno.setDrawingEnabled(true);
-            document.querySelector('.add-btn').style.background = "#FBBC05";
-            addLog("Annotation mode ENABLED.");
-        } else {
-            anno.setDrawingEnabled(false);
-            document.querySelector('.add-btn').style.background = "#34A853";
-            addLog("Annotation mode DISABLED.");
-        }
-    }
-
-    // ----------------------------------
-    // DELETE
-    // ----------------------------------
-    function deleteSelected() {
-        const selected = anno.getSelected();
-        if (selected) {
-            anno.removeAnnotation(selected);
-            addLog("Removed annotation.");
-        }
-    }
-
-    // ----------------------------------
-    // EVENTS
-    // ----------------------------------
-    anno.on('createAnnotation', (a) => {
-        anno.redraw(a);
-        const tags = a.bodies
-            .filter(b => b.purpose === 'tagging')
-            .map(b => b.value)
-            .join(', ');
-        addLog(`Created annotation. Labels: ${tags || 'None'}`);
+function updateSidebar() {
+    annotationList.innerHTML = "";
+    annotations.forEach((rect, index) => {
+        const div = document.createElement("div");
+        div.className = "annotation-item";
+        div.innerText = `Box ${index+1}: x=${rect.x.toFixed(0)}, y=${rect.y.toFixed(0)}, w=${rect.width.toFixed(0)}, h=${rect.height.toFixed(0)}`;
+        annotationList.appendChild(div);
     });
+}
 
-    anno.on('updateAnnotation', (a) => {
-        anno.redraw(a);
-        addLog("Annotation updated.");
-    });
+function deleteLast() {
+    annotations.pop();
+    redraw();
+    updateSidebar();
+}
 
-    anno.on('selectAnnotation', () => {
-        addLog("Annotation selected.");
-    });
+function clearAll() {
+    annotations = [];
+    redraw();
+    updateSidebar();
+}
 
-    // ----------------------------------
-    // EXPORT
-    // ----------------------------------
-    function exportData() {
-        const data = anno.getAnnotations();
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'antonio_labels.json';
-        a.click();
-        addLog("Exported annotations.");
-    }
-
-    addLog("Antonio Tool ready on alex-smith-lab.github.io.");
+function downloadJSON() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(annotations, null, 2));
+    const dlAnchor = document.createElement("a");
+    dlAnchor.setAttribute("href", dataStr);
+    dlAnchor.setAttribute("download", "annotations.json");
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+}
 </script>
+
+</body>
+</html>
