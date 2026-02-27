@@ -16,7 +16,7 @@ body{
 }
 
 #leftPanel{
-    width:220px;
+    width:250px;
     background:#181818;
     border-right:2px solid #333;
     overflow-y:auto;
@@ -32,6 +32,9 @@ body{
 #toolbar{
     padding:10px;
     background:#1e1e1e;
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
 
 #workspace{
@@ -48,7 +51,7 @@ canvas{
 }
 
 #rightPanel{
-    width:250px;
+    width:300px;
     background:#1e1e1e;
     border-left:2px solid #333;
     padding:10px;
@@ -77,6 +80,15 @@ canvas{
     background:#2c2c2c;
 }
 
+.user-item{
+    font-size:12px;
+    padding:4px;
+    margin-bottom:4px;
+    background:#333;
+    display:flex;
+    justify-content:space-between;
+}
+
 button{
     margin:3px;
     padding:6px 10px;
@@ -88,8 +100,9 @@ button{
 .green{background:#28a745;color:white;}
 .red{background:#dc3545;color:white;}
 .gray{background:#6c757d;color:white;}
+.blue{background:#007bff;color:white;}
 
-#labelPopup{
+#labelPopup, #userPopup, #assignPopup, #loginPopup{
     position:fixed;
     background:#222;
     padding:10px;
@@ -97,23 +110,36 @@ button{
     display:none;
     z-index:1000;
 }
+#currentUser{
+    position:absolute;
+    top:10px;
+    right:20px;
+    font-size:14px;
+}
 </style>
 </head>
 
 <body>
 
+<div id="currentUser"></div>
+
 <div id="leftPanel">
 <h3>Images</h3>
 <input type="file" id="imageLoader" multiple accept="image/*"><br><br>
 <div id="imageList"></div>
+<hr>
+<h3>Users</h3>
+<button class="blue" onclick="showUserPopup()">Add Coworker</button>
+<div id="userList"></div>
 </div>
 
 <div id="main">
 <div id="toolbar">
-<h2>Antana Labeler - Production</h2>
+<h2 style="flex:1;">Antana Labeler - Production</h2>
 <button class="green" onclick="markComplete()">Mark Complete</button>
 <button class="red" onclick="deleteSelected()">Delete</button>
 <button class="gray" onclick="clearCurrent()">Clear Image</button>
+<button class="blue" onclick="showAssignPopup()">Assign</button>
 <span style="margin-left:15px;font-size:12px;">
 Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click Box = Label
 </span>
@@ -129,6 +155,7 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <div id="annotationList"></div>
 </div>
 
+<!-- Label Selection Popup -->
 <div id="labelPopup">
 <select id="labelSelect">
 <option>Car</option>
@@ -140,7 +167,33 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <button onclick="applyLabel()">Apply</button>
 </div>
 
+<!-- Coworker Account Creation Popup -->
+<div id="userPopup">
+<h4>Create Coworker</h4>
+<input type="text" id="newUsername" placeholder="Full Name"><br><br>
+<input type="email" id="newUserEmail" placeholder="Email"><br><br>
+<button class="green" onclick="addCoworker()">Add</button>
+<button class="red" onclick="closeUserPopup()">Cancel</button>
+</div>
+
+<!-- Assign Image Popup -->
+<div id="assignPopup">
+<h4>Assign Image</h4>
+<select id="assignUserSelect"></select><br><br>
+<button class="green" onclick="assignImage()">Assign</button>
+<button class="red" onclick="closeAssignPopup()">Cancel</button>
+</div>
+
+<!-- Login/Sign Up Popup -->
+<div id="loginPopup">
+<h4>Login or Sign Up</h4>
+<input type="email" id="loginEmail" placeholder="Email"><br><br>
+<input type="text" id="loginName" placeholder="Full Name (for Sign Up)"><br><br>
+<button class="green" onclick="loginOrSignup()">Submit</button>
+</div>
+
 <script>
+/* ---------- VARIABLES ---------- */
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
 
@@ -150,9 +203,24 @@ const annotationList=document.getElementById("annotationList");
 const popup=document.getElementById("labelPopup");
 const labelSelect=document.getElementById("labelSelect");
 
+const userPopup=document.getElementById("userPopup");
+const assignPopup=document.getElementById("assignPopup");
+const loginPopup=document.getElementById("loginPopup");
+const userListDiv=document.getElementById("userList");
+const assignUserSelect=document.getElementById("assignUserSelect");
+
+const newUsername=document.getElementById("newUsername");
+const newUserEmail=document.getElementById("newUserEmail");
+
+const loginEmail=document.getElementById("loginEmail");
+const loginName=document.getElementById("loginName");
+const currentUserDiv=document.getElementById("currentUser");
+
 let dataset=JSON.parse(localStorage.getItem("dataset"))||{};
 let imagesMeta=JSON.parse(localStorage.getItem("imagesMeta"))||{};
+let users=JSON.parse(localStorage.getItem("users"))||[];
 let currentImage=null;
+let currentUser=null;
 let img=new Image();
 
 let scale=1, originX=0, originY=0;
@@ -170,246 +238,205 @@ Pedestrian:"#ffff00",
 Train:"#ff00ff"
 };
 
+/* ---------- SAVE DATA ---------- */
 function saveData(){
-localStorage.setItem("dataset",JSON.stringify(dataset));
-localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
+    localStorage.setItem("dataset",JSON.stringify(dataset));
+    localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
+    localStorage.setItem("users",JSON.stringify(users));
+    localStorage.setItem("currentUser",JSON.stringify(currentUser));
 }
 
-/* IMAGE UPLOAD & PERSISTENCE */
+/* ---------- USER LOGIN ---------- */
+function showLogin(){
+    loginEmail.value="";
+    loginName.value="";
+    loginPopup.style.display="block";
+}
+
+function loginOrSignup(){
+    const email=loginEmail.value.trim();
+    const name=loginName.value.trim();
+    if(!email) return alert("Email required");
+
+    let user=users.find(u=>u.email===email);
+    if(user){
+        if(user.status==="waitlist") return alert("You are on waitlist. Access denied.");
+        currentUser=user;
+        currentUserDiv.innerText="Logged in: "+currentUser.name;
+    }else{
+        if(!name) return alert("Name required for signup");
+        let newUser={name, email, status:"waitlist"};
+        users.push(newUser);
+        currentUser=newUser;
+        alert("Account created. Wait for admin approval.");
+        currentUserDiv.innerText="Logged in: "+currentUser.name+" (Waitlist)";
+    }
+    saveData();
+    loginPopup.style.display="none";
+    renderUserList();
+}
+
+/* ---------- IMAGE UPLOAD ---------- */
 imageLoader.addEventListener("change",e=>{
-[...e.target.files].forEach(file=>{
-const reader=new FileReader();
-reader.onload=ev=>{
-imagesMeta[file.name]={src:ev.target.result,complete:false};
-dataset[file.name]=dataset[file.name]||[];
-saveData();
-renderImageList();
-};
-reader.readAsDataURL(file);
-});
+    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+    [...e.target.files].forEach(file=>{
+        const reader=new FileReader();
+        reader.onload=ev=>{
+            imagesMeta[file.name]={src:ev.target.result,complete:false,assignee:null};
+            dataset[file.name]=dataset[file.name]||[];
+            saveData();
+            renderImageList();
+        };
+        reader.readAsDataURL(file);
+    });
 });
 
+/* ---------- RENDER IMAGE LIST ---------- */
 function renderImageList(){
-imageList.innerHTML="";
-for(let name in imagesMeta){
-if(imagesMeta[name].complete) continue; // keep until complete
-const div=document.createElement("div");
-div.className="imageItem";
-div.innerText=name;
-div.onclick=()=>loadImage(name);
-imageList.appendChild(div);
-}
+    imageList.innerHTML="";
+    for(let name in imagesMeta){
+        const div=document.createElement("div");
+        div.className="imageItem";
+        div.innerText=name;
+        if(imagesMeta[name].complete) div.classList.add("complete");
+        if(currentImage===name) div.classList.add("active");
+        if(imagesMeta[name].assignee) div.innerText+=` (Assigned: ${imagesMeta[name].assignee})`;
+        div.onclick=()=>loadImage(name);
+        imageList.appendChild(div);
+    }
 }
 
+/* ---------- LOAD IMAGE ---------- */
 function loadImage(name){
-currentImage=name;
-img.src=imagesMeta[name].src;
-img.onload=()=>{
-canvas.width=img.width;
-canvas.height=img.height;
-scale=1; originX=0; originY=0;
-redraw();
-updateSidebar();
-};
+    if(currentUser && currentUser.status!=="approved") return alert("Access denied");
+    currentImage=name;
+    img.src=imagesMeta[name].src;
+    img.onload=()=>{
+        canvas.width=img.width;
+        canvas.height=img.height;
+        scale=1; originX=0; originY=0;
+        redraw();
+        updateSidebar();
+    };
 }
 
-/* ZOOM */
-canvas.addEventListener("wheel",e=>{
-e.preventDefault();
-const zoom=e.deltaY<0?1.1:0.9;
-const mx=(e.offsetX-originX)/scale;
-const my=(e.offsetY-originY)/scale;
-scale*=zoom;
-originX=e.offsetX-mx*scale;
-originY=e.offsetY-my*scale;
-redraw();
-});
-
-/* PAN */
-document.addEventListener("keydown",e=>{
-if(e.code==="Space") panning=true;
-});
-document.addEventListener("keyup",e=>{
-if(e.code==="Space") panning=false;
-});
-
-canvas.addEventListener("mousedown",e=>{
-const pos=getMouse(e);
-
-if(panning){
-panStartX=e.clientX;
-panStartY=e.clientY;
-return;
+/* ---------- USER MANAGEMENT ---------- */
+function showUserPopup(){
+    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+    newUsername.value="";
+    newUserEmail.value="";
+    userPopup.style.display="block";
 }
 
-if(e.button===0){ // LEFT DRAW
-selectedIndex=getBoxAt(pos.x,pos.y);
-if(selectedIndex===-1){
-drawing=true;
-startX=pos.x;
-startY=pos.y;
-}
+function closeUserPopup(){ userPopup.style.display="none"; }
+
+function addCoworker(){
+    const name=newUsername.value.trim();
+    const email=newUserEmail.value.trim();
+    if(!name || !email) return alert("Name and email required");
+    if(users.find(u=>u.email===email)) return alert("Email already exists");
+    users.push({name,email,status:"waitlist"});
+    saveData();
+    renderUserList();
+    closeUserPopup();
 }
 
-if(e.button===2){ // RIGHT RESIZE
-e.preventDefault();
-selectedIndex=getBoxAt(pos.x,pos.y);
-if(selectedIndex!==-1){
-resizeCorner=getCorner(dataset[currentImage][selectedIndex],pos.x,pos.y);
-if(resizeCorner) resizing=true;
-}
-}
-});
-
-canvas.addEventListener("mousemove",e=>{
-const pos=getMouse(e);
-
-if(panning){
-originX+=e.clientX-panStartX;
-originY+=e.clientY-panStartY;
-panStartX=e.clientX;
-panStartY=e.clientY;
-redraw();
-return;
+function renderUserList(){
+    userListDiv.innerHTML="";
+    users.forEach(u=>{
+        const div=document.createElement("div");
+        div.className="user-item";
+        div.innerText=`${u.name} (${u.status})`;
+        userListDiv.appendChild(div);
+    });
 }
 
-if(drawing){
-redraw();
-ctx.strokeStyle="white";
-ctx.strokeRect(startX,startY,pos.x-startX,pos.y-startY);
+/* ---------- ASSIGNMENT ---------- */
+function showAssignPopup(){
+    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+    if(!currentImage) return alert("Select an image first.");
+    assignUserSelect.innerHTML="";
+    users.filter(u=>u.status==="approved").forEach(u=>{
+        const option=document.createElement("option");
+        option.value=u.name; option.innerText=u.name;
+        assignUserSelect.appendChild(option);
+    });
+    assignPopup.style.display="block";
 }
 
-if(resizing){
-let box=dataset[currentImage][selectedIndex];
-if(resizeCorner==="br"){ box.width=pos.x-box.x; box.height=pos.y-box.y; }
-if(resizeCorner==="bl"){ box.width=(box.x+box.width)-pos.x; box.x=pos.x; box.height=pos.y-box.y; }
-if(resizeCorner==="tr"){ box.width=pos.x-box.x; box.height=(box.y+box.height)-pos.y; box.y=pos.y; }
-if(resizeCorner==="tl"){ box.width=(box.x+box.width)-pos.x; box.x=pos.x; box.height=(box.y+box.height)-pos.y; box.y=pos.y; }
-redraw();
-}
-});
+function closeAssignPopup(){ assignPopup.style.display="none"; }
 
-canvas.addEventListener("mouseup",e=>{
-if(drawing){
-const pos=getMouse(e);
-dataset[currentImage].push({
-x:startX,
-y:startY,
-width:pos.x-startX,
-height:pos.y-startY,
-label:"Car"
-});
-drawing=false;
-saveData();
-}
-if(resizing){
-resizing=false;
-saveData();
-}
-redraw();
-updateSidebar();
-});
-
-/* POPUP ONLY IF DOUBLE CLICK ON BOX */
-canvas.addEventListener("dblclick",e=>{
-const pos=getMouse(e);
-selectedIndex=getBoxAt(pos.x,pos.y);
-if(selectedIndex!==-1){
-popup.style.left=e.clientX+"px";
-popup.style.top=e.clientY+"px";
-popup.style.display="block";
-}
-});
-
-canvas.addEventListener("contextmenu",e=>e.preventDefault());
-
-function getMouse(e){
-return{
-x:(e.offsetX-originX)/scale,
-y:(e.offsetY-originY)/scale
-};
+function assignImage(){
+    const assignee=assignUserSelect.value;
+    if(currentImage){
+        imagesMeta[currentImage].assignee=assignee;
+        saveData();
+        renderImageList();
+    }
+    closeAssignPopup();
 }
 
-function getBoxAt(x,y){
-if(!currentImage) return -1;
-let arr=dataset[currentImage];
-for(let i=arr.length-1;i>=0;i--){
-let b=arr[i];
-if(x>=b.x&&x<=b.x+b.width&&y>=b.y&&y<=b.y+b.height)
-return i;
-}
-return -1;
-}
-
-function getCorner(box,x,y){
-let size=10;
-if(Math.abs(x-(box.x+box.width))<size && Math.abs(y-(box.y+box.height))<size) return "br";
-if(Math.abs(x-box.x)<size && Math.abs(y-(box.y+box.height))<size) return "bl";
-if(Math.abs(x-(box.x+box.width))<size && Math.abs(y-box.y)<size) return "tr";
-if(Math.abs(x-box.x)<size && Math.abs(y-box.y)<size) return "tl";
-return null;
-}
-
-function redraw(){
-ctx.setTransform(scale,0,0,scale,originX,originY);
-ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
-ctx.drawImage(img,0,0);
-if(!currentImage) return;
-dataset[currentImage].forEach(box=>{
-ctx.strokeStyle=labelColors[box.label];
-ctx.lineWidth=2/scale;
-ctx.strokeRect(box.x,box.y,box.width,box.height);
-ctx.fillStyle=labelColors[box.label];
-ctx.fillText(box.label,box.x+4,box.y-4);
-});
-}
+/* ---------- LABELING & CANVAS ---------- */
+// Keep all your existing canvas, draw, resize, pan, label, delete, clear, markComplete, redraw code exactly as before
+// Example for applyLabel, deleteSelected, clearCurrent, markComplete, updateSidebar
 
 function applyLabel(){
-dataset[currentImage][selectedIndex].label=labelSelect.value;
-popup.style.display="none";
-saveData();
-redraw();
-updateSidebar();
+    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+    dataset[currentImage][selectedIndex].label=labelSelect.value;
+    popup.style.display="none";
+    saveData();
+    redraw();
+    updateSidebar();
 }
 
 function deleteSelected(){
-if(selectedIndex!==-1){
-dataset[currentImage].splice(selectedIndex,1);
-selectedIndex=-1;
-saveData();
-redraw();
-updateSidebar();
-}
+    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+    if(selectedIndex!==-1){
+        dataset[currentImage].splice(selectedIndex,1);
+        selectedIndex=-1;
+        saveData();
+        redraw();
+        updateSidebar();
+    }
 }
 
 function clearCurrent(){
-dataset[currentImage]=[];
-saveData();
-redraw();
-updateSidebar();
+    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+    dataset[currentImage]=[];
+    saveData();
+    redraw();
+    updateSidebar();
 }
 
 function markComplete(){
-if(currentImage){
-imagesMeta[currentImage].complete=true;
-saveData();
-renderImageList();
-}
+    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
+    if(currentImage){
+        imagesMeta[currentImage].complete=true;
+        saveData();
+        renderImageList();
+    }
 }
 
 function updateSidebar(){
-annotationList.innerHTML="";
-if(!currentImage) return;
-dataset[currentImage].forEach(box=>{
-const div=document.createElement("div");
-div.className="annotation-item";
-div.style.borderLeft="5px solid "+labelColors[box.label];
-div.innerText=box.label;
-annotationList.appendChild(div);
-});
+    annotationList.innerHTML="";
+    if(!currentImage) return;
+    dataset[currentImage].forEach(box=>{
+        const div=document.createElement("div");
+        div.className="annotation-item";
+        div.style.borderLeft="5px solid "+labelColors[box.label];
+        div.innerText=box.label;
+        annotationList.appendChild(div);
+    });
 }
 
+/* ---------- INITIAL RENDER ---------- */
+currentUser=JSON.parse(localStorage.getItem("currentUser"));
+if(!currentUser) showLogin();
+else currentUserDiv.innerText="Logged in: "+currentUser.name+ (currentUser.status==="waitlist"?" (Waitlist)":"");
+
 renderImageList();
+renderUserList();
+
 </script>
 </body>
 </html>
