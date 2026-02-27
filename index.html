@@ -86,7 +86,6 @@ button{
 }
 
 .green{background:#28a745;color:white;}
-.blue{background:#007bff;color:white;}
 .red{background:#dc3545;color:white;}
 .gray{background:#6c757d;color:white;}
 
@@ -115,6 +114,9 @@ button{
 <button class="green" onclick="markComplete()">Mark Complete</button>
 <button class="red" onclick="deleteSelected()">Delete</button>
 <button class="gray" onclick="clearCurrent()">Clear Image</button>
+<span style="margin-left:15px;font-size:12px;">
+Wheel = Zoom | SPACE + Drag = Pan | Left = Draw/Select | Right = Resize | Double Click = Label
+</span>
 </div>
 
 <div id="workspace">
@@ -153,11 +155,16 @@ let imagesMeta=JSON.parse(localStorage.getItem("imagesMeta"))||{};
 let currentImage=null;
 let img=new Image();
 
+let scale=1, originX=0, originY=0;
+
 let drawing=false;
 let resizing=false;
+let panning=false;
+
+let startX,startY;
 let selectedIndex=-1;
 let resizeCorner=null;
-let startX,startY;
+let panStartX, panStartY;
 
 const labelColors={
 Car:"#ff3b3b",
@@ -203,26 +210,49 @@ img.src=imagesMeta[name].src;
 img.onload=()=>{
 canvas.width=img.width;
 canvas.height=img.height;
+scale=1; originX=0; originY=0;
 redraw();
 updateSidebar();
 };
 }
 
+canvas.addEventListener("wheel",e=>{
+e.preventDefault();
+const zoom=e.deltaY<0?1.1:0.9;
+const mx=(e.offsetX-originX)/scale;
+const my=(e.offsetY-originY)/scale;
+scale*=zoom;
+originX=e.offsetX-mx*scale;
+originY=e.offsetY-my*scale;
+redraw();
+});
+
+document.addEventListener("keydown",e=>{
+if(e.code==="Space") panning=true;
+});
+document.addEventListener("keyup",e=>{
+if(e.code==="Space") panning=false;
+});
+
 canvas.addEventListener("mousedown",e=>{
 const pos=getMouse(e);
 
-if(e.button===0){ // LEFT CLICK = DRAG
+if(panning){
+panStartX=e.clientX;
+panStartY=e.clientY;
+return;
+}
+
+if(e.button===0){ // LEFT
 selectedIndex=getBoxAt(pos.x,pos.y);
-if(selectedIndex!==-1){
-drawing=false;
-}else{
+if(selectedIndex===-1){
 drawing=true;
 startX=pos.x;
 startY=pos.y;
 }
 }
 
-if(e.button===2){ // RIGHT CLICK = RESIZE
+if(e.button===2){ // RIGHT
 e.preventDefault();
 selectedIndex=getBoxAt(pos.x,pos.y);
 if(selectedIndex!==-1){
@@ -234,6 +264,15 @@ if(resizeCorner) resizing=true;
 
 canvas.addEventListener("mousemove",e=>{
 const pos=getMouse(e);
+
+if(panning){
+originX+=e.clientX-panStartX;
+originY+=e.clientY-panStartY;
+panStartX=e.clientX;
+panStartY=e.clientY;
+redraw();
+return;
+}
 
 if(drawing){
 redraw();
@@ -261,25 +300,33 @@ width:pos.x-startX,
 height:pos.y-startY,
 label:"Car"
 });
-selectedIndex=dataset[currentImage].length-1;
 drawing=false;
 saveData();
-showPopup(e.clientX,e.clientY);
 }
 if(resizing){
 resizing=false;
 saveData();
-showPopup(e.clientX,e.clientY);
 }
 updateSidebar();
+redraw();
+});
+
+canvas.addEventListener("dblclick",e=>{
+const pos=getMouse(e);
+selectedIndex=getBoxAt(pos.x,pos.y);
+if(selectedIndex!==-1){
+popup.style.left=e.clientX+"px";
+popup.style.top=e.clientY+"px";
+popup.style.display="block";
+}
 });
 
 canvas.addEventListener("contextmenu",e=>e.preventDefault());
 
 function getMouse(e){
 return{
-x:e.offsetX,
-y:e.offsetY
+x:(e.offsetX-originX)/scale,
+y:(e.offsetY-originY)/scale
 };
 }
 
@@ -304,22 +351,17 @@ return null;
 }
 
 function redraw(){
-ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.setTransform(scale,0,0,scale,originX,originY);
+ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
 ctx.drawImage(img,0,0);
 if(!currentImage) return;
-dataset[currentImage].forEach((box,i)=>{
+dataset[currentImage].forEach(box=>{
 ctx.strokeStyle=labelColors[box.label];
-ctx.lineWidth=2;
+ctx.lineWidth=2/scale;
 ctx.strokeRect(box.x,box.y,box.width,box.height);
 ctx.fillStyle=labelColors[box.label];
 ctx.fillText(box.label,box.x+4,box.y-4);
 });
-}
-
-function showPopup(x,y){
-popup.style.left=x+"px";
-popup.style.top=y+"px";
-popup.style.display="block";
 }
 
 function applyLabel(){
