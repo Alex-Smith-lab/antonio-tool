@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Antonio Advanced Annotation Tool</title>
+<title>Antonio Pro Annotation Tool</title>
 
 <style>
 body {
@@ -37,8 +37,8 @@ body {
 }
 
 canvas {
-    cursor: crosshair;
     background: #000;
+    cursor: crosshair;
 }
 
 #sidebar {
@@ -69,6 +69,26 @@ button {
     border-radius: 4px;
     font-size: 12px;
 }
+
+/* Label Popup */
+#labelPopup {
+    position: fixed;
+    background: #222;
+    padding: 10px;
+    border: 2px solid #444;
+    display: none;
+    z-index: 1000;
+}
+
+.label-option {
+    padding: 5px;
+    cursor: pointer;
+    margin: 3px 0;
+}
+
+.label-option:hover {
+    background: #444;
+}
 </style>
 </head>
 
@@ -77,9 +97,11 @@ button {
 <div id="main">
 
 <div id="toolbar">
-    <h2>Antonio Advanced Annotation Tool</h2>
+    <h2>Antonio Pro Annotation Tool</h2>
     <input type="file" id="imageLoader" accept="image/*">
     <button class="green" onclick="enableDraw()">Add Box</button>
+    <button class="blue" onclick="zoomIn()">Zoom +</button>
+    <button class="blue" onclick="zoomOut()">Zoom -</button>
     <button class="red" onclick="deleteSelected()">Delete Selected</button>
     <button class="gray" onclick="clearAll()">Clear All</button>
     <button class="blue" onclick="downloadJSON()">Download JSON</button>
@@ -96,25 +118,31 @@ button {
     <div id="annotationList"></div>
 </div>
 
+<div id="labelPopup"></div>
+
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const imageLoader = document.getElementById("imageLoader");
 const annotationList = document.getElementById("annotationList");
+const labelPopup = document.getElementById("labelPopup");
 
 let img = new Image();
 let annotations = [];
 let selectedIndex = -1;
 
-let drawing = false;
-let resizing = false;
-let dragging = false;
-let resizeCorner = null;
-
-let startX, startY;
+let scale = 1;
 let drawMode = false;
+let drawing = false;
+let startX, startY;
 
-const handleSize = 6;
+const labelColors = {
+    "Car": "#ff3b3b",
+    "Bus": "#00ff99",
+    "Truck": "#3399ff",
+    "Pedestrian": "#ffff00",
+    "Train": "#ff00ff"
+};
 
 imageLoader.addEventListener("change", function(e) {
     const reader = new FileReader();
@@ -131,201 +159,162 @@ imageLoader.addEventListener("change", function(e) {
 
 function enableDraw() {
     drawMode = true;
-    selectedIndex = -1;
 }
 
+function zoomIn() {
+    scale *= 1.2;
+    redraw();
+}
+
+function zoomOut() {
+    scale /= 1.2;
+    redraw();
+}
+
+canvas.addEventListener("wheel", function(e){
+    e.preventDefault();
+    if (e.deltaY < 0) zoomIn();
+    else zoomOut();
+});
+
 canvas.addEventListener("mousedown", function(e) {
-    const {x, y} = getMousePos(e);
+    const {x,y} = getMousePos(e);
 
     if (drawMode) {
         drawing = true;
         startX = x;
         startY = y;
-        return;
+    } else {
+        selectedIndex = getBoxAt(x,y);
+        redraw();
     }
-
-    selectedIndex = getBoxAt(x, y);
-
-    if (selectedIndex !== -1) {
-        const corner = getCorner(x, y, annotations[selectedIndex]);
-        if (corner) {
-            resizing = true;
-            resizeCorner = corner;
-        } else {
-            dragging = true;
-            startX = x;
-            startY = y;
-        }
-    }
-
-    redraw();
 });
 
 canvas.addEventListener("mousemove", function(e) {
-    const {x, y} = getMousePos(e);
+    if (!drawing) return;
 
-    if (drawing) {
-        redraw();
-        ctx.strokeStyle = "red";
-        ctx.strokeRect(startX, startY, x - startX, y - startY);
-    }
+    const {x,y} = getMousePos(e);
+    redraw();
 
-    if (dragging && selectedIndex !== -1) {
-        let box = annotations[selectedIndex];
-        box.x += x - startX;
-        box.y += y - startY;
-        startX = x;
-        startY = y;
-        redraw();
-    }
-
-    if (resizing && selectedIndex !== -1) {
-        let box = annotations[selectedIndex];
-
-        if (resizeCorner === "tl") {
-            box.width += box.x - x;
-            box.height += box.y - y;
-            box.x = x;
-            box.y = y;
-        }
-        if (resizeCorner === "tr") {
-            box.width = x - box.x;
-            box.height += box.y - y;
-            box.y = y;
-        }
-        if (resizeCorner === "bl") {
-            box.width += box.x - x;
-            box.x = x;
-            box.height = y - box.y;
-        }
-        if (resizeCorner === "br") {
-            box.width = x - box.x;
-            box.height = y - box.y;
-        }
-
-        redraw();
-    }
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(startX, startY, x-startX, y-startY);
 });
 
 canvas.addEventListener("mouseup", function(e) {
-    const {x, y} = getMousePos(e);
+    if (!drawing) return;
 
-    if (drawing) {
-        let newBox = {
-            x: startX,
-            y: startY,
-            width: x - startX,
-            height: y - startY,
-            label: prompt("Enter label for this box:")
-        };
-        annotations.push(newBox);
-        drawing = false;
-        drawMode = false;
-        redraw();
-        updateSidebar();
-    }
+    const {x,y} = getMousePos(e);
 
-    resizing = false;
-    dragging = false;
+    annotations.push({
+        x: startX,
+        y: startY,
+        width: x-startX,
+        height: y-startY,
+        label: "Car",
+        color: labelColors["Car"]
+    });
+
+    drawing = false;
+    drawMode = false;
+    redraw();
+    updateSidebar();
 });
 
-function getMousePos(e) {
+canvas.addEventListener("dblclick", function(e){
+    const {x,y} = getMousePos(e);
+    selectedIndex = getBoxAt(x,y);
+    if (selectedIndex !== -1) {
+        showLabelPopup(e.clientX, e.clientY);
+    }
+});
+
+function showLabelPopup(px, py){
+    labelPopup.innerHTML = "";
+    for (let label in labelColors){
+        const div = document.createElement("div");
+        div.className = "label-option";
+        div.style.color = labelColors[label];
+        div.innerText = label;
+        div.onclick = function(){
+            annotations[selectedIndex].label = label;
+            annotations[selectedIndex].color = labelColors[label];
+            labelPopup.style.display = "none";
+            redraw();
+            updateSidebar();
+        }
+        labelPopup.appendChild(div);
+    }
+    labelPopup.style.left = px+"px";
+    labelPopup.style.top = py+"px";
+    labelPopup.style.display = "block";
+}
+
+function getMousePos(e){
     const rect = canvas.getBoundingClientRect();
     return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: (e.clientX - rect.left)/scale,
+        y: (e.clientY - rect.top)/scale
     };
 }
 
-function redraw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0);
+function redraw(){
+    ctx.setTransform(scale,0,0,scale,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
 
-    annotations.forEach((box, index) => {
-        ctx.strokeStyle = index === selectedIndex ? "yellow" : "red";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(box.x, box.y, box.width, box.height);
+    annotations.forEach((box,index)=>{
+        ctx.strokeStyle = box.color;
+        ctx.lineWidth = 2/scale;
+        ctx.strokeRect(box.x,box.y,box.width,box.height);
 
-        ctx.fillStyle = "red";
-        ctx.fillText(box.label || "", box.x + 4, box.y - 4);
-
-        drawHandles(box);
+        ctx.fillStyle = box.color;
+        ctx.fillText(box.label, box.x+5, box.y-5);
     });
 }
 
-function drawHandles(box) {
-    ctx.fillStyle = "white";
-    const corners = [
-        [box.x, box.y],
-        [box.x + box.width, box.y],
-        [box.x, box.y + box.height],
-        [box.x + box.width, box.y + box.height]
-    ];
-    corners.forEach(c => {
-        ctx.fillRect(c[0] - handleSize/2, c[1] - handleSize/2, handleSize, handleSize);
-    });
-}
-
-function getBoxAt(x, y) {
-    for (let i = annotations.length - 1; i >= 0; i--) {
-        let b = annotations[i];
-        if (x >= b.x && x <= b.x + b.width &&
-            y >= b.y && y <= b.y + b.height) {
+function getBoxAt(x,y){
+    for(let i=annotations.length-1;i>=0;i--){
+        let b=annotations[i];
+        if(x>=b.x && x<=b.x+b.width &&
+           y>=b.y && y<=b.y+b.height){
             return i;
         }
     }
     return -1;
 }
 
-function getCorner(x, y, box) {
-    const corners = {
-        tl: [box.x, box.y],
-        tr: [box.x + box.width, box.y],
-        bl: [box.x, box.y + box.height],
-        br: [box.x + box.width, box.y + box.height]
-    };
-
-    for (let key in corners) {
-        let [cx, cy] = corners[key];
-        if (Math.abs(x - cx) < handleSize &&
-            Math.abs(y - cy) < handleSize) {
-            return key;
-        }
-    }
-    return null;
-}
-
-function deleteSelected() {
-    if (selectedIndex !== -1) {
-        annotations.splice(selectedIndex, 1);
-        selectedIndex = -1;
+function deleteSelected(){
+    if(selectedIndex!==-1){
+        annotations.splice(selectedIndex,1);
+        selectedIndex=-1;
         redraw();
         updateSidebar();
     }
 }
 
-function clearAll() {
-    annotations = [];
+function clearAll(){
+    annotations=[];
     redraw();
     updateSidebar();
 }
 
-function updateSidebar() {
-    annotationList.innerHTML = "";
-    annotations.forEach((box, index) => {
-        const div = document.createElement("div");
-        div.className = "annotation-item";
-        div.innerText = `${box.label} | x:${box.x.toFixed(0)}, y:${box.y.toFixed(0)}, w:${box.width.toFixed(0)}, h:${box.height.toFixed(0)}`;
+function updateSidebar(){
+    annotationList.innerHTML="";
+    annotations.forEach((box)=>{
+        const div=document.createElement("div");
+        div.className="annotation-item";
+        div.style.borderLeft="5px solid "+box.color;
+        div.innerText=`${box.label} | x:${box.x.toFixed(0)}, y:${box.y.toFixed(0)}`;
         annotationList.appendChild(div);
     });
 }
 
-function downloadJSON() {
-    const dataStr = "data:text/json;charset=utf-8," +
-        encodeURIComponent(JSON.stringify(annotations, null, 2));
-    const dl = document.createElement("a");
-    dl.href = dataStr;
-    dl.download = "annotations.json";
+function downloadJSON(){
+    const dataStr="data:text/json;charset=utf-8,"+
+        encodeURIComponent(JSON.stringify(annotations,null,2));
+    const dl=document.createElement("a");
+    dl.href=dataStr;
+    dl.download="annotations.json";
     dl.click();
 }
 </script>
