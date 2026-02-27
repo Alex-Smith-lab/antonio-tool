@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antonio Annotation | 2D Vehicle Tool</title>
+    <title>Antonio Annotation | Professional 2D Tool</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.all.min.js"></script>
@@ -14,29 +14,37 @@
             font-family: 'Segoe UI', sans-serif;
             background: #000000; color: white;
             display: flex; flex-direction: column;
+            overflow: hidden;
         }
 
         header {
             background: #1a1a1a; padding: 10px; text-align: center;
             border-bottom: 2px solid #34A853; flex-shrink: 0;
+            z-index: 100;
         }
 
-        /* Main layout: Workspace + Sidebar */
+        /* Main layout: Adjustable Workspace + Sidebar */
         .main-layout {
             display: flex; flex-grow: 1; overflow: hidden;
         }
 
         .workspace {
-            flex-grow: 1; display: flex; justify-content: center;
-            align-items: center; background: #000; padding: 20px;
-            overflow: auto;
+            flex-grow: 1; position: relative;
+            background: #000; overflow: auto; /* Enables scrolling/adjusting */
+            display: flex; justify-content: center; align-items: center;
         }
 
-        #target-image { max-width: 100%; height: auto; display: block; }
+        #annotation-container { position: relative; }
 
-        /* Right Sidebar Panel */
+        #target-image { 
+            display: block; 
+            max-width: none; /* Allows full size for adjustment */
+            height: auto;
+        }
+
+        /* Sidebar Panel */
         .sidebar {
-            width: 300px; background: #1a1a1a; border-left: 1px solid #333;
+            width: 320px; background: #1a1a1a; border-left: 1px solid #333;
             display: flex; flex-direction: column; flex-shrink: 0;
         }
 
@@ -45,7 +53,7 @@
             border-bottom: 1px solid #333; color: #FBBC05;
         }
 
-        .annotation-list {
+        .activity-log {
             flex-grow: 1; overflow-y: auto; padding: 10px;
         }
 
@@ -56,43 +64,47 @@
 
         .toolbar {
             padding: 15px; background: #1a1a1a; display: flex;
-            justify-content: center; gap: 10px; border-top: 1px solid #333;
+            justify-content: center; gap: 15px; border-top: 1px solid #333;
         }
 
-        button { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        /* Action Buttons */
+        button { 
+            padding: 10px 18px; cursor: pointer; border: none; 
+            border-radius: 4px; font-weight: bold; display: flex; align-items: center; gap: 5px;
+        }
+        .add-btn { background: #34A853; color: white; }
+        .del-btn { background: #EA4335; color: white; }
         .save-btn { background: #4285F4; color: white; }
-        .clear-btn { background: #EA4335; color: white; }
-
-        /* Custom Label Styling */
-        .a9s-annotationlayer .a9s-annotation .a9s-inner { stroke: #00ff00 !important; stroke-width: 2; }
+        
+        button:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1 style="margin:0; font-size: 20px;">ANTONIO ANNOTATION</h1>
-    <p style="margin: 0; color: #FBBC05; font-size: 12px;">2D Vehicle Labeling Tool</p>
+    <h1 style="margin:0; font-size: 22px; letter-spacing: 1px;">ANTONIO ANNOTATION</h1>
+    <p style="margin: 0; color: #FBBC05; font-size: 12px;">2D VEHICLE TRACKING SYSTEM</p>
 </header>
 
 <div class="main-layout">
     <div class="workspace">
-        <img id="target-image" src="https://raw.githubusercontent.com/Alex-Smith-lab/antonio-tool/main/scene.jpg">
+        <div id="annotation-container">
+            <img id="target-image" src="scene.jpg">
+        </div>
     </div>
 
     <div class="sidebar">
-        <div class="sidebar-header">ACTIVITY LOG & LABELS</div>
-        <div id="log" class="annotation-list">
-            <div class="log-entry" style="border-left-color: #34A853;">Session started. Ready for annotation.</div>
+        <div class="sidebar-header">COWORKER ACTIVITY LOG</div>
+        <div id="activity-log" class="activity-log">
+            <div class="log-entry" style="border-left-color: #34A853;">[SYSTEM]: Workspace initialized.</div>
         </div>
     </div>
 </div>
 
 <div class="toolbar">
-    <div style="color: #aaa; margin-right: 20px; align-self: center;">
-        Labels: <b>Car, Truck, Bike, Bus</b>
-    </div>
-    <button class="save-btn" onclick="exportData()">Download 2D JSON</button>
-    <button class="clear-btn" onclick="resetAll()">Clear All</button>
+    <button class="add-btn" onclick="startDrawing()"><span>➕</span> Add Box</button>
+    <button class="del-btn" onclick="deleteSelected()"><span>🗑️</span> Delete Selected</button>
+    <button class="save-btn" onclick="exportData()"><span>💾</span> Save JSON</button>
 </div>
 
 <script>
@@ -101,14 +113,14 @@
         image: 'target-image',
         widgets: [
             { widget: 'COMMENT', editable: 'clickable' },
-            { widget: 'TAG', vocabulary: [ 'Car', 'Truck', 'Bike', 'Bus', 'Pedestrian' ] }
+            { widget: 'TAG', vocabulary: [ 'Car', 'Truck', 'Bus', 'Motorcycle', 'Van' ] }
         ]
     });
 
-    const logEl = document.getElementById('log');
+    const logEl = document.getElementById('activity-log');
 
-    // Helper to add to sidebar log
-    function addLog(action, user = "You") {
+    // Tracking Function
+    function addLog(action, user = "Antonio") {
         const entry = document.createElement('div');
         entry.className = 'log-entry';
         const time = new Date().toLocaleTimeString();
@@ -116,37 +128,36 @@
         logEl.prepend(entry);
     }
 
-    // --- TRACKING EDITS ---
-    anno.on('createAnnotation', (annotation) => {
-        addLog("Created a new box.");
-    });
-
-    anno.on('updateAnnotation', (annotation, previous) => {
-        addLog("Edited/Moved a box.");
-    });
-
-    anno.on('deleteAnnotation', (annotation) => {
-        addLog("Deleted a box.");
-    });
-
-    // --- EXPORT & SAVE ---
-    function exportData() {
-        const annotations = anno.getAnnotations();
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(annotations, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", "antonio_2d_labels.json");
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
-        addLog("Exported JSON file.");
+    // Logic for Buttons
+    function startDrawing() {
+        anno.setDrawingTool('rect');
+        addLog("Enabled 'Add' tool.");
     }
 
-    function resetAll() {
-        if(confirm("This will delete all current work. Continue?")) {
-            anno.setAnnotations([]);
-            addLog("Cleared all annotations.");
+    function deleteSelected() {
+        const selected = anno.getSelected();
+        if (selected) {
+            anno.removeAnnotation(selected);
+            addLog("Deleted a vehicle box.");
+        } else {
+            alert("Please click on a box first to select it for deletion.");
         }
+    }
+
+    // Event Listeners for coworker/user tracking
+    anno.on('createAnnotation', () => addLog("Created new 2D annotation."));
+    anno.on('updateAnnotation', () => addLog("Edited/Moved an annotation."));
+    anno.on('deleteAnnotation', () => addLog("Removed an annotation."));
+
+    function exportData() {
+        const data = anno.getAnnotations();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'antonio_labels.json';
+        a.click();
+        addLog("Downloaded saved JSON data.");
     }
 </script>
 
