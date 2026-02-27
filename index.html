@@ -3,128 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antonio Annotation | Professional 2D Tool</title>
+    <title>Antonio Annotation | Fixed & Zoom Tool</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@recogito/annotorious@2.7.2/dist/annotorious.all.min.js"></script>
 
     <style>
-        * { box-sizing: border-box; }
-        
+        /* 1. LAYOUT STABILITY - Fixes Header & Footer */
         html, body {
             margin: 0; padding: 0; height: 100%;
             font-family: 'Segoe UI', sans-serif;
-            background: #0b0b0b; color: white;
+            background: #000000; color: white;
             display: flex; flex-direction: column;
-            overflow: hidden; /* Prevents whole page from scrolling */
+            overflow: hidden; /* Stops page-wide scrolling */
         }
 
-        /* 1. STABLE HEADER */
         header {
-            height: 60px;
-            background: #1a1a1a; 
-            text-align: center;
-            border-bottom: 2px solid #34A853; 
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            z-index: 1000;
+            position: fixed; top: 0; left: 0; width: 100%;
+            background: #1a1a1a; padding: 12px 0; text-align: center;
+            border-bottom: 2px solid #34A853; z-index: 1000;
         }
 
+        /* 2. ADJUSTABLE WORKSPACE (Image moves alone) */
         .main-layout {
             display: flex; 
-            flex: 1; 
-            overflow: hidden;
+            margin-top: 65px; /* Matches header height */
+            height: calc(100vh - 135px); /* Space for header and toolbar */
         }
 
-        /* 2. ADJUSTABLE WORKSPACE */
         .workspace {
-            flex: 1;
-            position: relative;
-            background: #000;
-            overflow: auto; /* Scrollbars appear when zoomed */
-            display: block; /* Changed from flex to allow proper top-left alignment when zooming */
+            flex-grow: 1; position: relative;
+            background: #000; overflow: auto; /* Enable scroll wheel movement */
+            display: flex; justify-content: center; align-items: center;
             cursor: crosshair;
         }
 
-        #zoom-wrapper {
-            transform-origin: 0 0;
+        #annotation-container { 
+            position: relative;
+            transform-origin: center center;
             transition: transform 0.1s ease-out;
             display: inline-block;
         }
 
-        #target-image { 
-            display: block; 
-            max-width: 100%; /* Default view */
-            height: auto;
+        #target-image { display: block; max-width: none; }
+
+        /* 3. SIDE PANEL WITH CLOSE SIGN */
+        .sidebar {
+            width: 320px; background: #1a1a1a; border-left: 1px solid #333;
+            display: flex; flex-direction: column; flex-shrink: 0;
+            transition: width 0.3s ease;
         }
 
-        /* SIDEBAR */
-        .sidebar {
-            width: 300px; background: #1a1a1a; border-left: 1px solid #333;
-            display: flex; flex-direction: column; flex-shrink: 0;
-        }
+        .sidebar.hidden { width: 0; overflow: hidden; border: none; }
 
         .sidebar-header {
             padding: 15px; background: #252525; font-weight: bold;
             border-bottom: 1px solid #333; color: #FBBC05;
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        .activity-log {
-            flex-grow: 1; overflow-y: auto; padding: 10px;
-            font-size: 11px;
-        }
+        .close-x { color: #EA4335; cursor: pointer; font-size: 24px; font-weight: bold; }
 
+        .activity-log { flex-grow: 1; overflow-y: auto; padding: 10px; }
         .log-entry {
-            background: #222; margin-bottom: 5px; padding: 8px;
-            border-left: 3px solid #4285F4;
+            background: #2b2b2b; margin-bottom: 8px; padding: 10px;
+            border-radius: 4px; font-size: 12px; border-left: 3px solid #4285F4;
         }
 
-        /* TOOLBAR */
+        /* 4. FIXED TOOLBAR */
         .toolbar {
-            height: 70px;
-            padding: 10px; background: #1a1a1a; display: flex;
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            padding: 15px; background: #1a1a1a; display: flex;
             justify-content: center; gap: 15px; border-top: 1px solid #333;
-            flex-shrink: 0;
+            z-index: 1000;
         }
 
         button { 
-            padding: 8px 15px; cursor: pointer; border: none; 
+            padding: 10px 18px; cursor: pointer; border: none; 
             border-radius: 4px; font-weight: bold; display: flex; align-items: center; gap: 5px;
         }
         .add-btn { background: #34A853; color: white; }
         .del-btn { background: #EA4335; color: white; }
         .save-btn { background: #4285F4; color: white; }
-        button:hover { opacity: 0.8; }
+        .side-btn { background: #555; color: white; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1 style="margin:0; font-size: 18px; letter-spacing: 1px;">ANTONIO ANNOTATION</h1>
-    <p style="margin: 0; color: #FBBC05; font-size: 10px;">2D VEHICLE TRACKING SYSTEM</p>
+    <h1 style="margin:0; font-size: 22px;">ANTONIO ANNOTATION</h1>
+    <p style="margin: 0; color: #FBBC05; font-size: 12px;">SCROLL TO ZOOM | FIXED HEADER MODE</p>
 </header>
 
 <div class="main-layout">
-    <div class="workspace" id="workspace">
-        <div id="zoom-wrapper">
-            <img id="target-image" src="scene.jpg" alt="Upload scene.jpg">
+    <div class="workspace" id="zoom-viewport">
+        <div id="annotation-container">
+            <img id="target-image" src="scene.jpg">
         </div>
     </div>
 
-    <div class="sidebar">
-        <div class="sidebar-header">ACTIVITY LOG</div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>ACTIVITY & LABELS</span>
+            <span class="close-x" onclick="toggleSidebar()">×</span>
+        </div>
         <div id="activity-log" class="activity-log">
-            <div class="log-entry">[SYSTEM]: Ready for annotation.</div>
+            <div class="log-entry" style="border-left-color: #34A853;">[SYSTEM]: Ready.</div>
         </div>
     </div>
 </div>
 
 <div class="toolbar">
-    <button class="add-btn" onclick="startDrawing()"><span>➕</span> Add Box</button>
+    <button class="add-btn" onclick="startDrawing()"><span>➕</span> Add Annotation</button>
     <button class="del-btn" onclick="deleteSelected()"><span>🗑️</span> Delete</button>
-    <button class="save-btn" onclick="exportData()"><span>💾</span> Export JSON</button>
+    <button class="save-btn" onclick="exportData()"><span>💾</span> Save JSON</button>
+    <button class="side-btn" onclick="toggleSidebar()">📋 Toggle Sidebar</button>
 </div>
 
 <script>
@@ -132,65 +125,64 @@
     const anno = Annotorious.init({
         image: 'target-image',
         widgets: [
-            { widget: 'TAG', vocabulary: [ 'Car', 'Truck', 'Bus', 'Motorcycle' ] }
+            { widget: 'COMMENT', editable: 'clickable' },
+            { widget: 'TAG', vocabulary: [ 'Car', 'Truck', 'Bus', 'Motorcycle', 'Pedestrian' ] }
         ]
     });
 
-    // --- ZOOM LOGIC ---
+    // --- MOUSE WHEEL ZOOM LOGIC ---
     let scale = 1;
-    const zoomWrapper = document.getElementById('zoom-wrapper');
-    const workspace = document.getElementById('workspace');
+    const container = document.getElementById('annotation-container');
+    const viewport = document.getElementById('zoom-viewport');
 
-    workspace.addEventListener('wheel', (e) => {
-        if (e.ctrlKey || e.metaKey) return; // Allow normal pinch zoom if needed
+    viewport.addEventListener('wheel', (e) => {
         e.preventDefault();
-
-        const zoomSpeed = 0.1;
-        if (e.deltaY < 0) {
-            scale += zoomSpeed;
-        } else {
-            scale = Math.max(0.5, scale - zoomSpeed); // Don't zoom out too far
-        }
-
-        zoomWrapper.style.transform = `scale(${scale})`;
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        scale = Math.min(Math.max(0.5, scale + delta), 4); // Limits zoom range
+        container.style.transform = `scale(${scale})`;
     }, { passive: false });
 
-    // --- LOGGING & ACTIONS ---
+    // --- SIDEBAR & LOGIC ---
     const logEl = document.getElementById('activity-log');
 
-    function addLog(action) {
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('hidden');
+    }
+
+    function addLog(action, user = "Antonio") {
         const entry = document.createElement('div');
         entry.className = 'log-entry';
-        entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${action}`;
+        const time = new Date().toLocaleTimeString();
+        entry.innerHTML = `<strong>${user}</strong> [${time}]: ${action}`;
         logEl.prepend(entry);
     }
 
     function startDrawing() {
         anno.setDrawingTool('rect');
-        addLog("Tool: Rectangle enabled");
+        addLog("Drawing tool active.");
     }
 
     function deleteSelected() {
         const selected = anno.getSelected();
         if (selected) {
             anno.removeAnnotation(selected);
-            addLog("Action: Annotation deleted");
+            addLog("Removed annotation.");
         }
     }
 
+    // Reflect labels and edits on side panel
+    anno.on('createAnnotation', (a) => {
+        const tags = a.bodies.filter(b => b.type === 'TagBody').map(b => b.value).join(', ');
+        addLog(`Created box. Labels: ${tags || 'None'}`);
+    });
+
     function exportData() {
         const data = anno.getAnnotations();
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = 'annotations.json';
-        a.click();
-        addLog("System: Data exported");
+        a.href = url; a.download = 'antonio_labels.json'; a.click();
     }
-
-    // Sync Annotorious events with log
-    anno.on('createAnnotation', () => addLog("Created Annotation"));
 </script>
 
 </body>
