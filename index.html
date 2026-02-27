@@ -1,9 +1,8 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>Antana Labeler - Production</title>
-
 <style>
 body{
     margin:0;
@@ -14,7 +13,6 @@ body{
     height:100vh;
     overflow:hidden;
 }
-
 #homepage{
     position:fixed;
     top:0; left:0;
@@ -28,7 +26,6 @@ body{
     flex-direction:column;
     z-index:1000;
 }
-
 #leftPanel{
     width:250px;
     background:#181818;
@@ -36,13 +33,11 @@ body{
     overflow-y:auto;
     padding:10px;
 }
-
 #main{
     flex:4;
     display:flex;
     flex-direction:column;
 }
-
 #toolbar{
     padding:10px;
     background:#1e1e1e;
@@ -50,20 +45,17 @@ body{
     align-items:center;
     gap:10px;
 }
-
 #workspace{
     flex:1;
     background:black;
     position:relative;
     overflow:hidden;
 }
-
 canvas{
     display:block;
     background:black;
     cursor:crosshair;
 }
-
 #rightPanel{
     width:300px;
     background:#1e1e1e;
@@ -71,29 +63,24 @@ canvas{
     padding:10px;
     overflow-y:auto;
 }
-
 .imageItem{
     padding:5px;
     cursor:pointer;
     background:#2a2a2a;
     margin-bottom:5px;
 }
-
 .imageItem.active{
     background:#007bff;
 }
-
 .imageItem.complete{
     background:#28a745;
 }
-
 .annotation-item{
     font-size:12px;
     padding:4px;
     margin-bottom:4px;
     background:#2c2c2c;
 }
-
 .user-item{
     font-size:12px;
     padding:4px;
@@ -102,7 +89,6 @@ canvas{
     display:flex;
     justify-content:space-between;
 }
-
 button{
     margin:3px;
     padding:6px 10px;
@@ -110,12 +96,10 @@ button{
     border-radius:4px;
     cursor:pointer;
 }
-
 .green{background:#28a745;color:white;}
 .red{background:#dc3545;color:white;}
 .gray{background:#6c757d;color:white;}
 .blue{background:#007bff;color:white;}
-
 #labelPopup, #userPopup, #assignPopup, #loginPopup, #adminPopup{
     position:fixed;
     background:#222;
@@ -132,7 +116,6 @@ button{
 }
 </style>
 </head>
-
 <body>
 
 <!-- Homepage for login -->
@@ -175,7 +158,7 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <div id="annotationList"></div>
 </div>
 
-<!-- Label Selection Popup -->
+<!-- Popups -->
 <div id="labelPopup">
 <select id="labelSelect">
 <option>Car</option>
@@ -187,7 +170,6 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <button onclick="applyLabel()">Apply</button>
 </div>
 
-<!-- Coworker Account Creation Popup -->
 <div id="userPopup">
 <h4>Create Coworker</h4>
 <input type="text" id="newUsername" placeholder="Full Name"><br><br>
@@ -196,7 +178,6 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <button class="red" onclick="closeUserPopup()">Cancel</button>
 </div>
 
-<!-- Assign Image Popup -->
 <div id="assignPopup">
 <h4>Assign Image</h4>
 <select id="assignUserSelect"></select><br><br>
@@ -204,7 +185,6 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <button class="red" onclick="closeAssignPopup()">Cancel</button>
 </div>
 
-<!-- Login/Sign Up Popup -->
 <div id="loginPopup">
 <h4>Login or Sign Up</h4>
 <input type="email" id="loginEmail" placeholder="Email"><br><br>
@@ -212,7 +192,6 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <button class="green" onclick="loginOrSignup()">Submit</button>
 </div>
 
-<!-- Admin Popup to approve waitlist -->
 <div id="adminPopup">
 <h4>Pending Access Requests</h4>
 <div id="pendingList"></div>
@@ -307,7 +286,6 @@ function loginOrSignup(){
         if(email !== adminEmail) alert("Account created. Wait for admin approval.");
     }
 
-    // Auto approve admin
     if(email===adminEmail) currentUser.status="approved";
 
     currentUserDiv.innerText="Logged in: "+currentUser.name+ (currentUser.status==="waitlist"?" (Waitlist)":"");
@@ -324,8 +302,7 @@ function showAdminPopup(){
     pendingListDiv.innerHTML="";
     users.filter(u=>u.status==="waitlist").forEach((u,i)=>{
         const div=document.createElement("div");
-        div.innerHTML=`${u.name} (${u.email}) 
-        <button class="green" onclick="approveUser(${i})">Approve</button>`;
+        div.innerHTML=`${u.name} (${u.email}) <button class="green" onclick="approveUser(${i})">Approve</button>`;
         pendingListDiv.appendChild(div);
     });
     adminPopup.style.display="block";
@@ -440,7 +417,7 @@ function assignImage(){
     closeAssignPopup();
 }
 
-/* ---------- LABELING & CANVAS ---------- */
+/* ---------- LABELING ---------- */
 function applyLabel(){
     if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
     dataset[currentImage][selectedIndex].label=labelSelect.value;
@@ -449,7 +426,6 @@ function applyLabel(){
     redraw();
     updateSidebar();
 }
-
 function deleteSelected(){
     if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
     if(selectedIndex!==-1){
@@ -460,7 +436,6 @@ function deleteSelected(){
         updateSidebar();
     }
 }
-
 function clearCurrent(){
     if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
     dataset[currentImage]=[];
@@ -468,7 +443,6 @@ function clearCurrent(){
     redraw();
     updateSidebar();
 }
-
 function markComplete(){
     if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
     if(currentImage){
@@ -477,7 +451,6 @@ function markComplete(){
         renderImageList();
     }
 }
-
 function updateSidebar(){
     annotationList.innerHTML="";
     if(!currentImage) return;
@@ -492,14 +465,11 @@ function updateSidebar(){
 
 /* ---------- INITIAL RENDER ---------- */
 currentUser=JSON.parse(localStorage.getItem("currentUser"));
-if(!currentUser) {
-    homepage.style.display="flex";
-} else {
-    // Auto approve admin
+if(!currentUser) homepage.style.display="flex";
+else{
     if(currentUser.email===adminEmail) currentUser.status="approved";
     currentUserDiv.innerText="Logged in: "+currentUser.name+ (currentUser.status==="waitlist"?" (Waitlist)":"");
-    if(currentUser.status==="approved") homepage.style.display="none";
-    else homepage.style.display="flex";
+    homepage.style.display=(currentUser.status==="approved")?"none":"flex";
 }
 
 renderImageList();
