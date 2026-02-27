@@ -2,7 +2,8 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Antonio Annotation Tool</title>
+<title>Antonio Advanced Annotation Tool</title>
+
 <style>
 body {
     margin: 0;
@@ -10,12 +11,34 @@ body {
     background: #111;
     color: white;
     display: flex;
+    height: 100vh;
+    overflow: hidden;
 }
 
 #main {
-    flex: 3;
-    text-align: center;
-    padding: 20px;
+    flex: 4;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+#toolbar {
+    padding: 10px;
+}
+
+#workspace {
+    flex: 1;
+    overflow: auto;
+    border: 2px solid #333;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    cursor: crosshair;
+    background: #000;
 }
 
 #sidebar {
@@ -24,12 +47,6 @@ body {
     padding: 15px;
     overflow-y: auto;
     border-left: 2px solid #333;
-}
-
-canvas {
-    border: 2px solid #555;
-    cursor: crosshair;
-    margin-top: 10px;
 }
 
 button {
@@ -58,17 +75,20 @@ button {
 <body>
 
 <div id="main">
-    <h2>Antonio Annotation Tool</h2>
 
-    <input type="file" id="imageLoader" accept="image/*"><br>
-
-    <button class="green" onclick="enableDraw()">Add Annotation</button>
-    <button class="red" onclick="deleteLast()">Delete Last</button>
+<div id="toolbar">
+    <h2>Antonio Advanced Annotation Tool</h2>
+    <input type="file" id="imageLoader" accept="image/*">
+    <button class="green" onclick="enableDraw()">Add Box</button>
+    <button class="red" onclick="deleteSelected()">Delete Selected</button>
     <button class="gray" onclick="clearAll()">Clear All</button>
     <button class="blue" onclick="downloadJSON()">Download JSON</button>
+</div>
 
-    <br>
+<div id="workspace">
     <canvas id="canvas"></canvas>
+</div>
+
 </div>
 
 <div id="sidebar">
@@ -84,10 +104,17 @@ const annotationList = document.getElementById("annotationList");
 
 let img = new Image();
 let annotations = [];
+let selectedIndex = -1;
+
 let drawing = false;
+let resizing = false;
+let dragging = false;
+let resizeCorner = null;
+
 let startX, startY;
-let currentRect = null;
 let drawMode = false;
+
+const handleSize = 6;
 
 imageLoader.addEventListener("change", function(e) {
     const reader = new FileReader();
@@ -95,7 +122,7 @@ imageLoader.addEventListener("change", function(e) {
         img.onload = function() {
             canvas.width = img.width;
             canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
+            redraw();
         }
         img.src = event.target.result;
     }
@@ -104,75 +131,177 @@ imageLoader.addEventListener("change", function(e) {
 
 function enableDraw() {
     drawMode = true;
+    selectedIndex = -1;
 }
 
 canvas.addEventListener("mousedown", function(e) {
-    if (!drawMode) return;
-    drawing = true;
-    const rect = canvas.getBoundingClientRect();
-    startX = e.clientX - rect.left;
-    startY = e.clientY - rect.top;
+    const {x, y} = getMousePos(e);
+
+    if (drawMode) {
+        drawing = true;
+        startX = x;
+        startY = y;
+        return;
+    }
+
+    selectedIndex = getBoxAt(x, y);
+
+    if (selectedIndex !== -1) {
+        const corner = getCorner(x, y, annotations[selectedIndex]);
+        if (corner) {
+            resizing = true;
+            resizeCorner = corner;
+        } else {
+            dragging = true;
+            startX = x;
+            startY = y;
+        }
+    }
+
+    redraw();
 });
 
 canvas.addEventListener("mousemove", function(e) {
-    if (!drawing) return;
+    const {x, y} = getMousePos(e);
 
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    if (drawing) {
+        redraw();
+        ctx.strokeStyle = "red";
+        ctx.strokeRect(startX, startY, x - startX, y - startY);
+    }
 
-    redraw();
+    if (dragging && selectedIndex !== -1) {
+        let box = annotations[selectedIndex];
+        box.x += x - startX;
+        box.y += y - startY;
+        startX = x;
+        startY = y;
+        redraw();
+    }
 
-    const width = mouseX - startX;
-    const height = mouseY - startY;
+    if (resizing && selectedIndex !== -1) {
+        let box = annotations[selectedIndex];
 
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(startX, startY, width, height);
+        if (resizeCorner === "tl") {
+            box.width += box.x - x;
+            box.height += box.y - y;
+            box.x = x;
+            box.y = y;
+        }
+        if (resizeCorner === "tr") {
+            box.width = x - box.x;
+            box.height += box.y - y;
+            box.y = y;
+        }
+        if (resizeCorner === "bl") {
+            box.width += box.x - x;
+            box.x = x;
+            box.height = y - box.y;
+        }
+        if (resizeCorner === "br") {
+            box.width = x - box.x;
+            box.height = y - box.y;
+        }
 
-    currentRect = {
-        x: startX,
-        y: startY,
-        width: width,
-        height: height
-    };
+        redraw();
+    }
 });
 
-canvas.addEventListener("mouseup", function() {
-    if (drawing && currentRect) {
-        annotations.push(currentRect);
+canvas.addEventListener("mouseup", function(e) {
+    const {x, y} = getMousePos(e);
+
+    if (drawing) {
+        let newBox = {
+            x: startX,
+            y: startY,
+            width: x - startX,
+            height: y - startY,
+            label: prompt("Enter label for this box:")
+        };
+        annotations.push(newBox);
+        drawing = false;
+        drawMode = false;
+        redraw();
         updateSidebar();
     }
-    drawing = false;
-    currentRect = null;
+
+    resizing = false;
+    dragging = false;
 });
+
+function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+}
 
 function redraw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0);
 
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 2;
+    annotations.forEach((box, index) => {
+        ctx.strokeStyle = index === selectedIndex ? "yellow" : "red";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
 
-    annotations.forEach(rect => {
-        ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+        ctx.fillStyle = "red";
+        ctx.fillText(box.label || "", box.x + 4, box.y - 4);
+
+        drawHandles(box);
     });
 }
 
-function updateSidebar() {
-    annotationList.innerHTML = "";
-    annotations.forEach((rect, index) => {
-        const div = document.createElement("div");
-        div.className = "annotation-item";
-        div.innerText = `Box ${index+1}: x=${rect.x.toFixed(0)}, y=${rect.y.toFixed(0)}, w=${rect.width.toFixed(0)}, h=${rect.height.toFixed(0)}`;
-        annotationList.appendChild(div);
+function drawHandles(box) {
+    ctx.fillStyle = "white";
+    const corners = [
+        [box.x, box.y],
+        [box.x + box.width, box.y],
+        [box.x, box.y + box.height],
+        [box.x + box.width, box.y + box.height]
+    ];
+    corners.forEach(c => {
+        ctx.fillRect(c[0] - handleSize/2, c[1] - handleSize/2, handleSize, handleSize);
     });
 }
 
-function deleteLast() {
-    annotations.pop();
-    redraw();
-    updateSidebar();
+function getBoxAt(x, y) {
+    for (let i = annotations.length - 1; i >= 0; i--) {
+        let b = annotations[i];
+        if (x >= b.x && x <= b.x + b.width &&
+            y >= b.y && y <= b.y + b.height) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+function getCorner(x, y, box) {
+    const corners = {
+        tl: [box.x, box.y],
+        tr: [box.x + box.width, box.y],
+        bl: [box.x, box.y + box.height],
+        br: [box.x + box.width, box.y + box.height]
+    };
+
+    for (let key in corners) {
+        let [cx, cy] = corners[key];
+        if (Math.abs(x - cx) < handleSize &&
+            Math.abs(y - cy) < handleSize) {
+            return key;
+        }
+    }
+    return null;
+}
+
+function deleteSelected() {
+    if (selectedIndex !== -1) {
+        annotations.splice(selectedIndex, 1);
+        selectedIndex = -1;
+        redraw();
+        updateSidebar();
+    }
 }
 
 function clearAll() {
@@ -181,14 +310,23 @@ function clearAll() {
     updateSidebar();
 }
 
+function updateSidebar() {
+    annotationList.innerHTML = "";
+    annotations.forEach((box, index) => {
+        const div = document.createElement("div");
+        div.className = "annotation-item";
+        div.innerText = `${box.label} | x:${box.x.toFixed(0)}, y:${box.y.toFixed(0)}, w:${box.width.toFixed(0)}, h:${box.height.toFixed(0)}`;
+        annotationList.appendChild(div);
+    });
+}
+
 function downloadJSON() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(annotations, null, 2));
-    const dlAnchor = document.createElement("a");
-    dlAnchor.setAttribute("href", dataStr);
-    dlAnchor.setAttribute("download", "annotations.json");
-    document.body.appendChild(dlAnchor);
-    dlAnchor.click();
-    dlAnchor.remove();
+    const dataStr = "data:text/json;charset=utf-8," +
+        encodeURIComponent(JSON.stringify(annotations, null, 2));
+    const dl = document.createElement("a");
+    dl.href = dataStr;
+    dl.download = "annotations.json";
+    dl.click();
 }
 </script>
 
