@@ -115,7 +115,7 @@ button{
 <button class="red" onclick="deleteSelected()">Delete</button>
 <button class="gray" onclick="clearCurrent()">Clear Image</button>
 <span style="margin-left:15px;font-size:12px;">
-Wheel = Zoom | SPACE + Drag = Pan | Left = Draw/Select | Right = Resize | Double Click = Label
+Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click Box = Label
 </span>
 </div>
 
@@ -156,11 +156,7 @@ let currentImage=null;
 let img=new Image();
 
 let scale=1, originX=0, originY=0;
-
-let drawing=false;
-let resizing=false;
-let panning=false;
-
+let drawing=false, resizing=false, panning=false;
 let startX,startY;
 let selectedIndex=-1;
 let resizeCorner=null;
@@ -179,6 +175,7 @@ localStorage.setItem("dataset",JSON.stringify(dataset));
 localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
 }
 
+/* IMAGE UPLOAD & PERSISTENCE */
 imageLoader.addEventListener("change",e=>{
 [...e.target.files].forEach(file=>{
 const reader=new FileReader();
@@ -195,9 +192,9 @@ reader.readAsDataURL(file);
 function renderImageList(){
 imageList.innerHTML="";
 for(let name in imagesMeta){
+if(imagesMeta[name].complete) continue; // keep until complete
 const div=document.createElement("div");
 div.className="imageItem";
-if(imagesMeta[name].complete) div.classList.add("complete");
 div.innerText=name;
 div.onclick=()=>loadImage(name);
 imageList.appendChild(div);
@@ -216,6 +213,7 @@ updateSidebar();
 };
 }
 
+/* ZOOM */
 canvas.addEventListener("wheel",e=>{
 e.preventDefault();
 const zoom=e.deltaY<0?1.1:0.9;
@@ -227,6 +225,7 @@ originY=e.offsetY-my*scale;
 redraw();
 });
 
+/* PAN */
 document.addEventListener("keydown",e=>{
 if(e.code==="Space") panning=true;
 });
@@ -243,7 +242,7 @@ panStartY=e.clientY;
 return;
 }
 
-if(e.button===0){ // LEFT
+if(e.button===0){ // LEFT DRAW
 selectedIndex=getBoxAt(pos.x,pos.y);
 if(selectedIndex===-1){
 drawing=true;
@@ -252,7 +251,7 @@ startY=pos.y;
 }
 }
 
-if(e.button===2){ // RIGHT
+if(e.button===2){ // RIGHT RESIZE
 e.preventDefault();
 selectedIndex=getBoxAt(pos.x,pos.y);
 if(selectedIndex!==-1){
@@ -307,10 +306,11 @@ if(resizing){
 resizing=false;
 saveData();
 }
-updateSidebar();
 redraw();
+updateSidebar();
 });
 
+/* POPUP ONLY IF DOUBLE CLICK ON BOX */
 canvas.addEventListener("dblclick",e=>{
 const pos=getMouse(e);
 selectedIndex=getBoxAt(pos.x,pos.y);
