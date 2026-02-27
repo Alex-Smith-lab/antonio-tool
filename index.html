@@ -8,12 +8,49 @@
         ]
     });
 
-    // Enable annotations to be editable
-    anno.setDrawingEnabled(false); // start disabled
+    // -----------------------------
+    // LABEL COLOR MAP
+    // -----------------------------
+    const labelColors = {
+        Car: '#34A853',
+        Truck: '#4285F4',
+        Bus: '#FBBC05',
+        Motorcycle: '#EA4335',
+        Pedestrian: '#AA66CC'
+    };
 
-    let drawingActive = false;
+    // -----------------------------
+    // DYNAMIC COLOR STYLING
+    // -----------------------------
+    anno.setStyle(function(annotation) {
 
-    // --- ZOOM ---
+        const tagBody = annotation.bodies.find(b =>
+            b.purpose === 'tagging'
+        );
+
+        const label = tagBody ? tagBody.value : null;
+        const color = labelColors[label] || '#FFFFFF';
+
+        return {
+            stroke: color,
+            strokeWidth: 2,
+            fill: color,
+            fillOpacity: 0.15
+        };
+    });
+
+    // -----------------------------
+    // ENABLE DRAWING MODE ON LOAD
+    // -----------------------------
+    anno.setDrawingTool('rect');
+    anno.setDrawingEnabled(true);
+
+    let drawingActive = true;
+    document.querySelector('.add-btn').style.background = "#FBBC05";
+
+    // -----------------------------
+    // ZOOM
+    // -----------------------------
     let scale = 1;
     const container = document.getElementById('annotation-container');
     const viewport = document.getElementById('zoom-viewport');
@@ -25,7 +62,9 @@
         container.style.transform = `scale(${scale})`;
     }, { passive: false });
 
-    // --- SIDEBAR ---
+    // -----------------------------
+    // SIDEBAR
+    // -----------------------------
     const logEl = document.getElementById('activity-log');
 
     function toggleSidebar() {
@@ -40,12 +79,13 @@
         logEl.prepend(entry);
     }
 
-    // --- ANNOTATION MODE TOGGLE ---
+    // -----------------------------
+    // ANNOTATION MODE TOGGLE
+    // -----------------------------
     function startDrawing() {
         drawingActive = !drawingActive;
 
         if (drawingActive) {
-            anno.setDrawingTool('rect');
             anno.setDrawingEnabled(true);
             document.querySelector('.add-btn').style.background = "#FBBC05";
             addLog("Annotation mode ENABLED.");
@@ -56,7 +96,9 @@
         }
     }
 
-    // --- DELETE ---
+    // -----------------------------
+    // DELETE
+    // -----------------------------
     function deleteSelected() {
         const selected = anno.getSelected();
         if (selected) {
@@ -65,20 +107,31 @@
         }
     }
 
-    // --- EVENTS ---
+    // -----------------------------
+    // EVENTS
+    // -----------------------------
     anno.on('createAnnotation', (a) => {
+        anno.redraw(a);
         const tags = a.bodies
-            .filter(b => b.type === 'TextualBody' && b.purpose === 'tagging')
+            .filter(b => b.purpose === 'tagging')
             .map(b => b.value)
             .join(', ');
         addLog(`Created annotation. Labels: ${tags || 'None'}`);
+    });
+
+    // Update color if tag edited
+    anno.on('updateAnnotation', (a) => {
+        anno.redraw(a);
+        addLog("Annotation updated.");
     });
 
     anno.on('selectAnnotation', () => {
         addLog("Annotation selected.");
     });
 
-    // --- EXPORT ---
+    // -----------------------------
+    // EXPORT
+    // -----------------------------
     function exportData() {
         const data = anno.getAnnotations();
         const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
