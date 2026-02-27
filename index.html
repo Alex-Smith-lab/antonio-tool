@@ -1,145 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Antana Labeler - Production</title>
-
-<style>
-body{
-    margin:0;
-    font-family:Arial;
-    background:#111;
-    color:white;
-    display:flex;
-    height:100vh;
-    overflow:hidden;
-}
-
-#leftPanel{
-    width:220px;
-    background:#181818;
-    border-right:2px solid #333;
-    overflow-y:auto;
-    padding:10px;
-}
-
-#main{
-    flex:4;
-    display:flex;
-    flex-direction:column;
-}
-
-#toolbar{
-    padding:10px;
-    background:#1e1e1e;
-}
-
-#workspace{
-    flex:1;
-    background:black;
-    position:relative;
-    overflow:hidden;
-}
-
-canvas{
-    display:block;
-    background:black;
-    cursor:crosshair;
-}
-
-#rightPanel{
-    width:250px;
-    background:#1e1e1e;
-    border-left:2px solid #333;
-    padding:10px;
-    overflow-y:auto;
-}
-
-.imageItem{
-    padding:5px;
-    cursor:pointer;
-    background:#2a2a2a;
-    margin-bottom:5px;
-}
-
-.imageItem.active{
-    background:#007bff;
-}
-
-.imageItem.complete{
-    background:#28a745;
-}
-
-.annotation-item{
-    font-size:12px;
-    padding:4px;
-    margin-bottom:4px;
-    background:#2c2c2c;
-}
-
-button{
-    margin:3px;
-    padding:6px 10px;
-    border:none;
-    border-radius:4px;
-    cursor:pointer;
-}
-
-.green{background:#28a745;color:white;}
-.red{background:#dc3545;color:white;}
-.gray{background:#6c757d;color:white;}
-
-#labelPopup{
-    position:fixed;
-    background:#222;
-    padding:10px;
-    border:2px solid #555;
-    display:none;
-    z-index:1000;
-}
-</style>
-</head>
-
-<body>
-
-<div id="leftPanel">
-<h3>Images</h3>
-<input type="file" id="imageLoader" multiple accept="image/*"><br><br>
-<div id="imageList"></div>
-</div>
-
-<div id="main">
-<div id="toolbar">
-<h2>Antana Labeler - Production</h2>
-<button class="green" onclick="markComplete()">Mark Complete</button>
-<button class="red" onclick="deleteSelected()">Delete</button>
-<button class="gray" onclick="clearCurrent()">Clear Image</button>
-<span style="margin-left:15px;font-size:12px;">
-Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click Box = Label
-</span>
-</div>
-
-<div id="workspace">
-<canvas id="canvas"></canvas>
-</div>
-</div>
-
-<div id="rightPanel">
-<h3>Annotations</h3>
-<div id="annotationList"></div>
-</div>
-
-<div id="labelPopup">
-<select id="labelSelect">
-<option>Car</option>
-<option>Bus</option>
-<option>Truck</option>
-<option>Pedestrian</option>
-<option>Train</option>
-</select>
-<button onclick="applyLabel()">Apply</button>
-</div>
-
 <script>
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
@@ -276,6 +134,7 @@ return;
 if(drawing){
 redraw();
 ctx.strokeStyle="white";
+ctx.lineWidth=2/scale;
 ctx.strokeRect(startX,startY,pos.x-startX,pos.y-startY);
 }
 
@@ -292,22 +151,33 @@ redraw();
 canvas.addEventListener("mouseup",e=>{
 if(drawing){
 const pos=getMouse(e);
-dataset[currentImage].push({
-x:startX,
-y:startY,
-width:pos.x-startX,
-height:pos.y-startY,
-label:"Car"
-});
+let w = pos.x-startX;
+let h = pos.y-startY;
+
+// --- MODIFICATION HERE ---
+// Only save if the box has a reasonable size (e.g., > 5 pixels)
+if(Math.abs(w) > 5 && Math.abs(h) > 5){
+    dataset[currentImage].push({
+        x:startX,
+        y:startY,
+        width:w,
+        height:h,
+        label:"Car"
+    });
+    saveData();
+    updateSidebar();
+}
+// -------------------------
+
 drawing=false;
-saveData();
+redraw();
 }
 if(resizing){
 resizing=false;
 saveData();
-}
-redraw();
 updateSidebar();
+redraw();
+}
 });
 
 /* POPUP ONLY IF DOUBLE CLICK ON BOX */
@@ -342,7 +212,7 @@ return -1;
 }
 
 function getCorner(box,x,y){
-let size=10;
+let size=10/scale; // Adjusted size for zoom level
 if(Math.abs(x-(box.x+box.width))<size && Math.abs(y-(box.y+box.height))<size) return "br";
 if(Math.abs(x-box.x)<size && Math.abs(y-(box.y+box.height))<size) return "bl";
 if(Math.abs(x-(box.x+box.width))<size && Math.abs(y-box.y)<size) return "tr";
@@ -351,15 +221,17 @@ return null;
 }
 
 function redraw(){
+if(!currentImage) return;
 ctx.setTransform(scale,0,0,scale,originX,originY);
 ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
 ctx.drawImage(img,0,0);
-if(!currentImage) return;
+
 dataset[currentImage].forEach(box=>{
 ctx.strokeStyle=labelColors[box.label];
 ctx.lineWidth=2/scale;
 ctx.strokeRect(box.x,box.y,box.width,box.height);
 ctx.fillStyle=labelColors[box.label];
+ctx.font = (16/scale) + "px Arial";
 ctx.fillText(box.label,box.x+4,box.y-4);
 });
 }
@@ -411,5 +283,3 @@ annotationList.appendChild(div);
 
 renderImageList();
 </script>
-</body>
-</html>
