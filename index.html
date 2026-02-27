@@ -44,6 +44,7 @@ body{
 canvas{
     display:block;
     background:black;
+    cursor:crosshair;
 }
 
 #rightPanel{
@@ -63,6 +64,10 @@ canvas{
 
 .imageItem.active{
     background:#007bff;
+}
+
+.imageItem.complete{
+    background:#28a745;
 }
 
 .annotation-item{
@@ -107,15 +112,9 @@ button{
 <div id="main">
 <div id="toolbar">
 <h2>Antana Labeler - Production</h2>
-<button class="green" onclick="enableDraw()">Add Box</button>
+<button class="green" onclick="markComplete()">Mark Complete</button>
 <button class="red" onclick="deleteSelected()">Delete</button>
 <button class="gray" onclick="clearCurrent()">Clear Image</button>
-<button class="blue" onclick="exportYOLO()">Export YOLO</button>
-<button class="blue" onclick="exportCOCO()">Export COCO</button>
-<button class="blue" onclick="exportBackup()">Backup JSON</button>
-<span style="margin-left:15px;font-size:12px;">
-Wheel = Zoom | SPACE + Drag = Pan | C/B/T/P/R = Class
-</span>
 </div>
 
 <div id="workspace">
@@ -126,8 +125,6 @@ Wheel = Zoom | SPACE + Drag = Pan | C/B/T/P/R = Class
 <div id="rightPanel">
 <h3>Annotations</h3>
 <div id="annotationList"></div>
-<h3>Class Counter</h3>
-<div id="classCounter"></div>
 </div>
 
 <div id="labelPopup">
@@ -148,22 +145,20 @@ const ctx=canvas.getContext("2d");
 const imageLoader=document.getElementById("imageLoader");
 const imageList=document.getElementById("imageList");
 const annotationList=document.getElementById("annotationList");
-const classCounter=document.getElementById("classCounter");
 const popup=document.getElementById("labelPopup");
 const labelSelect=document.getElementById("labelSelect");
 
-let dataset={};
-let images=[];
+let dataset=JSON.parse(localStorage.getItem("dataset"))||{};
+let imagesMeta=JSON.parse(localStorage.getItem("imagesMeta"))||{};
 let currentImage=null;
 let img=new Image();
 
-let scale=1, originX=0, originY=0;
-let drawMode=false, drawing=false;
-let startX,startY;
+let drawing=false;
+let resizing=false;
 let selectedIndex=-1;
-let panning=false, panStartX, panStartY;
+let resizeCorner=null;
+let startX,startY;
 
-const classMap=["Car","Bus","Truck","Pedestrian","Train"];
 const labelColors={
 Car:"#ff3b3b",
 Bus:"#00ff99",
@@ -172,250 +167,207 @@ Pedestrian:"#ffff00",
 Train:"#ff00ff"
 };
 
+function saveData(){
+localStorage.setItem("dataset",JSON.stringify(dataset));
+localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
+}
+
 imageLoader.addEventListener("change",e=>{
-images=[...e.target.files];
-imageList.innerHTML="";
-images.forEach((file,i)=>{
+[...e.target.files].forEach(file=>{
+const reader=new FileReader();
+reader.onload=ev=>{
+imagesMeta[file.name]={src:ev.target.result,complete:false};
 dataset[file.name]=dataset[file.name]||[];
+saveData();
+renderImageList();
+};
+reader.readAsDataURL(file);
+});
+});
+
+function renderImageList(){
+imageList.innerHTML="";
+for(let name in imagesMeta){
 const div=document.createElement("div");
 div.className="imageItem";
-div.innerText=file.name;
-div.onclick=()=>loadImage(i);
+if(imagesMeta[name].complete) div.classList.add("complete");
+div.innerText=name;
+div.onclick=()=>loadImage(name);
 imageList.appendChild(div);
-});
-});
+}
+}
 
-function loadImage(index){
-const file=images[index];
-currentImage=file.name;
-document.querySelectorAll(".imageItem")
-.forEach(el=>el.classList.remove("active"));
-imageList.children[index].classList.add("active");
-
-const reader=new FileReader();
-reader.onload=e=>{
+function loadImage(name){
+currentImage=name;
+img.src=imagesMeta[name].src;
 img.onload=()=>{
 canvas.width=img.width;
 canvas.height=img.height;
-scale=1;originX=0;originY=0;
 redraw();
+updateSidebar();
 };
-img.src=e.target.result;
-};
-reader.readAsDataURL(file);
 }
-
-function enableDraw(){drawMode=true;}
-
-canvas.addEventListener("wheel",e=>{
-e.preventDefault();
-const zoom=e.deltaY<0?1.1:0.9;
-const mx=(e.offsetX-originX)/scale;
-const my=(e.offsetY-originY)/scale;
-scale*=zoom;
-originX=e.offsetX-mx*scale;
-originY=e.offsetY-my*scale;
-redraw();
-});
-
-document.addEventListener("keydown",e=>{
-if(e.code==="Space")panning=true;
-if(selectedIndex!==-1){
-if(e.key==="Delete")deleteSelected();
-if(e.key.toUpperCase()==="C")quickLabel("Car");
-if(e.key.toUpperCase()==="B")quickLabel("Bus");
-if(e.key.toUpperCase()==="T")quickLabel("Truck");
-if(e.key.toUpperCase()==="P")quickLabel("Pedestrian");
-if(e.key.toUpperCase()==="R")quickLabel("Train");
-}
-});
-document.addEventListener("keyup",e=>{
-if(e.code==="Space")panning=false;
-});
 
 canvas.addEventListener("mousedown",e=>{
-if(panning){
-panStartX=e.clientX;
-panStartY=e.clientY;
-return;
-}
 const pos=getMouse(e);
-if(drawMode){
+
+if(e.button===0){ // LEFT CLICK = DRAG
+selectedIndex=getBoxAt(pos.x,pos.y);
+if(selectedIndex!==-1){
+drawing=false;
+}else{
 drawing=true;
 startX=pos.x;
 startY=pos.y;
-}else{
+}
+}
+
+if(e.button===2){ // RIGHT CLICK = RESIZE
+e.preventDefault();
 selectedIndex=getBoxAt(pos.x,pos.y);
-redraw();
+if(selectedIndex!==-1){
+resizeCorner=getCorner(dataset[currentImage][selectedIndex],pos.x,pos.y);
+if(resizeCorner) resizing=true;
+}
 }
 });
 
 canvas.addEventListener("mousemove",e=>{
-if(panning){
-originX+=e.clientX-panStartX;
-originY+=e.clientY-panStartY;
-panStartX=e.clientX;
-panStartY=e.clientY;
-redraw();
-return;
-}
-if(!drawing)return;
 const pos=getMouse(e);
+
+if(drawing){
 redraw();
 ctx.strokeStyle="white";
 ctx.strokeRect(startX,startY,pos.x-startX,pos.y-startY);
+}
+
+if(resizing){
+let box=dataset[currentImage][selectedIndex];
+if(resizeCorner==="br"){ box.width=pos.x-box.x; box.height=pos.y-box.y; }
+if(resizeCorner==="bl"){ box.width=(box.x+box.width)-pos.x; box.x=pos.x; box.height=pos.y-box.y; }
+if(resizeCorner==="tr"){ box.width=pos.x-box.x; box.height=(box.y+box.height)-pos.y; box.y=pos.y; }
+if(resizeCorner==="tl"){ box.width=(box.x+box.width)-pos.x; box.x=pos.x; box.height=(box.y+box.height)-pos.y; box.y=pos.y; }
+redraw();
+}
 });
 
 canvas.addEventListener("mouseup",e=>{
-if(!drawing)return;
+if(drawing){
 const pos=getMouse(e);
 dataset[currentImage].push({
-x:startX,y:startY,
+x:startX,
+y:startY,
 width:pos.x-startX,
 height:pos.y-startY,
 label:"Car"
 });
-drawing=false;drawMode=false;
-redraw();updateSidebar();
+selectedIndex=dataset[currentImage].length-1;
+drawing=false;
+saveData();
+showPopup(e.clientX,e.clientY);
+}
+if(resizing){
+resizing=false;
+saveData();
+showPopup(e.clientX,e.clientY);
+}
+updateSidebar();
 });
 
-canvas.addEventListener("dblclick",e=>{
-const pos=getMouse(e);
-selectedIndex=getBoxAt(pos.x,pos.y);
-if(selectedIndex!==-1){
-popup.style.left=e.clientX+"px";
-popup.style.top=e.clientY+"px";
+canvas.addEventListener("contextmenu",e=>e.preventDefault());
+
+function getMouse(e){
+return{
+x:e.offsetX,
+y:e.offsetY
+};
+}
+
+function getBoxAt(x,y){
+if(!currentImage) return -1;
+let arr=dataset[currentImage];
+for(let i=arr.length-1;i>=0;i--){
+let b=arr[i];
+if(x>=b.x&&x<=b.x+b.width&&y>=b.y&&y<=b.y+b.height)
+return i;
+}
+return -1;
+}
+
+function getCorner(box,x,y){
+let size=10;
+if(Math.abs(x-(box.x+box.width))<size && Math.abs(y-(box.y+box.height))<size) return "br";
+if(Math.abs(x-box.x)<size && Math.abs(y-(box.y+box.height))<size) return "bl";
+if(Math.abs(x-(box.x+box.width))<size && Math.abs(y-box.y)<size) return "tr";
+if(Math.abs(x-box.x)<size && Math.abs(y-box.y)<size) return "tl";
+return null;
+}
+
+function redraw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.drawImage(img,0,0);
+if(!currentImage) return;
+dataset[currentImage].forEach((box,i)=>{
+ctx.strokeStyle=labelColors[box.label];
+ctx.lineWidth=2;
+ctx.strokeRect(box.x,box.y,box.width,box.height);
+ctx.fillStyle=labelColors[box.label];
+ctx.fillText(box.label,box.x+4,box.y-4);
+});
+}
+
+function showPopup(x,y){
+popup.style.left=x+"px";
+popup.style.top=y+"px";
 popup.style.display="block";
 }
-});
 
 function applyLabel(){
 dataset[currentImage][selectedIndex].label=labelSelect.value;
 popup.style.display="none";
-redraw();updateSidebar();
-}
-
-function quickLabel(label){
-dataset[currentImage][selectedIndex].label=label;
-redraw();updateSidebar();
-}
-
-function getMouse(e){
-return{
-x:(e.offsetX-originX)/scale,
-y:(e.offsetY-originY)/scale
-};
-}
-
-function redraw(){
-ctx.setTransform(scale,0,0,scale,originX,originY);
-ctx.clearRect(-originX/scale,-originY/scale,
-canvas.width/scale,canvas.height/scale);
-ctx.drawImage(img,0,0);
-if(!currentImage)return;
-dataset[currentImage].forEach((box,i)=>{
-ctx.strokeStyle=labelColors[box.label];
-ctx.lineWidth=2/scale;
-ctx.strokeRect(box.x,box.y,box.width,box.height);
-ctx.fillStyle=labelColors[box.label];
-ctx.fillText(box.label,box.x+5,box.y-5);
-});
-}
-
-function getBoxAt(x,y){
-if(!currentImage)return -1;
-const arr=dataset[currentImage];
-for(let i=arr.length-1;i>=0;i--){
-let b=arr[i];
-if(x>=b.x&&x<=b.x+b.width&&
-y>=b.y&&y<=b.y+b.height)return i;
-}
-return -1;
+saveData();
+redraw();
+updateSidebar();
 }
 
 function deleteSelected(){
 if(selectedIndex!==-1){
 dataset[currentImage].splice(selectedIndex,1);
 selectedIndex=-1;
-redraw();updateSidebar();
+saveData();
+redraw();
+updateSidebar();
 }
 }
 
 function clearCurrent(){
 dataset[currentImage]=[];
-redraw();updateSidebar();
+saveData();
+redraw();
+updateSidebar();
+}
+
+function markComplete(){
+if(currentImage){
+imagesMeta[currentImage].complete=true;
+saveData();
+renderImageList();
+}
 }
 
 function updateSidebar(){
 annotationList.innerHTML="";
-classCounter.innerHTML="";
-let counts={};
-if(!currentImage)return;
+if(!currentImage) return;
 dataset[currentImage].forEach(box=>{
-counts[box.label]=(counts[box.label]||0)+1;
 const div=document.createElement("div");
 div.className="annotation-item";
 div.style.borderLeft="5px solid "+labelColors[box.label];
 div.innerText=box.label;
 annotationList.appendChild(div);
 });
-for(let cls in counts){
-classCounter.innerHTML+=cls+": "+counts[cls]+"<br>";
-}
 }
 
-function exportBackup(){
-downloadJSON(dataset,"dataset_backup.json");
-}
-
-function exportYOLO(){
-let output="";
-images.forEach(file=>{
-let anns=dataset[file.name];
-if(!anns)return;
-anns.forEach(box=>{
-let id=classMap.indexOf(box.label);
-let x=(box.x+box.width/2)/img.width;
-let y=(box.y+box.height/2)/img.height;
-let w=box.width/img.width;
-let h=box.height/img.height;
-output+=`${file.name}: ${id} ${x.toFixed(4)} ${y.toFixed(4)} ${w.toFixed(4)} ${h.toFixed(4)}\n`;
-});
-});
-downloadJSON(output,"yolo_export.txt");
-}
-
-function exportCOCO(){
-let coco={images:[],annotations:[],categories:[]};
-classMap.forEach((c,i)=>{
-coco.categories.push({id:i,name:c});
-});
-let annId=0;
-images.forEach((file,i)=>{
-coco.images.push({id:i,file_name:file.name});
-dataset[file.name]?.forEach(box=>{
-coco.annotations.push({
-id:annId++,
-image_id:i,
-category_id:classMap.indexOf(box.label),
-bbox:[box.x,box.y,box.width,box.height],
-area:box.width*box.height,
-iscrowd:0
-});
-});
-});
-downloadJSON(coco,"coco_export.json");
-}
-
-function downloadJSON(data,name){
-const blob=new Blob([typeof data==="string"?data:JSON.stringify(data,null,2)],
-{type:"application/json"});
-const a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download=name;
-a.click();
-}
+renderImageList();
 </script>
-
 </body>
 </html>
