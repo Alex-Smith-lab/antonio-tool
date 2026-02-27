@@ -15,7 +15,7 @@
             font-family: 'Segoe UI', sans-serif;
             background: #000000; color: white;
             display: flex; flex-direction: column;
-            overflow: hidden; /* Stops page-wide scrolling */
+            overflow: hidden;
         }
 
         header {
@@ -24,18 +24,19 @@
             border-bottom: 2px solid #34A853; z-index: 1000;
         }
 
-        /* 2. ADJUSTABLE WORKSPACE (Image moves alone) */
+        /* 2. ADJUSTABLE WORKSPACE */
         .main-layout {
             display: flex; 
-            margin-top: 65px; /* Matches header height */
-            height: calc(100vh - 135px); /* Space for header and toolbar */
+            margin-top: 65px;
+            height: calc(100vh - 135px);
         }
 
         .workspace {
             flex-grow: 1; position: relative;
-            background: #000; overflow: auto; /* Enable scroll wheel movement */
+            background: #000; overflow: auto;
             display: flex; justify-content: center; align-items: center;
-            cursor: crosshair;
+            /* Z-index allows drawing canvas to sit above image */
+            z-index: 10;
         }
 
         #annotation-container { 
@@ -43,15 +44,17 @@
             transform-origin: center center;
             transition: transform 0.1s ease-out;
             display: inline-block;
+            cursor: crosshair; /* Enables crosshair cursor */
         }
 
         #target-image { display: block; max-width: none; }
 
-        /* 3. SIDE PANEL WITH CLOSE SIGN */
+        /* 3. SIDE PANEL */
         .sidebar {
             width: 320px; background: #1a1a1a; border-left: 1px solid #333;
             display: flex; flex-direction: column; flex-shrink: 0;
             transition: width 0.3s ease;
+            z-index: 1001; /* Above workspace */
         }
 
         .sidebar.hidden { width: 0; overflow: hidden; border: none; }
@@ -126,6 +129,7 @@
         image: 'target-image',
         widgets: [
             { widget: 'COMMENT', editable: 'clickable' },
+            // Label vocabulary prompts immediately after drawing
             { widget: 'TAG', vocabulary: [ 'Car', 'Truck', 'Bus', 'Motorcycle', 'Pedestrian' ] }
         ]
     });
@@ -157,7 +161,9 @@
         logEl.prepend(entry);
     }
 
+    // --- ACTIVATION LOGIC ---
     function startDrawing() {
+        // This line makes drawing active immediately
         anno.setDrawingTool('rect');
         addLog("Drawing tool active.");
     }
