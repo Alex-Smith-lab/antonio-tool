@@ -3,239 +3,414 @@
 <head>
 <meta charset="UTF-8">
 <title>Antana Labeler - Production</title>
+
 <style>
 body{
-  margin:0;
-  font-family:Arial;
-  background:#111;
-  color:white;
-  display:flex;
-  height:100vh;
-  overflow:hidden;
+    margin:0;
+    font-family:Arial;
+    background:#111;
+    color:white;
+    display:flex;
+    height:100vh;
+    overflow:hidden;
 }
-#homepage{
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  z-index:1000;
-  background: linear-gradient(135deg, #007bff 25%, #28a745 25%, #28a745 50%, #007bff 50%, #007bff 75%, #28a745 75%, #28a745 100%);
-  background-size: 56.57px 56.57px; /* creates zigzag pattern */
-  color:white;
-}
+
 #leftPanel{
-  width:250px;
-  background:#181818;
-  border-right:2px solid #333;
-  overflow-y:auto;
-  padding:10px;
+    width:220px;
+    background:#181818;
+    border-right:2px solid #333;
+    overflow-y:auto;
+    padding:10px;
 }
-#main{flex:4; display:flex; flex-direction:column;}
+
+#main{
+    flex:4;
+    display:flex;
+    flex-direction:column;
+}
+
 #toolbar{
-  padding:10px;
-  background:#1e1e1e;
-  display:flex;
-  align-items:center;
-  gap:10px;
+    padding:10px;
+    background:#1e1e1e;
 }
-#workspace{flex:1; background:black; position:relative; overflow:hidden;}
-canvas{display:block; background:black; cursor:crosshair;}
+
+#workspace{
+    flex:1;
+    background:black;
+    position:relative;
+    overflow:hidden;
+}
+
+canvas{
+    display:block;
+    background:black;
+    cursor:crosshair;
+}
+
 #rightPanel{
-  width:300px;
-  background:#1e1e1e;
-  border-left:2px solid #333;
-  padding:10px;
-  overflow-y:auto;
+    width:250px;
+    background:#1e1e1e;
+    border-left:2px solid #333;
+    padding:10px;
+    overflow-y:auto;
 }
+
 .imageItem{
-  padding:5px;
-  cursor:pointer;
-  background:#2a2a2a;
-  margin-bottom:5px;
+    padding:5px;
+    cursor:pointer;
+    background:#2a2a2a;
+    margin-bottom:5px;
 }
-.imageItem.active{background:#007bff;}
-.imageItem.complete{background:#28a745;}
+
+.imageItem.complete{
+    background:#28a745;
+}
+
 .annotation-item{
-  font-size:12px;
-  padding:4px;
-  margin-bottom:4px;
-  background:#2c2c2c;
+    font-size:12px;
+    padding:4px;
+    margin-bottom:4px;
+    background:#2c2c2c;
 }
+
 button{
-  margin:3px;
-  padding:6px 10px;
-  border:none;
-  border-radius:4px;
-  cursor:pointer;
+    margin:3px;
+    padding:6px 10px;
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
 }
+
 .green{background:#28a745;color:white;}
 .red{background:#dc3545;color:white;}
 .gray{background:#6c757d;color:white;}
-.blue{background:#007bff;color:white;}
-#currentUser{position:absolute;top:10px;right:20px;font-size:14px;}
-#labelPopup{position:fixed;background:#222;padding:10px;border:2px solid #555;display:none;z-index:1000;}
-input{padding:8px;margin:3px;width:220px;border-radius:4px;border:none;}
+
+#labelPopup{
+    position:fixed;
+    background:#222;
+    padding:10px;
+    border:2px solid #555;
+    display:none;
+    z-index:1000;
+}
 </style>
 </head>
+
 <body>
 
-<!-- Login Homepage -->
-<div id="homepage">
-  <h1>Welcome to Antana Labeler</h1>
-  <input type="email" id="loginEmail" placeholder="Email"><br>
-  <input type="text" id="loginName" placeholder="Full Name (new users)"><br>
-  <input type="password" id="loginPass" placeholder="Password"><br>
-  <button class="green" onclick="login()">Login / Sign Up</button>
-</div>
-
-<div id="currentUser"></div>
-
 <div id="leftPanel">
-  <h3>Images</h3>
-  <input type="file" id="imageLoader" multiple accept="image/*"><br><br>
-  <div id="imageList"></div>
-  <hr>
-  <button class="red" onclick="deleteAccount()">Delete My Account</button>
-  <button class="gray" onclick="logout()">Logout</button>
+<h3>Images</h3>
+<input type="file" id="imageLoader" multiple accept="image/*"><br><br>
+<div id="imageList"></div>
 </div>
 
 <div id="main">
-  <div id="toolbar">
-    <h2 style="flex:1;">Antana Labeler - Production</h2>
-    <button class="green" onclick="markComplete()">Mark Complete</button>
-    <button class="red" onclick="deleteSelected()">Delete</button>
-    <button class="gray" onclick="clearCurrent()">Clear Image</button>
-    <span style="margin-left:15px;font-size:12px;">
-    Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click Box = Label
-    </span>
-  </div>
-  <div id="workspace">
-    <canvas id="canvas"></canvas>
-  </div>
+<div id="toolbar">
+<h2>Antana Labeler - Production</h2>
+<button class="green" onclick="markComplete()">Mark Complete</button>
+<button class="red" onclick="deleteSelected()">Delete</button>
+<button class="gray" onclick="clearCurrent()">Clear Image</button>
+<span style="margin-left:15px;font-size:12px;">
+Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click Box = Label
+</span>
+</div>
+
+<div id="workspace">
+<canvas id="canvas"></canvas>
+</div>
 </div>
 
 <div id="rightPanel">
-  <h3>Annotations</h3>
-  <div id="annotationList"></div>
+<h3>Annotations</h3>
+<div id="annotationList"></div>
 </div>
 
-<!-- Label Popup -->
 <div id="labelPopup">
-  <select id="labelSelect">
-    <option>Car</option>
-    <option>Bus</option>
-    <option>Truck</option>
-    <option>Pedestrian</option>
-    <option>Train</option>
-  </select>
-  <button onclick="applyLabel()">Apply</button>
+<select id="labelSelect">
+<option>Car</option>
+<option>Bus</option>
+<option>Truck</option>
+<option>Pedestrian</option>
+<option>Train</option>
+</select>
+<button onclick="applyLabel()">Apply</button>
 </div>
 
 <script>
-const canvas=document.getElementById("canvas"); const ctx=canvas.getContext("2d");
-const imageLoader=document.getElementById("imageLoader"); const imageList=document.getElementById("imageList"); const annotationList=document.getElementById("annotationList");
-const popup=document.getElementById("labelPopup"); const labelSelect=document.getElementById("labelSelect");
-const loginEmail=document.getElementById("loginEmail"); const loginPass=document.getElementById("loginPass"); const loginName=document.getElementById("loginName");
-const currentUserDiv=document.getElementById("currentUser"); const homepage=document.getElementById("homepage");
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+const imageLoader=document.getElementById("imageLoader");
+const imageList=document.getElementById("imageList");
+const annotationList=document.getElementById("annotationList");
+const popup=document.getElementById("labelPopup");
+const labelSelect=document.getElementById("labelSelect");
 
 let dataset=JSON.parse(localStorage.getItem("dataset"))||{};
 let imagesMeta=JSON.parse(localStorage.getItem("imagesMeta"))||{};
-let users=JSON.parse(localStorage.getItem("users"))||[];
-let currentImage=null; let currentUser=null; let img=new Image();
-const labelColors={Car:"#ff3b3b",Bus:"#00ff99",Truck:"#3399ff",Pedestrian:"#ffff00",Train:"#ff00ff"};
+let currentImage=null;
+let img=new Image();
 
-function saveData(){ 
-  localStorage.setItem("dataset",JSON.stringify(dataset));
-  localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
-  localStorage.setItem("users",JSON.stringify(users));
-  localStorage.setItem("currentUser",JSON.stringify(currentUser));
-}
+let scale=1, originX=0, originY=0;
+let drawing=false, resizing=false, panning=false;
+let startX,startY;
+let selectedIndex=-1;
+let resizeCorner=null;
+let panStartX, panStartY;
 
-function login(){
-  const email=loginEmail.value.trim();
-  const pass=loginPass.value.trim();
-  const name=loginName.value.trim();
-  if(!email||!pass) return alert("Email & password required");
-  let user=users.find(u=>u.email===email);
-  if(user){
-      if(user.pass!==pass) return alert("Wrong password");
-      currentUser=user;
-  } else {
-      if(!name) return alert("Enter full name for new account");
-      currentUser={name,email,pass};
-      users.push(currentUser);
-  }
-  saveData();
-  homepage.style.display="none";
-  currentUserDiv.innerText="Logged in: "+currentUser.name;
-  renderImageList();
-}
+const labelColors={
+Car:"#ff3b3b",
+Bus:"#00ff99",
+Truck:"#3399ff",
+Pedestrian:"#ffff00",
+Train:"#ff00ff"
+};
 
-function logout(){
-  currentUser=null;
-  localStorage.removeItem("currentUser");
-  homepage.style.display="flex";
-  currentUserDiv.innerText="";
-}
-
-function deleteAccount(){
-  if(!currentUser) return;
-  users=users.filter(u=>u.email!==currentUser.email);
-  localStorage.setItem("users",JSON.stringify(users));
-  logout();
+function saveData(){
+localStorage.setItem("dataset",JSON.stringify(dataset));
+localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
 }
 
 imageLoader.addEventListener("change",e=>{
-  if(!currentUser) return alert("Login required");
-  [...e.target.files].forEach(file=>{
-      const reader=new FileReader();
-      reader.onload=ev=>{
-          imagesMeta[file.name]={src:ev.target.result,complete:false};
-          dataset[file.name]=dataset[file.name]||[];
-          saveData();
-          renderImageList();
-      };
-      reader.readAsDataURL(file);
-  });
+[...e.target.files].forEach((file,index)=>{
+const reader=new FileReader();
+reader.onload=ev=>{
+imagesMeta[file.name]={src:ev.target.result,complete:false};
+dataset[file.name]=dataset[file.name]||[];
+saveData();
+renderImageList();
+if(!currentImage){ loadImage(file.name); }
+};
+reader.readAsDataURL(file);
+});
 });
 
 function renderImageList(){
-  imageList.innerHTML="";
-  for(let name in imagesMeta){
-      const div=document.createElement("div");
-      div.className="imageItem";
-      div.innerText=name;
-      if(imagesMeta[name].complete) div.classList.add("complete");
-      if(currentImage===name) div.classList.add("active");
-      div.onclick=()=>loadImage(name);
-      imageList.appendChild(div);
-  }
+imageList.innerHTML="";
+for(let name in imagesMeta){
+if(imagesMeta[name].complete) continue;
+const div=document.createElement("div");
+div.className="imageItem";
+div.innerText=name;
+div.onclick=()=>loadImage(name);
+imageList.appendChild(div);
+}
 }
 
 function loadImage(name){
-  currentImage=name;
-  img.src=imagesMeta[name].src;
-  img.onload=()=>{ canvas.width=img.width; canvas.height=img.height; redraw(); updateSidebar(); };
+currentImage=name;
+img.src=imagesMeta[name].src;
+img.onload=()=>{
+canvas.width=img.width;
+canvas.height=img.height;
+scale=1; originX=0; originY=0;
+redraw();
+updateSidebar();
+};
+}
+
+canvas.addEventListener("wheel",e=>{
+e.preventDefault();
+const zoom=e.deltaY<0?1.1:0.9;
+const mx=(e.offsetX-originX)/scale;
+const my=(e.offsetY-originY)/scale;
+scale*=zoom;
+originX=e.offsetX-mx*scale;
+originY=e.offsetY-my*scale;
+redraw();
+});
+
+document.addEventListener("keydown",e=>{
+if(e.code==="Space") panning=true;
+});
+document.addEventListener("keyup",e=>{
+if(e.code==="Space") panning=false;
+});
+
+canvas.addEventListener("mousedown",e=>{
+if(!currentImage) return;
+const pos=getMouse(e);
+
+if(panning){
+panStartX=e.clientX;
+panStartY=e.clientY;
+return;
+}
+
+if(e.button===0){
+selectedIndex=getBoxAt(pos.x,pos.y);
+if(selectedIndex===-1){
+drawing=true;
+startX=pos.x;
+startY=pos.y;
+}
+}
+
+if(e.button===2){
+e.preventDefault();
+selectedIndex=getBoxAt(pos.x,pos.y);
+if(selectedIndex!==-1){
+resizeCorner=getCorner(dataset[currentImage][selectedIndex],pos.x,pos.y);
+if(resizeCorner) resizing=true;
+}
+}
+});
+
+canvas.addEventListener("mousemove",e=>{
+if(!currentImage) return;
+const pos=getMouse(e);
+
+if(panning){
+originX+=e.clientX-panStartX;
+originY+=e.clientY-panStartY;
+panStartX=e.clientX;
+panStartY=e.clientY;
+redraw();
+return;
+}
+
+if(drawing){
+redraw();
+ctx.strokeStyle="white";
+ctx.strokeRect(startX,startY,pos.x-startX,pos.y-startY);
+}
+
+if(resizing){
+let box=dataset[currentImage][selectedIndex];
+if(resizeCorner==="br"){ box.width=pos.x-box.x; box.height=pos.y-box.y; }
+if(resizeCorner==="bl"){ box.width=(box.x+box.width)-pos.x; box.x=pos.x; box.height=pos.y-box.y; }
+if(resizeCorner==="tr"){ box.width=pos.x-box.x; box.height=(box.y+box.height)-pos.y; box.y=pos.y; }
+if(resizeCorner==="tl"){ box.width=(box.x+box.width)-pos.x; box.x=pos.x; box.height=(box.y+box.height)-pos.y; box.y=pos.y; }
+redraw();
+}
+});
+
+canvas.addEventListener("mouseup",e=>{
+if(!currentImage) return;
+
+if(drawing){
+const pos=getMouse(e);
+dataset[currentImage].push({
+x:startX,
+y:startY,
+width:pos.x-startX,
+height:pos.y-startY,
+label:"Car"
+});
+drawing=false;
+saveData();
+}
+
+if(resizing){
+resizing=false;
+saveData();
+}
+
+redraw();
+updateSidebar();
+});
+
+canvas.addEventListener("dblclick",e=>{
+if(!currentImage) return;
+const pos=getMouse(e);
+selectedIndex=getBoxAt(pos.x,pos.y);
+if(selectedIndex!==-1){
+popup.style.left=e.clientX+"px";
+popup.style.top=e.clientY+"px";
+popup.style.display="block";
+}
+});
+
+canvas.addEventListener("contextmenu",e=>e.preventDefault());
+
+function getMouse(e){
+return{
+x:(e.offsetX-originX)/scale,
+y:(e.offsetY-originY)/scale
+};
+}
+
+function getBoxAt(x,y){
+let arr=dataset[currentImage];
+for(let i=arr.length-1;i>=0;i--){
+let b=arr[i];
+if(x>=b.x&&x<=b.x+b.width&&y>=b.y&&y<=b.y+b.height)
+return i;
+}
+return -1;
+}
+
+function getCorner(box,x,y){
+let size=10;
+if(Math.abs(x-(box.x+box.width))<size && Math.abs(y-(box.y+box.height))<size) return "br";
+if(Math.abs(x-box.x)<size && Math.abs(y-(box.y+box.height))<size) return "bl";
+if(Math.abs(x-(box.x+box.width))<size && Math.abs(y-box.y)<size) return "tr";
+if(Math.abs(x-box.x)<size && Math.abs(y-box.y)<size) return "tl";
+return null;
+}
+
+function redraw(){
+ctx.setTransform(scale,0,0,scale,originX,originY);
+ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
+ctx.drawImage(img,0,0);
+if(!currentImage) return;
+dataset[currentImage].forEach(box=>{
+ctx.strokeStyle=labelColors[box.label];
+ctx.lineWidth=2/scale;
+ctx.strokeRect(box.x,box.y,box.width,box.height);
+ctx.fillStyle=labelColors[box.label];
+ctx.fillText(box.label,box.x+4,box.y-4);
+});
 }
 
 function applyLabel(){
-  if(!currentUser || !currentImage) return;
-  dataset[currentImage][0]={label:labelSelect.value};
-  popup.style.display="none";
-  saveData();
-  updateSidebar();
+dataset[currentImage][selectedIndex].label=labelSelect.value;
+popup.style.display="none";
+saveData();
+redraw();
+updateSidebar();
 }
 
-function deleteSelected(){ if(!currentUser || !currentImage) return; dataset[currentImage]=[]; saveData(); updateSidebar(); }
-function clearCurrent(){ if(!currentUser || !currentImage) return; dataset[currentImage]=[]; saveData(); updateSidebar(); }
-function markComplete(){ if(!currentUser || !currentImage) return; imagesMeta[currentImage].complete=true; saveData(); renderImageList(); }
-function updateSidebar(){ annotationList.innerHTML=""; if(!currentImage) return; dataset[currentImage].forEach(box=>{ const div=document.createElement("div"); div.className="annotation-item"; div.style.borderLeft="5px solid "+labelColors[box.label]; div.innerText=box.label; annotationList.appendChild(div); }); }
+function deleteSelected(){
+if(selectedIndex!==-1){
+dataset[currentImage].splice(selectedIndex,1);
+selectedIndex=-1;
+saveData();
+redraw();
+updateSidebar();
+}
+}
 
-currentUser=JSON.parse(localStorage.getItem("currentUser")); 
-if(currentUser){ homepage.style.display="none"; currentUserDiv.innerText="Logged in: "+currentUser.name; renderImageList(); }
+function clearCurrent(){
+dataset[currentImage]=[];
+saveData();
+redraw();
+updateSidebar();
+}
+
+function markComplete(){
+if(currentImage){
+imagesMeta[currentImage].complete=true;
+saveData();
+renderImageList();
+currentImage=null;
+ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+}
+
+function updateSidebar(){
+annotationList.innerHTML="";
+if(!currentImage) return;
+dataset[currentImage].forEach(box=>{
+const div=document.createElement("div");
+div.className="annotation-item";
+div.style.borderLeft="5px solid "+labelColors[box.label];
+div.innerText=box.label;
+annotationList.appendChild(div);
+});
+}
+
+renderImageList();
 </script>
 </body>
 </html>
