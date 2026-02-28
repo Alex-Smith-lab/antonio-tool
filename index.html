@@ -4,124 +4,33 @@
 <meta charset="UTF-8">
 <title>Antana Labeler - Production</title>
 <style>
-body{
-    margin:0;
-    font-family:Arial;
-    background:#111;
-    color:white;
-    display:flex;
-    height:100vh;
-    overflow:hidden;
-}
-#homepage{
-    position:fixed;
-    top:0; left:0;
-    width:100%;
-    height:100%;
-    background:#007bff;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    color:white;
-    flex-direction:column;
-    z-index:1000;
-}
-#leftPanel{
-    width:250px;
-    background:#181818;
-    border-right:2px solid #333;
-    overflow-y:auto;
-    padding:10px;
-}
-#main{
-    flex:4;
-    display:flex;
-    flex-direction:column;
-}
-#toolbar{
-    padding:10px;
-    background:#1e1e1e;
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-#workspace{
-    flex:1;
-    background:black;
-    position:relative;
-    overflow:hidden;
-}
-canvas{
-    display:block;
-    background:black;
-    cursor:crosshair;
-}
-#rightPanel{
-    width:300px;
-    background:#1e1e1e;
-    border-left:2px solid #333;
-    padding:10px;
-    overflow-y:auto;
-}
-.imageItem{
-    padding:5px;
-    cursor:pointer;
-    background:#2a2a2a;
-    margin-bottom:5px;
-}
-.imageItem.active{
-    background:#007bff;
-}
-.imageItem.complete{
-    background:#28a745;
-}
-.annotation-item{
-    font-size:12px;
-    padding:4px;
-    margin-bottom:4px;
-    background:#2c2c2c;
-}
-.user-item{
-    font-size:12px;
-    padding:4px;
-    margin-bottom:4px;
-    background:#333;
-    display:flex;
-    justify-content:space-between;
-}
-button{
-    margin:3px;
-    padding:6px 10px;
-    border:none;
-    border-radius:4px;
-    cursor:pointer;
-}
+body{margin:0;font-family:Arial;background:#111;color:white;display:flex;height:100vh;overflow:hidden;}
+#homepage{position:fixed;top:0;left:0;width:100%;height:100%;background:#007bff;display:flex;justify-content:center;align-items:center;color:white;flex-direction:column;z-index:1000;}
+#leftPanel{width:250px;background:#181818;border-right:2px solid #333;overflow-y:auto;padding:10px;}
+#main{flex:4;display:flex;flex-direction:column;}
+#toolbar{padding:10px;background:#1e1e1e;display:flex;align-items:center;gap:10px;}
+#workspace{flex:1;background:black;position:relative;overflow:hidden;}
+canvas{display:block;background:black;cursor:crosshair;}
+#rightPanel{width:300px;background:#1e1e1e;border-left:2px solid #333;padding:10px;overflow-y:auto;}
+.imageItem{padding:5px;cursor:pointer;background:#2a2a2a;margin-bottom:5px;}
+.imageItem.active{background:#007bff;}
+.imageItem.complete{background:#28a745;}
+.annotation-item{font-size:12px;padding:4px;margin-bottom:4px;background:#2c2c2c;}
+.user-item{font-size:12px;padding:4px;margin-bottom:4px;background:#333;display:flex;justify-content:space-between;}
+button{margin:3px;padding:6px 10px;border:none;border-radius:4px;cursor:pointer;}
 .green{background:#28a745;color:white;}
 .red{background:#dc3545;color:white;}
 .gray{background:#6c757d;color:white;}
 .blue{background:#007bff;color:white;}
-#labelPopup, #userPopup, #assignPopup, #loginPopup, #adminPopup{
-    position:fixed;
-    background:#222;
-    padding:10px;
-    border:2px solid #555;
-    display:none;
-    z-index:1000;
-}
-#currentUser{
-    position:absolute;
-    top:10px;
-    right:20px;
-    font-size:14px;
-}
+#labelPopup,#userPopup,#assignPopup,#loginPopup{position:fixed;background:#222;padding:10px;border:2px solid #555;display:none;z-index:1000;}
+#currentUser{position:absolute;top:10px;right:20px;font-size:14px;}
 </style>
 </head>
 <body>
 
-<!-- Homepage for login -->
 <div id="homepage">
-    <h1>Welcome to Antana Labeler</h1>
-    <button class="green" onclick="showLogin()">Login / Sign Up</button>
+<h1>Welcome to Antana Labeler</h1>
+<button class="green" onclick="showLogin()">Login / Sign Up</button>
 </div>
 
 <div id="currentUser"></div>
@@ -147,7 +56,6 @@ button{
 Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click Box = Label
 </span>
 </div>
-
 <div id="workspace">
 <canvas id="canvas"></canvas>
 </div>
@@ -174,6 +82,7 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 <h4>Create Coworker</h4>
 <input type="text" id="newUsername" placeholder="Full Name"><br><br>
 <input type="email" id="newUserEmail" placeholder="Email"><br><br>
+<input type="password" id="newUserPass" placeholder="Password"><br><br>
 <button class="green" onclick="addCoworker()">Add</button>
 <button class="red" onclick="closeUserPopup()">Cancel</button>
 </div>
@@ -186,294 +95,75 @@ Wheel = Zoom | SPACE + Drag = Pan | Left = Draw | Right = Resize | Double Click 
 </div>
 
 <div id="loginPopup">
-<h4>Login or Sign Up</h4>
+<h4>Login</h4>
 <input type="email" id="loginEmail" placeholder="Email"><br><br>
-<input type="text" id="loginName" placeholder="Full Name (for Sign Up)"><br><br>
-<button class="green" onclick="loginOrSignup()">Submit</button>
-</div>
-
-<div id="adminPopup">
-<h4>Pending Access Requests</h4>
-<div id="pendingList"></div>
-<button class="red" onclick="closeAdminPopup()">Close</button>
+<input type="password" id="loginPass" placeholder="Password"><br><br>
+<button class="green" onclick="login()">Login</button>
 </div>
 
 <script>
-/* ---------- VARIABLES ---------- */
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-
-const imageLoader=document.getElementById("imageLoader");
-const imageList=document.getElementById("imageList");
-const annotationList=document.getElementById("annotationList");
-const popup=document.getElementById("labelPopup");
-const labelSelect=document.getElementById("labelSelect");
-
-const userPopup=document.getElementById("userPopup");
-const assignPopup=document.getElementById("assignPopup");
-const loginPopup=document.getElementById("loginPopup");
-const adminPopup=document.getElementById("adminPopup");
-
-const userListDiv=document.getElementById("userList");
-const assignUserSelect=document.getElementById("assignUserSelect");
-const pendingListDiv=document.getElementById("pendingList");
-
-const newUsername=document.getElementById("newUsername");
-const newUserEmail=document.getElementById("newUserEmail");
-
-const loginEmail=document.getElementById("loginEmail");
-const loginName=document.getElementById("loginName");
-const currentUserDiv=document.getElementById("currentUser");
-const homepage=document.getElementById("homepage");
+const canvas=document.getElementById("canvas"); const ctx=canvas.getContext("2d");
+const imageLoader=document.getElementById("imageLoader"); const imageList=document.getElementById("imageList"); const annotationList=document.getElementById("annotationList");
+const popup=document.getElementById("labelPopup"); const labelSelect=document.getElementById("labelSelect");
+const userPopup=document.getElementById("userPopup"); const assignPopup=document.getElementById("assignPopup"); const loginPopup=document.getElementById("loginPopup");
+const userListDiv=document.getElementById("userList"); const assignUserSelect=document.getElementById("assignUserSelect");
+const newUsername=document.getElementById("newUsername"); const newUserEmail=document.getElementById("newUserEmail"); const newUserPass=document.getElementById("newUserPass");
+const loginEmail=document.getElementById("loginEmail"); const loginPass=document.getElementById("loginPass"); const currentUserDiv=document.getElementById("currentUser"); const homepage=document.getElementById("homepage");
 
 const adminEmail="antonymbali96@gmail.com";
-
 let dataset=JSON.parse(localStorage.getItem("dataset"))||{};
 let imagesMeta=JSON.parse(localStorage.getItem("imagesMeta"))||{};
 let users=JSON.parse(localStorage.getItem("users"))||[];
-let currentImage=null;
-let currentUser=null;
-let img=new Image();
+let currentImage=null; let currentUser=null; let img=new Image();
+const labelColors={Car:"#ff3b3b",Bus:"#00ff99",Truck:"#3399ff",Pedestrian:"#ffff00",Train:"#ff00ff"};
 
-let scale=1, originX=0, originY=0;
-let drawing=false, resizing=false, panning=false;
-let startX,startY;
-let selectedIndex=-1;
-let resizeCorner=null;
-let panStartX, panStartY;
+function saveData(){ localStorage.setItem("dataset",JSON.stringify(dataset)); localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta)); localStorage.setItem("users",JSON.stringify(users)); localStorage.setItem("currentUser",JSON.stringify(currentUser)); }
 
-const labelColors={
-Car:"#ff3b3b",
-Bus:"#00ff99",
-Truck:"#3399ff",
-Pedestrian:"#ffff00",
-Train:"#ff00ff"
-};
+function showLogin(){ loginEmail.value=""; loginPass.value=""; loginPopup.style.display="block"; }
 
-/* ---------- SAVE DATA ---------- */
-function saveData(){
-    localStorage.setItem("dataset",JSON.stringify(dataset));
-    localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
-    localStorage.setItem("users",JSON.stringify(users));
-    localStorage.setItem("currentUser",JSON.stringify(currentUser));
-}
-
-/* ---------- LOGIN ---------- */
-function showLogin(){
-    loginEmail.value="";
-    loginName.value="";
-    loginPopup.style.display="block";
-}
-
-function loginOrSignup(){
+function login(){
     const email=loginEmail.value.trim();
-    const name=loginName.value.trim();
-    if(!email) return alert("Email required");
-
-    let user=users.find(u=>u.email===email);
-    if(user){
-        if(user.status==="waitlist" && email !== adminEmail){
-            alert("You are on waitlist. Access denied.");
-            loginPopup.style.display="none";
-            return;
-        }
-        currentUser=user;
-    }else{
-        if(!name) return alert("Name required for signup");
-        let newUser={name,email,status:"waitlist"};
-        users.push(newUser);
-        currentUser=newUser;
-        if(email !== adminEmail) alert("Account created. Wait for admin approval.");
-    }
-
-    if(email===adminEmail) currentUser.status="approved";
-
-    currentUserDiv.innerText="Logged in: "+currentUser.name+ (currentUser.status==="waitlist"?" (Waitlist)":"");
-    saveData();
-    loginPopup.style.display="none";
+    const pass=loginPass.value.trim();
+    if(!email||!pass) return alert("Email & password required");
+    let user=users.find(u=>u.email===email && u.pass===pass);
+    if(!user) return alert("Invalid credentials");
+    currentUser=user;
+    currentUserDiv.innerText="Logged in: "+user.name;
     homepage.style.display="none";
-
-    renderUserList();
-    if(currentUser.email===adminEmail) showAdminPopup();
+    loginPopup.style.display="none";
+    renderUserList(); renderImageList();
 }
 
-/* ---------- ADMIN POPUP ---------- */
-function showAdminPopup(){
-    pendingListDiv.innerHTML="";
-    users.filter(u=>u.status==="waitlist").forEach((u,i)=>{
-        const div=document.createElement("div");
-        div.innerHTML=`${u.name} (${u.email}) <button class="green" onclick="approveUser(${i})">Approve</button>`;
-        pendingListDiv.appendChild(div);
-    });
-    adminPopup.style.display="block";
-}
-
-function closeAdminPopup(){ adminPopup.style.display="none"; }
-
-function approveUser(index){
-    users[index].status="approved";
-    saveData();
-    renderUserList();
-    showAdminPopup();
-}
-
-/* ---------- IMAGE UPLOAD ---------- */
-imageLoader.addEventListener("change",e=>{
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    [...e.target.files].forEach(file=>{
-        const reader=new FileReader();
-        reader.onload=ev=>{
-            imagesMeta[file.name]={src:ev.target.result,complete:false,assignee:null};
-            dataset[file.name]=dataset[file.name]||[];
-            saveData();
-            renderImageList();
-        };
-        reader.readAsDataURL(file);
-    });
-});
-
-/* ---------- RENDER IMAGE LIST ---------- */
-function renderImageList(){
-    imageList.innerHTML="";
-    for(let name in imagesMeta){
-        const div=document.createElement("div");
-        div.className="imageItem";
-        div.innerText=name;
-        if(imagesMeta[name].complete) div.classList.add("complete");
-        if(currentImage===name) div.classList.add("active");
-        if(imagesMeta[name].assignee) div.innerText+=` (Assigned: ${imagesMeta[name].assignee})`;
-        div.onclick=()=>loadImage(name);
-        imageList.appendChild(div);
-    }
-}
-
-/* ---------- LOAD IMAGE ---------- */
-function loadImage(name){
-    if(currentUser && currentUser.status!=="approved") return alert("Access denied");
-    currentImage=name;
-    img.src=imagesMeta[name].src;
-    img.onload=()=>{
-        canvas.width=img.width;
-        canvas.height=img.height;
-        scale=1; originX=0; originY=0;
-        redraw();
-        updateSidebar();
-    };
-}
-
-/* ---------- USER MANAGEMENT ---------- */
-function showUserPopup(){
-    if(!currentUser || currentUser.email !== adminEmail) return alert("Access denied");
-    newUsername.value="";
-    newUserEmail.value="";
-    userPopup.style.display="block";
-}
-
+function showUserPopup(){ if(!currentUser || currentUser.email!==adminEmail) return alert("Access denied"); newUsername.value=""; newUserEmail.value=""; newUserPass.value=""; userPopup.style.display="block"; }
 function closeUserPopup(){ userPopup.style.display="none"; }
 
 function addCoworker(){
-    const name=newUsername.value.trim();
-    const email=newUserEmail.value.trim();
-    if(!name || !email) return alert("Name and email required");
-    if(users.find(u=>u.email===email)) return alert("Email already exists");
-    users.push({name,email,status:"waitlist"});
-    saveData();
-    renderUserList();
-    closeUserPopup();
+    const name=newUsername.value.trim(), email=newUserEmail.value.trim(), pass=newUserPass.value.trim();
+    if(!name||!email||!pass) return alert("All fields required");
+    if(users.find(u=>u.email===email)) return alert("Email exists");
+    users.push({name,email,pass}); saveData(); renderUserList(); closeUserPopup();
 }
 
-function renderUserList(){
-    userListDiv.innerHTML="";
-    users.forEach(u=>{
-        const div=document.createElement("div");
-        div.className="user-item";
-        div.innerText=`${u.name} (${u.status})`;
-        userListDiv.appendChild(div);
-    });
-}
+function renderUserList(){ userListDiv.innerHTML=""; users.forEach(u=>{ const div=document.createElement("div"); div.className="user-item"; div.innerText=u.name; userListDiv.appendChild(div); }); }
 
-/* ---------- ASSIGNMENT ---------- */
-function showAssignPopup(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    if(!currentImage) return alert("Select an image first.");
-    assignUserSelect.innerHTML="";
-    users.filter(u=>u.status==="approved").forEach(u=>{
-        const option=document.createElement("option");
-        option.value=u.name; option.innerText=u.name;
-        assignUserSelect.appendChild(option);
-    });
-    assignPopup.style.display="block";
-}
+function showAssignPopup(){ if(!currentUser || currentUser.email!==adminEmail) return alert("Access denied"); if(!currentImage) return alert("Select image first"); assignUserSelect.innerHTML=""; users.forEach(u=>{ if(u.email!==adminEmail){ const opt=document.createElement("option"); opt.value=u.email; opt.innerText=u.name; assignUserSelect.appendChild(opt); } }); assignPopup.style.display="block"; }
 
 function closeAssignPopup(){ assignPopup.style.display="none"; }
+function assignImage(){ const assignee=assignUserSelect.value; if(currentImage){ imagesMeta[currentImage].assignee=assignee; saveData(); renderImageList(); } closeAssignPopup(); }
 
-function assignImage(){
-    const assignee=assignUserSelect.value;
-    if(currentImage){
-        imagesMeta[currentImage].assignee=assignee;
-        saveData();
-        renderImageList();
-    }
-    closeAssignPopup();
-}
+imageLoader.addEventListener("change",e=>{ if(!currentUser) return alert("Login required"); [...e.target.files].forEach(file=>{ const reader=new FileReader(); reader.onload=ev=>{ imagesMeta[file.name]={src:ev.target.result,complete:false,assignee:null}; dataset[file.name]=dataset[file.name]||[]; saveData(); renderImageList(); }; reader.readAsDataURL(file); }); });
 
-/* ---------- LABELING ---------- */
-function applyLabel(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    dataset[currentImage][selectedIndex].label=labelSelect.value;
-    popup.style.display="none";
-    saveData();
-    redraw();
-    updateSidebar();
-}
-function deleteSelected(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    if(selectedIndex!==-1){
-        dataset[currentImage].splice(selectedIndex,1);
-        selectedIndex=-1;
-        saveData();
-        redraw();
-        updateSidebar();
-    }
-}
-function clearCurrent(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    dataset[currentImage]=[];
-    saveData();
-    redraw();
-    updateSidebar();
-}
-function markComplete(){
-    if(!currentUser || currentUser.status!=="approved") return alert("Access denied");
-    if(currentImage){
-        imagesMeta[currentImage].complete=true;
-        saveData();
-        renderImageList();
-    }
-}
-function updateSidebar(){
-    annotationList.innerHTML="";
-    if(!currentImage) return;
-    dataset[currentImage].forEach(box=>{
-        const div=document.createElement("div");
-        div.className="annotation-item";
-        div.style.borderLeft="5px solid "+labelColors[box.label];
-        div.innerText=box.label;
-        annotationList.appendChild(div);
-    });
-}
+function renderImageList(){ imageList.innerHTML=""; for(let name in imagesMeta){ const div=document.createElement("div"); div.className="imageItem"; div.innerText=name; if(imagesMeta[name].complete) div.classList.add("complete"); if(currentImage===name) div.classList.add("active"); if(imagesMeta[name].assignee) div.innerText+=` (Assigned: ${imagesMeta[name].assignee})`; div.onclick=()=>loadImage(name); imageList.appendChild(div); } }
 
-/* ---------- INITIAL RENDER ---------- */
-currentUser=JSON.parse(localStorage.getItem("currentUser"));
-if(!currentUser) homepage.style.display="flex";
-else{
-    if(currentUser.email===adminEmail) currentUser.status="approved";
-    currentUserDiv.innerText="Logged in: "+currentUser.name+ (currentUser.status==="waitlist"?" (Waitlist)":"");
-    homepage.style.display=(currentUser.status==="approved")?"none":"flex";
-}
+function loadImage(name){ currentImage=name; img.src=imagesMeta[name].src; img.onload=()=>{ canvas.width=img.width; canvas.height=img.height; redraw(); updateSidebar(); }; }
 
-renderImageList();
-renderUserList();
+function applyLabel(){ if(!currentUser) return alert("Login required"); dataset[currentImage][0]={label:labelSelect.value}; popup.style.display="none"; saveData(); updateSidebar(); }
+function deleteSelected(){ if(!currentUser) return alert("Login required"); if(currentImage){ dataset[currentImage]=[]; saveData(); updateSidebar(); } }
+function clearCurrent(){ if(!currentUser) return alert("Login required"); dataset[currentImage]=[]; saveData(); updateSidebar(); }
+function markComplete(){ if(!currentUser) return alert("Login required"); if(currentImage){ imagesMeta[currentImage].complete=true; saveData(); renderImageList(); } }
+function updateSidebar(){ annotationList.innerHTML=""; if(!currentImage) return; dataset[currentImage].forEach(box=>{ const div=document.createElement("div"); div.className="annotation-item"; div.style.borderLeft="5px solid "+labelColors[box.label]; div.innerText=box.label; annotationList.appendChild(div); }); }
+
+currentUser=JSON.parse(localStorage.getItem("currentUser")); if(currentUser){ homepage.style.display="none"; currentUserDiv.innerText="Logged in: "+currentUser.name; renderUserList(); renderImageList(); }
 </script>
 </body>
 </html>
