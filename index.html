@@ -24,12 +24,13 @@ body{
   z-index:1000;
 }
 
-/* UPDATED 2D BOX DRAWING IMAGE */
+/* ✅ LEFT SIDE IMAGE (2D BOX DRAWING) */
 #homeLeft{
   flex:1;
-  background:url('https://images.unsplash.com/photo-1581091870627-3f89d2a7d7c6?q=80&w=2070') center/cover no-repeat;
+  background:url('https://images.unsplash.com/photo-1603570419888-2c3b5c7c8a0d?q=80&w=2070') center/cover no-repeat;
 }
 
+/* ✅ RIGHT SIDE LOGIN */
 #homeRight{
   flex:1;
   display:flex;
@@ -211,7 +212,6 @@ function login(){
   renderImageList();
 }
 
-/* ✅ PASSWORD RESET DIRECTLY ON LOGIN PAGE */
 function forgotPassword(){
   const email = loginEmail.value.trim();
   if(!email) return alert("Enter your email first");
@@ -227,7 +227,6 @@ function forgotPassword(){
 
   user.pass = newPass;
   saveData();
-
   alert("Password successfully reset! You can now login.");
 }
 
