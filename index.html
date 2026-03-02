@@ -1,412 +1,333 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Antana Labeler - Production</title>
+    <meta charset="UTF-8">
+    <title>Antana Labeler - Production</title>
+    <style>
+        :root {
+            --bg-color: #0b0b0b;
+            --card-bg: #161616;
+            --accent-purple: #7b2ff7;
+            --accent-blue: #0d6efd;
+            --text-main: #ffffff;
+            --text-dim: #a0a0a0;
+        }
 
-<style>
-:root{
---bg-color:#0b0b0b;
---card-bg:#161616;
---accent-purple:#7b2ff7;
---accent-blue:#0d6efd;
---text-main:#ffffff;
---text-dim:#a0a0a0;
-}
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            font-size: 14px; /* Reduced base font size */
+        }
 
-body,html{
-margin:0;
-padding:0;
-font-family:'Segoe UI',sans-serif;
-background:var(--bg-color);
-color:var(--text-main);
-height:100vh;
-overflow:hidden;
-font-size:14px;
-}
+        /* ===== LOGIN PAGE ===== */
+        #loginPage {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+            position: fixed;
+            z-index: 2000;
+            background: var(--bg-color);
+        }
 
-/* LOGIN PAGE */
-#loginPage{
-display:flex;
-height:100vh;
-width:100%;
-position:fixed;
-z-index:2000;
-background:var(--bg-color);
-}
+        #loginLeft {
+            flex: 1.2;
+            background: url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
 
-#loginLeft{
-flex:1.2;
-background:url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;
-}
+        #loginLeft::after {
+            content: "Vehicle: Car [98%]";
+            position: absolute;
+            border: 1.5px solid #00ff00;
+            color: #00ff00;
+            padding: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            top: 40%; left: 30%;
+            background: rgba(0,0,0,0.5);
+        }
 
-#loginRight{
-flex:0.8;
-background:var(--accent-blue);
-display:flex;
-justify-content:center;
-align-items:center;
-}
+        #loginRight {
+            flex: 0.8;
+            background: var(--accent-blue);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
 
-.login-box{width:100%;max-width:300px;}
-input{width:100%;padding:10px;margin:8px 0;border-radius:4px;border:none;}
-.login-btn{width:100%;padding:10px;background:white;color:var(--accent-blue);border:none;font-weight:bold;cursor:pointer;border-radius:4px;}
+        .login-box { width: 100%; max-width: 300px; }
+        .login-box h2 { margin-bottom: 15px; font-size: 20px; }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 4px;
+            border: none;
+            outline: none;
+            font-size: 13px;
+        }
 
-/* NAV */
-#topNav{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:10px 25px;
-background:rgba(0,0,0,0.4);
-border-bottom:1px solid #1a1a1a;
-}
+        .login-btn {
+            width: 100%;
+            padding: 10px;
+            background: white;
+            color: var(--accent-blue);
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
 
-.profile-container{position:relative;cursor:pointer;}
+        /* ===== WORKSPACE LAYOUT ===== */
+        #topNav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 25px;
+            background: rgba(0,0,0,0.4);
+            border-bottom: 1px solid #1a1a1a;
+        }
 
-#profileDropdown{
-position:absolute;
-right:0;
-top:35px;
-background:#1a1a1a;
-border:1px solid #333;
-padding:12px;
-border-radius:6px;
-display:none;
-min-width:160px;
-z-index:100;
-}
+        .logo { font-weight: bold; font-size: 1.1rem; }
 
-/* DASHBOARD */
-#dashboard{
-max-width:1100px;
-margin:30px auto;
-width:90%;
-overflow-y:auto;
-height:calc(100vh - 120px);
-padding-bottom:60px;
-}
+        .profile-container {
+            position: relative;
+            cursor: pointer;
+        }
 
-.work-card{
-background:var(--card-bg);
-width:280px;
-border-radius:10px;
-padding:15px;
-border:1px solid #222;
-}
+        #profileDropdown {
+            position: absolute;
+            right: 0;
+            top: 35px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+            min-width: 160px;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
 
-.upload-area{
-margin-top:15px;
-border:1.5px dashed #333;
-border-radius:6px;
-padding:15px;
-text-align:center;
-cursor:pointer;
-}
+        #dashboard {
+            max-width: 1100px;
+            margin: 30px auto;
+            width: 90%;
+            overflow-y: auto;
+            height: calc(100vh - 120px);
+            padding-bottom: 60px;
+        }
 
-.continue-btn{
-background:var(--accent-purple);
-color:white;
-border:none;
-width:100%;
-padding:10px;
-border-radius:6px;
-margin-top:15px;
-font-weight:bold;
-cursor:pointer;
-}
+        h1 { font-size: 1.6rem; margin-bottom: 25px; font-weight: 500; }
 
-/* WORKSPACE FULL SCREEN */
-#workspacePage{
-display:none;
-position:fixed;
-top:50px;
-left:0;
-right:0;
-bottom:20px;
-background:#000;
-z-index:900;
-}
+        .work-card {
+            background: var(--card-bg);
+            width: 280px;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #222;
+        }
 
-#workspaceTop{
-position:absolute;
-top:10px;
-left:15px;
-z-index:1000;
-}
+        .upload-area {
+            margin-top: 15px;
+            border: 1.5px dashed #333;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+        }
 
-.complete-btn{
-background:#00c853;
-color:white;
-border:none;
-padding:6px 14px;
-font-weight:bold;
-cursor:pointer;
-border-radius:6px;
-}
+        .continue-btn {
+            background: var(--accent-purple);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
+        }
 
-#workzone{
-width:100%;
-height:100%;
-overflow:hidden;
-position:relative;
-cursor:grab;
-}
+        /* ===== NEW SESSIONS SECTION ===== */
+        .sessions-section {
+            margin-top: 40px;
+            opacity: 0.8;
+        }
+        .session-empty-img {
+            width: 100px;
+            margin: 20px 0;
+            filter: grayscale(1) invert(1);
+            opacity: 0.3;
+        }
 
-#canvas{
-position:absolute;
-top:0;
-left:0;
-}
-
-.label-popup{
-position:absolute;
-background:#1a1a1a;
-border:1px solid #333;
-padding:5px;
-z-index:2000;
-}
-
-/* FOOTER */
-.footer-bar{
-position:fixed;
-bottom:0;
-width:100%;
-background:var(--accent-purple);
-color:white;
-font-size:9px;
-padding:3px 10px;
-display:flex;
-justify-content:space-between;
-text-transform:uppercase;
-font-weight:bold;
-z-index:500;
-}
-</style>
+        /* ===== FOOTER ===== */
+        .footer-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: var(--accent-purple);
+            color: white;
+            font-size: 9px;
+            padding: 3px 10px;
+            display: flex;
+            justify-content: space-between;
+            text-transform: uppercase;
+            font-weight: bold;
+            z-index: 500;
+        }
+    </style>
 </head>
 <body>
 
-<div id="loginPage">
-<div id="loginLeft"></div>
-<div id="loginRight">
-<div class="login-box">
-<h2>Antana Login</h2>
-<input type="text" id="userName" placeholder="Full Name">
-<input type="email" id="userEmail" placeholder="Email Address">
-<input type="password" id="userPass" placeholder="Password">
-<button class="login-btn" onclick="handleLogin()">Sign In</button>
-</div>
-</div>
-</div>
+    <div id="loginPage">
+        <div id="loginLeft"></div>
+        <div id="loginRight">
+            <div class="login-box">
+                <h2>Antana Login</h2>
+                <input type="text" id="userName" placeholder="Full Name">
+                <input type="email" id="userEmail" placeholder="Email Address">
+                <input type="password" id="userPass" placeholder="Password">
+                <button class="login-btn" onclick="handleLogin()">Sign In</button>
+            </div>
+        </div>
+    </div>
 
-<div id="topNav">
-<div>a</div>
-<div class="profile-container" onclick="toggleProfile()">
-👤
-<div id="profileDropdown">
-<strong id="displayUserName">User</strong><br>
-<small id="displayUserEmail"></small>
-<hr>
-<button onclick="logout()" style="background:none;border:none;color:red;cursor:pointer;">Logout</button>
-</div>
-</div>
-</div>
+    <div id="topNav">
+        <div class="logo">a<span>&#129107;</span></div>
+        <div class="profile-container" onclick="toggleProfile()">
+            <span style="font-size: 18px;">👤</span>
+            <div id="profileDropdown">
+                <strong id="displayUserName" style="font-size: 13px;">User Name</strong><br>
+                <small id="displayUserEmail" style="color:gray; font-size: 11px;"></small>
+                <hr style="border:0; border-top:1px solid #333; margin:8px 0;">
+                <button onclick="logout()" style="background:none; border:none; color:#ff4444; cursor:pointer; padding:0; font-size: 12px;">Logout</button>
+            </div>
+        </div>
+    </div>
 
-<div id="dashboard">
-<h1 id="greetingText">Good evening!</h1>
+    <div id="dashboard">
+        <h1 id="greetingText">Good evening! ☁️</h1>
 
-<div class="work-card">
-<span><b>Upload New Dataset</b></span>
-<label class="upload-area">
-📁
-<input type="file" id="fileInput" accept="image/*">
-</label>
-<button class="continue-btn" onclick="startWork()">Continue →</button>
-</div>
-</div>
+        <span style="color:var(--text-dim); font-size: 0.8rem; margin-bottom:15px; display:block;">Available Work</span>
 
-<div id="workspacePage">
-<div id="workspaceTop">
-<button class="complete-btn" onclick="completeImage()">✔ Complete</button>
-</div>
-<div id="workzone">
-<canvas id="canvas"></canvas>
-</div>
-</div>
+        <div class="work-card">
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                <div style="background:#2a2a2a; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size: 14px;">🔨</div>
+                <div style="background:rgba(123, 47, 247, 0.2); color:var(--accent-purple); padding:3px 8px; border-radius:12px; font-size:10px; font-weight:bold;">In Progress</div>
+            </div>
 
-<div class="footer-bar">
-<span id="footerLeft">COWORKER: LOADING...</span>
-<span id="footerRight">COWORKER: LOADING...</span>
-</div>
+            <span style="font-weight:bold; display:block; font-size: 13px;">Upload New Dataset</span>
+            <p style="color:var(--text-dim); font-size:11px;">Select images to begin your private session.</p>
 
-<script>
-let currentUser=null;
-let canvas,ctx,img=new Image();
-let scale=1,originX=0,originY=0;
-let startX,startY,drawing=false,dragging=false;
-let boxes=[];
+            <label for="fileInput" class="upload-area">
+                <div style="font-size: 20px;">📁</div>
+                <div style="font-size: 10px; margin-top: 5px;">Click or Drop Files</div>
+                <input type="file" id="fileInput" multiple accept="image/*" onchange="updateUploadText(this)">
+            </label>
 
-function handleLogin(){
-const name=document.getElementById('userName').value;
-const email=document.getElementById('userEmail').value;
-if(!name||!email)return alert("Fill details");
-currentUser={name,email};
-localStorage.setItem("antana_user",JSON.stringify(currentUser));
-initDashboard();
-}
+            <button class="continue-btn" onclick="startWork()">Continue →</button>
+        </div>
 
-function initDashboard(){
-const saved=localStorage.getItem("antana_user");
-if(saved){
-currentUser=JSON.parse(saved);
-document.getElementById('loginPage').style.display='none';
-document.getElementById('displayUserName').innerText=currentUser.name;
-document.getElementById('displayUserEmail').innerText=currentUser.email;
-document.getElementById('footerLeft').innerText="COWORKER: "+currentUser.name;
-document.getElementById('footerRight').innerText="COWORKER: "+currentUser.name;
-}
-}
+        <div class="sessions-section">
+            <span style="color:var(--text-dim); font-size: 0.8rem;">Your Sessions</span>
+            <div style="text-align: center; padding: 40px 0;">
+                <img src="https://cdn-icons-png.flaticon.com/512/5089/5089691.png" class="session-empty-img" alt="Empty">
+                <div style="font-weight: bold; color: white;">No More Sessions</div>
+                <div style="font-size: 11px; color: var(--text-dim); margin-top: 5px;">All your completed tasks will appear here.</div>
+            </div>
+        </div>
+    </div>
 
-function toggleProfile(){
-let dd=document.getElementById('profileDropdown');
-dd.style.display=dd.style.display==="block"?"none":"block";
-}
+    <div class="footer-bar">
+        <span id="footerLeft">COWORKER: LOADING...</span>
+        <span id="footerRight">COWORKER: LOADING...</span>
+    </div>
 
-function startWork(){
-const file=document.getElementById('fileInput').files[0];
-if(!file)return alert("Upload image first");
+    <script>
+        let currentUser = null;
 
-document.getElementById('dashboard').style.display="none";
-document.getElementById('workspacePage').style.display="block";
+        // Auto-refresh page every 10 minutes to pick up new code changes
+        setTimeout(() => { location.reload(); }, 600000);
 
-canvas=document.getElementById("canvas");
-ctx=canvas.getContext("2d");
+        function updateGreeting() {
+            const now = new Date();
+            const hours = now.getHours();
+            let greet = "Good evening";
+            let icon = "🌙";
 
-let reader=new FileReader();
-reader.onload=e=>img.src=e.target.result;
-reader.readAsDataURL(file);
+            if (hours < 12) { greet = "Good morning"; icon = "☀️"; }
+            else if (hours < 17) { greet = "Good afternoon"; icon = "🌤️"; }
+            
+            const name = currentUser ? currentUser.name.split(' ')[0] : "Antony";
+            document.getElementById('greetingText').innerText = `${greet}, ${name}! ${icon}`;
+        }
 
-img.onload=function(){
-canvas.width=img.width;
-canvas.height=img.height;
-draw();
-}
+        function handleLogin() {
+            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value;
+            
+            if(!name || !email) return alert("Please fill in your details");
 
-initCanvasEvents();
-}
+            currentUser = { name, email };
+            localStorage.setItem("antana_user", JSON.stringify(currentUser));
+            initDashboard();
+        }
 
-function initCanvasEvents(){
+        function initDashboard() {
+            const saved = localStorage.getItem("antana_user");
+            if(saved) {
+                currentUser = JSON.parse(saved);
+                document.getElementById('loginPage').style.display = 'none';
+                
+                updateGreeting();
+                
+                document.getElementById('displayUserName').innerText = currentUser.name;
+                document.getElementById('displayUserEmail').innerText = currentUser.email;
+                
+                const footerText = `COWORKER: ${currentUser.name} • Antony Company`;
+                document.getElementById('footerLeft').innerText = footerText;
+                document.getElementById('footerRight').innerText = footerText;
+            }
+        }
 
-canvas.oncontextmenu=e=>e.preventDefault();
+        function toggleProfile() {
+            const dd = document.getElementById('profileDropdown');
+            dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+        }
 
-canvas.onmousedown=e=>{
-const rect=canvas.getBoundingClientRect();
-const x=(e.clientX-rect.left-originX)/scale;
-const y=(e.clientY-rect.top-originY)/scale;
+        function updateUploadText(input) {
+            if(input.files.length > 0) {
+                input.parentElement.querySelector('div:nth-child(2)').innerText = input.files.length + " files ready";
+            }
+        }
 
-if(e.button===0){ // LEFT CLICK DRAG
-dragging=true;
-}
-if(e.button===2){ // RIGHT CLICK DRAW
-drawing=true;
-startX=x;
-startY=y;
-}
-};
+        function startWork() {
+            const files = document.getElementById('fileInput').files;
+            if(files.length === 0) return alert("Please upload files first.");
+            alert("Workspace session created for " + currentUser.name);
+        }
 
-canvas.onmousemove=e=>{
-const rect=canvas.getBoundingClientRect();
-const x=(e.clientX-rect.left-originX)/scale;
-const y=(e.clientY-rect.top-originY)/scale;
+        function logout() {
+            localStorage.removeItem("antana_user");
+            location.reload();
+        }
 
-if(dragging){
-originX+=e.movementX;
-originY+=e.movementY;
-draw();
-}
-
-if(drawing){
-draw();
-ctx.strokeStyle="white";
-ctx.strokeRect(startX,startY,x-startX,y-startY);
-}
-};
-
-canvas.onmouseup=e=>{
-const rect=canvas.getBoundingClientRect();
-const x=(e.clientX-rect.left-originX)/scale;
-const y=(e.clientY-rect.top-originY)/scale;
-
-if(drawing){
-drawing=false;
-let box={x:startX,y:startY,w:x-startX,h:y-startY,label:null,color:null};
-boxes.push(box);
-showPopup(e.pageX,e.pageY,box);
-}
-dragging=false;
-};
-
-canvas.onwheel=e=>{
-e.preventDefault();
-scale+=e.deltaY*-0.001;
-scale=Math.min(Math.max(.5,scale),5);
-draw();
-};
-}
-
-function draw(){
-ctx.setTransform(scale,0,0,scale,originX,originY);
-ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
-ctx.drawImage(img,0,0);
-boxes.forEach(b=>{
-if(b.color){
-ctx.strokeStyle=b.color;
-ctx.strokeRect(b.x,b.y,b.w,b.h);
-}
-});
-}
-
-function showPopup(x,y,box){
-let popup=document.createElement("div");
-popup.className="label-popup";
-popup.style.left=x+"px";
-popup.style.top=y+"px";
-popup.innerHTML=`
-<select>
-<option>Select</option>
-<option value="bus" data-color="red">Bus</option>
-<option value="car" data-color="green">Car</option>
-<option value="motorcycle" data-color="blue">Motorcycle</option>
-<option value="train" data-color="yellow">Train</option>
-<option value="truck" data-color="purple">Truck</option>
-<option value="pedestrian" data-color="cyan">Pedestrian</option>
-<option value="unknown" data-color="gray">Unknown</option>
-</select>`;
-document.body.appendChild(popup);
-popup.querySelector("select").onchange=function(){
-box.label=this.value;
-box.color=this.options[this.selectedIndex].dataset.color;
-document.body.removeChild(popup);
-draw();
-};
-}
-
-function completeImage(){
-document.getElementById('workspacePage').style.display="none";
-document.getElementById('dashboard').style.display="block";
-boxes=[];
-scale=1;
-originX=0;
-originY=0;
-}
-
-function logout(){
-localStorage.removeItem("antana_user");
-location.reload();
-}
-
-window.onload=initDashboard;
-</script>
-
+        window.onload = initDashboard;
+    </script>
 </body>
 </html>
