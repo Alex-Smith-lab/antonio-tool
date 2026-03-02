@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Antana Labeler - Production</title>
-
 <style>
 :root{
 --bg:#0b0b0b;
@@ -17,11 +16,12 @@
 body,html{
 margin:0;
 padding:0;
-font-family:Segoe UI;
+font-family:Segoe UI,sans-serif;
 background:var(--bg);
-color:white;
+color:var(--white);
 height:100vh;
 overflow:hidden;
+font-size:14px;
 }
 
 /* LOGIN */
@@ -71,7 +71,7 @@ margin-top:70px;
 padding:20px;
 }
 .work-card{background:var(--card);padding:20px;width:280px;border-radius:8px;}
-.upload-area{margin-top:10px;border:1px dashed #333;padding:15px;text-align:center;cursor:pointer;}
+.upload-area{margin-top:10px;border:1.5px dashed #333;padding:15px;text-align:center;cursor:pointer;}
 .continue-btn{margin-top:15px;background:var(--purple);color:white;border:none;padding:10px;width:100%;cursor:pointer;border-radius:6px;}
 
 /* WORKSPACE */
@@ -85,32 +85,32 @@ right:0;
 background:black;
 }
 
-#leftPanel{
+/* RIGHT ANNOTATION PANEL */
+#rightPanel{
 position:absolute;
-left:0;
+right:0;
 top:0;
 bottom:0;
 width:250px;
 background:#111;
-border-right:1px solid #222;
+border-left:1px solid #222;
 overflow:auto;
 padding:10px;
-z-index:100;
+z-index:200;
 }
-#leftPanel h3{margin-top:0;}
+#rightPanel h3{margin-top:0;}
 #hidePanel{
 position:absolute;
-right:5px;
+left:5px;
 top:5px;
 cursor:pointer;
 color:red;
 }
-
 #showPanelBtn{
 position:absolute;
-left:5px;
+right:5px;
 top:5px;
-z-index:150;
+z-index:250;
 background:#222;
 border:none;
 color:white;
@@ -119,11 +119,12 @@ cursor:pointer;
 display:none;
 }
 
+/* TOP COMPLETE BUTTON */
 #workspaceTop{
 position:absolute;
 top:10px;
 left:10px;
-z-index:200;
+z-index:300;
 }
 .complete-btn{
 background:#00c853;
@@ -135,7 +136,8 @@ border-radius:6px;
 font-weight:bold;
 }
 
-#addBoxBtn{
+/* ADD/DELETE/UNDO TOOL */
+#boxControls{
 position:absolute;
 bottom:10px;
 left:10px;
@@ -145,19 +147,28 @@ border:none;
 color:white;
 padding:5px 8px;
 cursor:pointer;
+display:flex;
+gap:5px;
 }
 
+/* WORKZONE */
 #workzone{
 position:absolute;
-left:250px;
-right:0;
+left:0;
+right:250px;
 top:0;
 bottom:0;
 overflow:hidden;
 cursor:grab;
 }
-
-canvas{position:absolute;top:0;left:0;}
+canvas{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+object-fit:contain;
+}
 
 /* FOOTER */
 .footer-bar{
@@ -174,14 +185,18 @@ padding:3px 10px;
 font-weight:bold;
 }
 
-/* POPUP */
+/* LABEL POPUP */
 .label-popup{
 position:absolute;
 background:#111;
 border:1px solid #333;
 padding:5px;
-z-index:2000;
+z-index:1000;
+display:flex;
+flex-direction:column;
 }
+.label-popup select{margin-bottom:5px;}
+.label-popup button{background:red;color:white;border:none;padding:2px 5px;font-size:11px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -214,7 +229,7 @@ z-index:2000;
 
 <!-- DASHBOARD -->
 <div id="dashboard">
-<h2>Upload Dataset</h2>
+<h2 id="greetingText">Welcome!</h2>
 <div class="work-card">
 <label class="upload-area">
 <input type="file" id="fileInput" accept="image/*">
@@ -226,7 +241,7 @@ z-index:2000;
 
 <!-- WORKSPACE -->
 <div id="workspacePage">
-<div id="leftPanel">
+<div id="rightPanel">
 <span id="hidePanel" onclick="hidePanel()">❌</span>
 <h3>Annotations</h3>
 <div id="annotationList"></div>
@@ -238,7 +253,11 @@ z-index:2000;
 <button class="complete-btn" onclick="completeTask()">✔ Complete</button>
 </div>
 
-<button id="addBoxBtn" onclick="enableDraw()">+ Add Box</button>
+<div id="boxControls">
+<button onclick="enableDraw()">+ Add Box</button>
+<button onclick="deleteLastBox()">- Delete Last</button>
+<button onclick="undoLastBox()">⮪ Undo</button>
+</div>
 
 <div id="workzone">
 <canvas id="canvas"></canvas>
@@ -253,9 +272,7 @@ z-index:2000;
 <script>
 let currentUser=null;
 let canvas,ctx,img=new Image();
-let boxes=[];
-let drawingMode=false;
-let startX,startY;
+let boxes=[],history=[],drawing=false,startX,startY,drawMode=false;
 let scale=1,originX=0,originY=0;
 
 /* LOGIN */
@@ -276,11 +293,18 @@ displayUserName.innerText=currentUser.name;
 displayUserEmail.innerText=currentUser.email;
 footerLeft.innerText="COWORKER: "+currentUser.name;
 footerRight.innerText="COWORKER: "+currentUser.name;
+
+// Dynamic greeting
+let h=(new Date()).getHours();
+let greet="Good evening";
+if(h>=5 && h<11) greet="Good morning";
+else if(h>=11 && h<17) greet="Good afternoon";
+else if(h>=17 && h<23) greet="Good evening";
+else greet="Hi "+currentUser.name+", it's late! Take some rest!";
+greetingText.innerText=greet;
 }
 }
-function toggleProfile(){
-profileDropdown.style.display=profileDropdown.style.display==="block"?"none":"block";
-}
+function toggleProfile(){profileDropdown.style.display=profileDropdown.style.display==="block"?"none":"block";}
 function logout(){localStorage.clear();location.reload();}
 
 /* WORKSPACE */
@@ -304,104 +328,119 @@ img.onload=()=>{
 canvas.width=img.width;
 canvas.height=img.height;
 draw();
+loadBoxes();
 };
 
 initCanvas();
 }
 
-/* CANVAS */
+/* CANVAS EVENTS */
+let dragging=false;
 function initCanvas(){
-canvas.onmousedown=e=>{
-if(!drawingMode)return;
+canvas.ondblclick=e=>{
 const rect=canvas.getBoundingClientRect();
 startX=(e.clientX-rect.left-originX)/scale;
 startY=(e.clientY-rect.top-originY)/scale;
-canvas.onmouseup=ev=>{
-const x=(ev.clientX-rect.left-originX)/scale;
-const y=(ev.clientY-rect.top-originY)/scale;
-let box={x:startX,y:startY,w:x-startX,h:y-startY,label:null};
-boxes.push(box);
-saveState();
-showPopup(ev.pageX,ev.pageY,box);
-drawingMode=false;
+drawMode=true;
+drawing=true;
 };
+canvas.onmousemove=e=>{
+const rect=canvas.getBoundingClientRect();
+const x=(e.clientX-rect.left-originX)/scale;
+const y=(e.clientY-rect.top-originY)/scale;
+if(drawing){draw();ctx.strokeStyle="white";ctx.strokeRect(startX,startY,x-startX,y-startY);}
+if(dragging){originX+=e.movementX;originY+=e.movementY;draw();}
+};
+canvas.onmouseup=e=>{
+if(drawing){
+drawing=false;
+const rect=canvas.getBoundingClientRect();
+let x=(e.clientX-rect.left-originX)/scale;
+let y=(e.clientY-rect.top-originY)/scale;
+let box={x:startX,y:startY,w:x-startX,h:y-startY,label:"",id:Date.now()};
+boxes.push(box);history.push(JSON.stringify(boxes));
+saveBoxes();
+showLabelPopup(e.pageX,e.pageY,box);
+drawMode=false;
+updateAnnotationList();
+}
+dragging=false;
+};
+canvas.onmousedown=e=>{
+if(!drawMode) dragging=true;
+};
+canvas.onwheel=e=>{
+e.preventDefault();
+scale+=e.deltaY*-0.001;
+scale=Math.min(Math.max(.5,scale),5);
+draw();
 };
 }
 
+/* DRAW */
 function draw(){
 ctx.setTransform(scale,0,0,scale,originX,originY);
 ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
-ctx.drawImage(img,0,0);
+ctx.drawImage(img,0,0,canvas.width,canvas.height);
 boxes.forEach(b=>{
-ctx.strokeStyle="lime";
+ctx.strokeStyle=b.color||"lime";
 ctx.strokeRect(b.x,b.y,b.w,b.h);
+ctx.fillStyle=b.color||"lime";
+ctx.font="12px Arial";
+if(b.label)ctx.fillText(b.label,b.x,b.y-5);
 });
-updateList();
 }
 
-function enableDraw(){drawingMode=true;}
-
-function showPopup(x,y,box){
+/* LABEL POPUP */
+function showLabelPopup(x,y,box){
 let pop=document.createElement("div");
 pop.className="label-popup";
 pop.style.left=x+"px";
 pop.style.top=y+"px";
 pop.innerHTML=`
 <select>
-<option>Select</option>
-<option>Car</option>
-<option>Bus</option>
-<option>Truck</option>
-<option>Pedestrian</option>
+<option value="">Select</option>
+<option value="Car" data-color="green">Car</option>
+<option value="Bus" data-color="red">Bus</option>
+<option value="Truck" data-color="purple">Truck</option>
+<option value="Motorcycle" data-color="blue">Motorcycle</option>
+<option value="Pedestrian" data-color="cyan">Pedestrian</option>
+<option value="Unknown" data-color="gray">Unknown</option>
 </select>
-<button onclick="this.parentElement.remove()">Delete</button>
+<button onclick="deleteBox(${box.id});this.parentElement.remove()">Delete</button>
 `;
 document.body.appendChild(pop);
 pop.querySelector("select").onchange=function(){
 box.label=this.value;
-saveState();
-pop.remove();
+box.color=this.options[this.selectedIndex].dataset.color;
+saveBoxes();
 draw();
+pop.remove();
+updateAnnotationList();
 };
 }
 
-/* PANEL */
-function updateList(){
+/* BOX CONTROLS */
+function enableDraw(){drawMode=true;}
+function deleteLastBox(){if(boxes.length>0){boxes.pop();history.push(JSON.stringify(boxes));saveBoxes();draw();updateAnnotationList();}}
+function undoLastBox(){if(history.length>1){history.pop();boxes=JSON.parse(history[history.length-1]);saveBoxes();draw();updateAnnotationList();}}
+
+/* ANNOTATION PANEL */
+function updateAnnotationList(){
 annotationList.innerHTML="";
-boxes.forEach((b,i)=>{
-annotationList.innerHTML+=`<div>${i+1}. ${b.label||"Unlabeled"}</div>`;
+boxes.forEach(b=>{
+annotationList.innerHTML+=`<div>${b.label||"Unlabeled"}</div>`;
 });
 }
-function hidePanel(){
-leftPanel.style.display="none";
-workzone.style.left="0";
-showPanelBtn.style.display="block";
-}
-function showPanel(){
-leftPanel.style.display="block";
-workzone.style.left="250px";
-showPanelBtn.style.display="none";
-}
+function hidePanel(){rightPanel.style.display="none";workzone.style.right="0";showPanelBtn.style.display="block";}
+function showPanel(){rightPanel.style.display="block";workzone.style.right="250px";showPanelBtn.style.display="none";}
 
-/* SAVE STATE */
-function saveState(){
-localStorage.setItem("antana_boxes",JSON.stringify(boxes));
-}
-function loadState(){
-let imgData=localStorage.getItem("antana_image");
-let savedBoxes=localStorage.getItem("antana_boxes");
-if(imgData){
-dashboard.style.display="none";
-workspacePage.style.display="block";
-img.src=imgData;
-img.onload=()=>{
-canvas.width=img.width;
-canvas.height=img.height;
-draw();
-};
-}
-if(savedBoxes)boxes=JSON.parse(savedBoxes);
-}
+/* DELETE BOX */
+function deleteBox(id){boxes=boxes.filter(b=>b.id!==id);history.push(JSON.stringify(boxes));saveBoxes();draw();updateAnnotationList();}
+
+/* SAVE/LOAD */
+function saveBoxes(){localStorage.setItem("antana_boxes",JSON.stringify(boxes));}
+function loadBoxes(){let saved=localStorage.getItem("antana_boxes");if(saved){boxes=JSON.parse(saved);draw();updateAnnotationList();history.push(JSON.stringify(boxes));}}
 
 /* COMPLETE */
 function completeTask(){
@@ -410,12 +449,22 @@ localStorage.removeItem("antana_boxes");
 boxes=[];
 workspacePage.style.display="none";
 dashboard.style.display="block";
+drawMode=false;
 }
 
 /* INIT */
 window.onload=()=>{
 initDashboard();
-loadState();
+let imgData=localStorage.getItem("antana_image");
+if(imgData){
+dashboard.style.display="none";
+workspacePage.style.display="block";
+canvas=document.getElementById("canvas");
+ctx=canvas.getContext("2d");
+img.src=imgData;
+img.onload=()=>{canvas.width=img.width;canvas.height=img.height;draw();loadBoxes();};
+initCanvas();
+}
 };
 </script>
 </body>
