@@ -1,412 +1,238 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Antana Labeler - Production</title>
+    <meta charset="UTF-8">
+    <title>Antana Labeler - Production</title>
+    <style>
+        :root {
+            --bg-color: #0b0b0b;
+            --card-bg: #161616;
+            --accent-purple: #7b2ff7;
+            --text-main: #ffffff;
+            --text-dim: #a0a0a0;
+        }
 
-<style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#0f0f0f;
-  color:white;
-  display:flex;
-  height:100vh;
-  overflow:hidden;
-}
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-x: hidden;
+        }
 
-/* ===== LOGIN PAGE (UNCHANGED) ===== */
-#homepage{
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  display:flex;
-  z-index:1000;
-}
-#homeLeft{
-  flex:1;
-  background:url('https://images.unsplash.com/photo-1555949963-aa79dcee981c?q=80&w=2070') center/cover no-repeat;
-}
-#homeRight{
-  flex:1;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  background:#0d6efd;
-}
-#homeRight h1{ margin-bottom:30px; }
+        /* Top Navigation Bar */
+        #topNav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: rgba(0,0,0,0.2);
+        }
 
-input{
-  padding:10px;
-  margin:6px;
-  width:250px;
-  border-radius:5px;
-  border:none;
-}
+        .logo { font-weight: bold; font-size: 1.2rem; }
+        
+        /* Dashboard Container */
+        #dashboard {
+            max-width: 1200px;
+            margin: 40px auto;
+            width: 90%;
+        }
 
-/* ===== DARK MODERN DASHBOARD ===== */
-#leftPanel{
-  width:260px;
-  background:#151515;
-  border-right:1px solid #2c2c2c;
-  padding:15px;
-  overflow-y:auto;
-}
+        h1 { font-size: 2rem; margin-bottom: 40px; font-weight: 500; }
 
-#main{
-  flex:4;
-  display:flex;
-  flex-direction:column;
-}
+        .section-label {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            display: block;
+        }
 
-#toolbar{
-  padding:12px 20px;
-  background:#121212;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  border-bottom:1px solid #2a2a2a;
-}
+        /* Work Card (The "Available Work" replacement) */
+        .work-card {
+            background: var(--card-bg);
+            width: 320px;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #222;
+            transition: transform 0.2s;
+        }
 
-#toolbarLeft{
-  display:flex;
-  align-items:center;
-  gap:20px;
-}
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
 
-#toolbarRight{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
+        .icon-circle {
+            background: #2a2a2a;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
 
-#workspace{
-  flex:1;
-  background:#000;
-  position:relative;
-  overflow:hidden;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
+        .badge {
+            background: rgba(123, 47, 247, 0.2);
+            color: var(--accent-purple);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
 
-canvas{
-  background:black;
-  cursor:crosshair;
-}
+        .project-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: block;
+        }
 
-/* ===== RIGHT PANEL ===== */
-#rightPanel{
-  width:280px;
-  background:#151515;
-  border-left:1px solid #2c2c2c;
-  padding:15px;
-  overflow-y:auto;
-}
+        .project-id {
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            word-break: break-all;
+            line-height: 1.4;
+        }
 
-/* ===== IMAGE ITEMS ===== */
-.imageItem{
-  padding:8px;
-  cursor:pointer;
-  background:#1f1f1f;
-  margin-bottom:6px;
-  border-radius:6px;
-  transition:0.2s;
-}
-.imageItem:hover{ background:#292929; }
-.imageItem.active{background:#7b2ff7;}
-.imageItem.complete{background:#28a745;}
+        /* Upload Interaction */
+        .upload-area {
+            margin-top: 20px;
+            border: 2px dashed #333;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
 
-/* ===== BUTTONS ===== */
-button{
-  padding:6px 12px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  font-weight:500;
-}
-.green{background:#7b2ff7;color:white;}
-.red{background:#dc3545;color:white;}
-.gray{background:#444;color:white;}
-.blue{background:#0d6efd;color:white;}
+        .upload-area:hover {
+            border-color: var(--accent-purple);
+        }
 
-/* ===== PROFILE ===== */
-#profile{
-  position:relative;
-  cursor:pointer;
-}
-#profileBox{
-  position:absolute;
-  right:0;
-  top:35px;
-  background:#1f1f1f;
-  padding:12px;
-  width:220px;
-  border-radius:8px;
-  display:none;
-  border:1px solid #333;
-}
-#profileBox button{
-  width:100%;
-  margin-top:6px;
-}
+        #fileInput { display: none; }
 
-/* Greeting */
-#greeting{
-  position:absolute;
-  top:10px;
-  left:20px;
-  font-size:14px;
-  font-weight:bold;
-}
+        .continue-btn {
+            background: var(--accent-purple);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
 
-#labelPopup{
-  position:fixed;
-  background:#222;
-  padding:10px;
-  border:2px solid #555;
-  display:none;
-  z-index:1000;
-}
-</style>
+        /* Empty State (Sessions) */
+        .empty-state {
+            text-align: center;
+            margin-top: 80px;
+            color: var(--text-dim);
+        }
+
+        .empty-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* Footer Branding */
+        .footer-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: var(--accent-purple);
+            color: white;
+            font-size: 10px;
+            padding: 4px 10px;
+            display: flex;
+            justify-content: space-between;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
 </head>
-
 <body>
 
-<!-- LOGIN PAGE -->
-<div id="homepage">
-  <div id="homeLeft"></div>
-  <div id="homeRight">
-    <h1>Data Labeler Login</h1>
-    <input type="email" id="loginEmail" placeholder="Email">
-    <input type="text" id="loginName" placeholder="Full Name (new users)">
-    <input type="password" id="loginPass" placeholder="Password">
-    <button class="green" onclick="login()">Login / Sign Up</button>
-  </div>
-</div>
-
-<div id="greeting"></div>
-
-<!-- LEFT PANEL -->
-<div id="leftPanel">
-  <h3>Images</h3>
-  <input type="file" id="imageLoader" multiple accept="image/*"><br><br>
-  <div id="imageList"></div>
-</div>
-
-<!-- MAIN -->
-<div id="main">
-
-  <div id="toolbar">
-
-    <!-- LEFT -->
-    <div id="toolbarLeft">
-      <h2>Antana Labeler - Production</h2>
-    </div>
-
-    <!-- RIGHT -->
-    <div id="toolbarRight">
-      <button class="green" onclick="markComplete()">✔</button>
-      <button class="gray" onclick="clearCurrent()">🧹</button>
-      <button class="red" onclick="deleteSelected()">🗑</button>
-
-      <div id="profile" onclick="toggleProfile()">
-        👤
-        <div id="profileBox">
-          <div id="coworkerDetails"></div>
-          <button class="gray" onclick="logout()">Logout</button>
-          <button class="red" onclick="deleteAccount()">Delete Account</button>
+    <div id="topNav">
+        <div class="logo">a<span>&#129107;</span></div>
+        <div style="display:flex; gap:20px; opacity:0.7;">
+            <span>⛶</span> <span>💼</span> <span>☰</span> <span>$</span> <span>⚙</span> 👤
         </div>
-      </div>
     </div>
 
-  </div>
+    <div id="dashboard">
+        <h1 id="greetingText">Good evening, Antony! ☁️</h1>
 
-  <div id="workspace">
-    <canvas id="canvas"></canvas>
-  </div>
+        <span class="section-label">Available Work</span>
 
-</div>
+        <div class="work-card">
+            <div class="card-header">
+                <div class="icon-circle">🔨</div>
+                <div class="badge">In Progress</div>
+            </div>
 
-<div id="rightPanel">
-  <h3>Annotations</h3>
-  <div id="annotationList"></div>
-</div>
+            <span class="project-title">Upload New Dataset</span>
+            <p class="project-id">Select images to begin a new labeling session.</p>
 
-<div id="labelPopup">
-  <select id="labelSelect">
-    <option>Car</option>
-    <option>Bus</option>
-    <option>Truck</option>
-    <option>Pedestrian</option>
-    <option>Train</option>
-  </select>
-  <button onclick="applyLabel()">Apply</button>
-</div>
+            <label for="fileInput" class="upload-area" id="dropZone">
+                <div style="font-size: 24px;">📁</div>
+                <div style="font-size: 12px; margin-top: 8px;">Click or Drop Files</div>
+                <input type="file" id="fileInput" multiple accept="image/*">
+            </label>
 
-<script>
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-const imageLoader=document.getElementById("imageLoader");
-const imageList=document.getElementById("imageList");
-const annotationList=document.getElementById("annotationList");
-const popup=document.getElementById("labelPopup");
-const labelSelect=document.getElementById("labelSelect");
-const loginEmail=document.getElementById("loginEmail");
-const loginPass=document.getElementById("loginPass");
-const loginName=document.getElementById("loginName");
-const homepage=document.getElementById("homepage");
-const greetingDiv=document.getElementById("greeting");
+            <button class="continue-btn" onclick="startWork()">
+                Continue <span>→</span>
+            </button>
+        </div>
 
-let dataset=JSON.parse(localStorage.getItem("dataset"))||{};
-let imagesMeta=JSON.parse(localStorage.getItem("imagesMeta"))||{};
-let users=JSON.parse(localStorage.getItem("users"))||[];
-let currentImage=null;
-let currentUser=null;
-let img=new Image();
+        <div class="empty-state">
+            <span class="section-label" style="text-align: left;">Your Sessions</span>
+            <div class="empty-icon">🗂️</div>
+            <h3 style="color: white; margin-bottom: 5px;">No More Sessions</h3>
+            <p style="font-size: 13px;">Oh no! It looks like we don't have any more<br>sessions available for you. Check back soon.</p>
+        </div>
+    </div>
 
-let scale=1;
+    <div class="footer-bar">
+        <span>COWORKER: ANTONY MBALI • FB2905 [WASM | WEBGL]</span>
+        <span>COWORKER: ANTONY MBALI • FB2905 [WASM | WEBGL]</span>
+    </div>
 
-/* SAVE */
-function saveData(){
-  localStorage.setItem("dataset",JSON.stringify(dataset));
-  localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
-  localStorage.setItem("users",JSON.stringify(users));
-  localStorage.setItem("currentUser",JSON.stringify(currentUser));
-}
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const greetingText = document.getElementById('greetingText');
+        
+        // Load User Info
+        let currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        if(currentUser) {
+            greetingText.innerText = `Good evening, ${currentUser.name.split(' ')[0]}! ☁️`;
+        }
 
-/* LOGIN */
-function login(){
-  const email=loginEmail.value.trim();
-  const pass=loginPass.value.trim();
-  const name=loginName.value.trim();
-  if(!email||!pass) return alert("Email & password required");
+        // Handle File Selection
+        fileInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if(files.length > 0) {
+                alert(`${files.length} images staged for upload. Click Continue to enter Workspace.`);
+                // Here you would integrate with your existing 'imagesMeta' logic
+            }
+        });
 
-  let user=users.find(u=>u.email===email);
-  if(user){
-      if(user.pass!==pass) return alert("Wrong password");
-      currentUser=user;
-  } else {
-      if(!name) return alert("Enter full name for new account");
-      currentUser={name,email,pass};
-      users.push(currentUser);
-  }
-  saveData();
-  homepage.style.display="none";
-  greetingDiv.innerText="Welcome, "+currentUser.name;
-  document.getElementById("coworkerDetails").innerHTML=
-    "<strong>"+currentUser.name+"</strong><br>"+currentUser.email;
-  renderImageList();
-}
-
-/* PROFILE */
-function toggleProfile(){
-  const box=document.getElementById("profileBox");
-  box.style.display=box.style.display==="block"?"none":"block";
-}
-
-function logout(){
-  currentUser=null;
-  localStorage.removeItem("currentUser");
-  homepage.style.display="flex";
-  greetingDiv.innerText="";
-}
-
-function deleteAccount(){
-  users=users.filter(u=>u.email!==currentUser.email);
-  saveData();
-  logout();
-}
-
-/* ZOOM */
-canvas.addEventListener("wheel",function(e){
-  e.preventDefault();
-  const zoom=e.deltaY<0?1.1:0.9;
-  scale*=zoom;
-  redraw();
-});
-
-function redraw(){
-  ctx.setTransform(scale,0,0,scale,0,0);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(img.src) ctx.drawImage(img,0,0);
-}
-
-/* IMAGE */
-imageLoader.addEventListener("change",e=>{
-  if(!currentUser) return alert("Login required");
-  [...e.target.files].forEach(file=>{
-      const reader=new FileReader();
-      reader.onload=ev=>{
-          imagesMeta[file.name]={src:ev.target.result,complete:false};
-          dataset[file.name]=dataset[file.name]||[];
-          saveData();
-          renderImageList();
-      };
-      reader.readAsDataURL(file);
-  });
-});
-
-function renderImageList(){
-  imageList.innerHTML="";
-  for(let name in imagesMeta){
-      const div=document.createElement("div");
-      div.className="imageItem";
-      div.innerText=name;
-      if(currentImage===name) div.classList.add("active");
-      if(imagesMeta[name].complete) div.classList.add("complete");
-      div.onclick=()=>loadImage(name);
-      imageList.appendChild(div);
-  }
-}
-
-function loadImage(name){
-  currentImage=name;
-  img.src=imagesMeta[name].src;
-  img.onload=()=>{
-    canvas.width=img.width;
-    canvas.height=img.height;
-    scale=1;
-    redraw();
-  };
-}
-
-function applyLabel(){
-  if(!currentUser || !currentImage) return;
-  dataset[currentImage][0]={label:labelSelect.value};
-  popup.style.display="none";
-  saveData();
-}
-
-function deleteSelected(){
-  if(!currentImage) return;
-  dataset[currentImage]=[];
-  saveData();
-}
-
-function clearCurrent(){
-  if(!currentImage) return;
-  dataset[currentImage]=[];
-  saveData();
-}
-
-function markComplete(){
-  if(!currentImage) return;
-  imagesMeta[currentImage].complete=true;
-  saveData();
-  renderImageList();
-}
-
-currentUser=JSON.parse(localStorage.getItem("currentUser"));
-if(currentUser){
-  homepage.style.display="none";
-  greetingDiv.innerText="Welcome, "+currentUser.name;
-  document.getElementById("coworkerDetails").innerHTML=
-    "<strong>"+currentUser.name+"</strong><br>"+currentUser.email;
-  renderImageList();
-}
-</script>
-
+        function startWork() {
+            // Logic to redirect to your labeling canvas workspace
+            alert("Redirecting to Workspace...");
+            // window.location.href = 'workspace.html'; 
+        }
+    </script>
 </body>
 </html>
