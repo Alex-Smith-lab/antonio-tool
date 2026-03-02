@@ -1,333 +1,422 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Antana Labeler - Production</title>
-    <style>
-        :root {
-            --bg-color: #0b0b0b;
-            --card-bg: #161616;
-            --accent-purple: #7b2ff7;
-            --accent-blue: #0d6efd;
-            --text-main: #ffffff;
-            --text-dim: #a0a0a0;
-        }
+<meta charset="UTF-8">
+<title>Antana Labeler - Production</title>
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background: var(--bg-color);
-            color: var(--text-main);
-            height: 100vh;
-            overflow: hidden;
-            font-size: 14px; /* Reduced base font size */
-        }
+<style>
+:root{
+--bg:#0b0b0b;
+--card:#161616;
+--purple:#7b2ff7;
+--blue:#0d6efd;
+--white:#fff;
+--dim:#999;
+}
 
-        /* ===== LOGIN PAGE ===== */
-        #loginPage {
-            display: flex;
-            height: 100vh;
-            width: 100%;
-            position: fixed;
-            z-index: 2000;
-            background: var(--bg-color);
-        }
+body,html{
+margin:0;
+padding:0;
+font-family:Segoe UI;
+background:var(--bg);
+color:white;
+height:100vh;
+overflow:hidden;
+}
 
-        #loginLeft {
-            flex: 1.2;
-            background: url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
+/* LOGIN */
+#loginPage{
+display:flex;
+height:100vh;
+position:fixed;
+width:100%;
+z-index:2000;
+background:#000;
+}
+#loginLeft{flex:1.2;background:url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;}
+#loginRight{flex:.8;background:var(--blue);display:flex;align-items:center;justify-content:center;}
+.login-box{width:300px;}
+input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:4px;}
+.login-btn{width:100%;padding:10px;background:white;color:var(--blue);border:none;font-weight:bold;cursor:pointer;border-radius:4px;}
 
-        #loginLeft::after {
-            content: "Vehicle: Car [98%]";
-            position: absolute;
-            border: 1.5px solid #00ff00;
-            color: #00ff00;
-            padding: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            top: 40%; left: 30%;
-            background: rgba(0,0,0,0.5);
-        }
+/* NAV */
+#topNav{
+position:fixed;
+top:0;
+left:0;
+right:0;
+height:50px;
+background:#000;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:0 20px;
+z-index:1000;
+border-bottom:1px solid #222;
+}
+.profile-container{position:relative;cursor:pointer;}
+#profileDropdown{
+position:absolute;
+right:0;
+top:40px;
+background:#111;
+border:1px solid #333;
+padding:10px;
+display:none;
+}
 
-        #loginRight {
-            flex: 0.8;
-            background: var(--accent-blue);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-        }
+/* DASHBOARD */
+#dashboard{
+margin-top:70px;
+padding:20px;
+}
+.work-card{background:var(--card);padding:20px;width:280px;border-radius:8px;}
+.upload-area{margin-top:10px;border:1px dashed #333;padding:15px;text-align:center;cursor:pointer;}
+.continue-btn{margin-top:15px;background:var(--purple);color:white;border:none;padding:10px;width:100%;cursor:pointer;border-radius:6px;}
 
-        .login-box { width: 100%; max-width: 300px; }
-        .login-box h2 { margin-bottom: 15px; font-size: 20px; }
-        
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 8px 0;
-            border-radius: 4px;
-            border: none;
-            outline: none;
-            font-size: 13px;
-        }
+/* WORKSPACE */
+#workspacePage{
+display:none;
+position:fixed;
+top:50px;
+bottom:20px;
+left:0;
+right:0;
+background:black;
+}
 
-        .login-btn {
-            width: 100%;
-            padding: 10px;
-            background: white;
-            color: var(--accent-blue);
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-            margin-top: 10px;
-            font-size: 13px;
-        }
+#leftPanel{
+position:absolute;
+left:0;
+top:0;
+bottom:0;
+width:250px;
+background:#111;
+border-right:1px solid #222;
+overflow:auto;
+padding:10px;
+z-index:100;
+}
+#leftPanel h3{margin-top:0;}
+#hidePanel{
+position:absolute;
+right:5px;
+top:5px;
+cursor:pointer;
+color:red;
+}
 
-        /* ===== WORKSPACE LAYOUT ===== */
-        #topNav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 25px;
-            background: rgba(0,0,0,0.4);
-            border-bottom: 1px solid #1a1a1a;
-        }
+#showPanelBtn{
+position:absolute;
+left:5px;
+top:5px;
+z-index:150;
+background:#222;
+border:none;
+color:white;
+padding:4px 8px;
+cursor:pointer;
+display:none;
+}
 
-        .logo { font-weight: bold; font-size: 1.1rem; }
+#workspaceTop{
+position:absolute;
+top:10px;
+left:10px;
+z-index:200;
+}
+.complete-btn{
+background:#00c853;
+border:none;
+padding:6px 14px;
+color:white;
+cursor:pointer;
+border-radius:6px;
+font-weight:bold;
+}
 
-        .profile-container {
-            position: relative;
-            cursor: pointer;
-        }
+#addBoxBtn{
+position:absolute;
+bottom:10px;
+left:10px;
+font-size:11px;
+background:#222;
+border:none;
+color:white;
+padding:5px 8px;
+cursor:pointer;
+}
 
-        #profileDropdown {
-            position: absolute;
-            right: 0;
-            top: 35px;
-            background: #1a1a1a;
-            border: 1px solid #333;
-            padding: 12px;
-            border-radius: 6px;
-            display: none;
-            min-width: 160px;
-            z-index: 100;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
+#workzone{
+position:absolute;
+left:250px;
+right:0;
+top:0;
+bottom:0;
+overflow:hidden;
+cursor:grab;
+}
 
-        #dashboard {
-            max-width: 1100px;
-            margin: 30px auto;
-            width: 90%;
-            overflow-y: auto;
-            height: calc(100vh - 120px);
-            padding-bottom: 60px;
-        }
+canvas{position:absolute;top:0;left:0;}
 
-        h1 { font-size: 1.6rem; margin-bottom: 25px; font-weight: 500; }
+/* FOOTER */
+.footer-bar{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+height:20px;
+background:var(--purple);
+font-size:9px;
+display:flex;
+justify-content:space-between;
+padding:3px 10px;
+font-weight:bold;
+}
 
-        .work-card {
-            background: var(--card-bg);
-            width: 280px;
-            border-radius: 10px;
-            padding: 15px;
-            border: 1px solid #222;
-        }
-
-        .upload-area {
-            margin-top: 15px;
-            border: 1.5px dashed #333;
-            border-radius: 6px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-        }
-
-        .continue-btn {
-            background: var(--accent-purple);
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        /* ===== NEW SESSIONS SECTION ===== */
-        .sessions-section {
-            margin-top: 40px;
-            opacity: 0.8;
-        }
-        .session-empty-img {
-            width: 100px;
-            margin: 20px 0;
-            filter: grayscale(1) invert(1);
-            opacity: 0.3;
-        }
-
-        /* ===== FOOTER ===== */
-        .footer-bar {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: var(--accent-purple);
-            color: white;
-            font-size: 9px;
-            padding: 3px 10px;
-            display: flex;
-            justify-content: space-between;
-            text-transform: uppercase;
-            font-weight: bold;
-            z-index: 500;
-        }
-    </style>
+/* POPUP */
+.label-popup{
+position:absolute;
+background:#111;
+border:1px solid #333;
+padding:5px;
+z-index:2000;
+}
+</style>
 </head>
 <body>
 
-    <div id="loginPage">
-        <div id="loginLeft"></div>
-        <div id="loginRight">
-            <div class="login-box">
-                <h2>Antana Login</h2>
-                <input type="text" id="userName" placeholder="Full Name">
-                <input type="email" id="userEmail" placeholder="Email Address">
-                <input type="password" id="userPass" placeholder="Password">
-                <button class="login-btn" onclick="handleLogin()">Sign In</button>
-            </div>
-        </div>
-    </div>
+<!-- LOGIN -->
+<div id="loginPage">
+<div id="loginLeft"></div>
+<div id="loginRight">
+<div class="login-box">
+<h2>Antana Login</h2>
+<input id="userName" placeholder="Full Name">
+<input id="userEmail" placeholder="Email">
+<input id="userPass" placeholder="Password" type="password">
+<button class="login-btn" onclick="handleLogin()">Sign In</button>
+</div>
+</div>
+</div>
 
-    <div id="topNav">
-        <div class="logo">a<span>&#129107;</span></div>
-        <div class="profile-container" onclick="toggleProfile()">
-            <span style="font-size: 18px;">👤</span>
-            <div id="profileDropdown">
-                <strong id="displayUserName" style="font-size: 13px;">User Name</strong><br>
-                <small id="displayUserEmail" style="color:gray; font-size: 11px;"></small>
-                <hr style="border:0; border-top:1px solid #333; margin:8px 0;">
-                <button onclick="logout()" style="background:none; border:none; color:#ff4444; cursor:pointer; padding:0; font-size: 12px;">Logout</button>
-            </div>
-        </div>
-    </div>
+<!-- NAV -->
+<div id="topNav">
+<div></div>
+<div class="profile-container" onclick="toggleProfile()">👤
+<div id="profileDropdown">
+<strong id="displayUserName"></strong><br>
+<small id="displayUserEmail"></small><hr>
+<button onclick="logout()">Logout</button>
+</div>
+</div>
+</div>
 
-    <div id="dashboard">
-        <h1 id="greetingText">Good evening! ☁️</h1>
+<!-- DASHBOARD -->
+<div id="dashboard">
+<h2>Upload Dataset</h2>
+<div class="work-card">
+<label class="upload-area">
+<input type="file" id="fileInput" accept="image/*">
+📁 Select Image
+</label>
+<button class="continue-btn" onclick="startWork()">Continue →</button>
+</div>
+</div>
 
-        <span style="color:var(--text-dim); font-size: 0.8rem; margin-bottom:15px; display:block;">Available Work</span>
+<!-- WORKSPACE -->
+<div id="workspacePage">
+<div id="leftPanel">
+<span id="hidePanel" onclick="hidePanel()">❌</span>
+<h3>Annotations</h3>
+<div id="annotationList"></div>
+</div>
 
-        <div class="work-card">
-            <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-                <div style="background:#2a2a2a; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size: 14px;">🔨</div>
-                <div style="background:rgba(123, 47, 247, 0.2); color:var(--accent-purple); padding:3px 8px; border-radius:12px; font-size:10px; font-weight:bold;">In Progress</div>
-            </div>
+<button id="showPanelBtn" onclick="showPanel()">☰</button>
 
-            <span style="font-weight:bold; display:block; font-size: 13px;">Upload New Dataset</span>
-            <p style="color:var(--text-dim); font-size:11px;">Select images to begin your private session.</p>
+<div id="workspaceTop">
+<button class="complete-btn" onclick="completeTask()">✔ Complete</button>
+</div>
 
-            <label for="fileInput" class="upload-area">
-                <div style="font-size: 20px;">📁</div>
-                <div style="font-size: 10px; margin-top: 5px;">Click or Drop Files</div>
-                <input type="file" id="fileInput" multiple accept="image/*" onchange="updateUploadText(this)">
-            </label>
+<button id="addBoxBtn" onclick="enableDraw()">+ Add Box</button>
 
-            <button class="continue-btn" onclick="startWork()">Continue →</button>
-        </div>
+<div id="workzone">
+<canvas id="canvas"></canvas>
+</div>
+</div>
 
-        <div class="sessions-section">
-            <span style="color:var(--text-dim); font-size: 0.8rem;">Your Sessions</span>
-            <div style="text-align: center; padding: 40px 0;">
-                <img src="https://cdn-icons-png.flaticon.com/512/5089/5089691.png" class="session-empty-img" alt="Empty">
-                <div style="font-weight: bold; color: white;">No More Sessions</div>
-                <div style="font-size: 11px; color: var(--text-dim); margin-top: 5px;">All your completed tasks will appear here.</div>
-            </div>
-        </div>
-    </div>
+<div class="footer-bar">
+<span id="footerLeft"></span>
+<span id="footerRight"></span>
+</div>
 
-    <div class="footer-bar">
-        <span id="footerLeft">COWORKER: LOADING...</span>
-        <span id="footerRight">COWORKER: LOADING...</span>
-    </div>
+<script>
+let currentUser=null;
+let canvas,ctx,img=new Image();
+let boxes=[];
+let drawingMode=false;
+let startX,startY;
+let scale=1,originX=0,originY=0;
 
-    <script>
-        let currentUser = null;
+/* LOGIN */
+function handleLogin(){
+const name=userName.value;
+const email=userEmail.value;
+if(!name||!email)return alert("Fill all");
+currentUser={name,email};
+localStorage.setItem("antana_user",JSON.stringify(currentUser));
+initDashboard();
+}
+function initDashboard(){
+let saved=localStorage.getItem("antana_user");
+if(saved){
+currentUser=JSON.parse(saved);
+loginPage.style.display="none";
+displayUserName.innerText=currentUser.name;
+displayUserEmail.innerText=currentUser.email;
+footerLeft.innerText="COWORKER: "+currentUser.name;
+footerRight.innerText="COWORKER: "+currentUser.name;
+}
+}
+function toggleProfile(){
+profileDropdown.style.display=profileDropdown.style.display==="block"?"none":"block";
+}
+function logout(){localStorage.clear();location.reload();}
 
-        // Auto-refresh page every 10 minutes to pick up new code changes
-        setTimeout(() => { location.reload(); }, 600000);
+/* WORKSPACE */
+function startWork(){
+const file=fileInput.files[0];
+if(!file)return alert("Upload first");
+dashboard.style.display="none";
+workspacePage.style.display="block";
 
-        function updateGreeting() {
-            const now = new Date();
-            const hours = now.getHours();
-            let greet = "Good evening";
-            let icon = "🌙";
+canvas=document.getElementById("canvas");
+ctx=canvas.getContext("2d");
 
-            if (hours < 12) { greet = "Good morning"; icon = "☀️"; }
-            else if (hours < 17) { greet = "Good afternoon"; icon = "🌤️"; }
-            
-            const name = currentUser ? currentUser.name.split(' ')[0] : "Antony";
-            document.getElementById('greetingText').innerText = `${greet}, ${name}! ${icon}`;
-        }
+let reader=new FileReader();
+reader.onload=e=>{
+img.src=e.target.result;
+localStorage.setItem("antana_image",img.src);
+};
+reader.readAsDataURL(file);
 
-        function handleLogin() {
-            const name = document.getElementById('userName').value;
-            const email = document.getElementById('userEmail').value;
-            
-            if(!name || !email) return alert("Please fill in your details");
+img.onload=()=>{
+canvas.width=img.width;
+canvas.height=img.height;
+draw();
+};
 
-            currentUser = { name, email };
-            localStorage.setItem("antana_user", JSON.stringify(currentUser));
-            initDashboard();
-        }
+initCanvas();
+}
 
-        function initDashboard() {
-            const saved = localStorage.getItem("antana_user");
-            if(saved) {
-                currentUser = JSON.parse(saved);
-                document.getElementById('loginPage').style.display = 'none';
-                
-                updateGreeting();
-                
-                document.getElementById('displayUserName').innerText = currentUser.name;
-                document.getElementById('displayUserEmail').innerText = currentUser.email;
-                
-                const footerText = `COWORKER: ${currentUser.name} • Antony Company`;
-                document.getElementById('footerLeft').innerText = footerText;
-                document.getElementById('footerRight').innerText = footerText;
-            }
-        }
+/* CANVAS */
+function initCanvas(){
+canvas.onmousedown=e=>{
+if(!drawingMode)return;
+const rect=canvas.getBoundingClientRect();
+startX=(e.clientX-rect.left-originX)/scale;
+startY=(e.clientY-rect.top-originY)/scale;
+canvas.onmouseup=ev=>{
+const x=(ev.clientX-rect.left-originX)/scale;
+const y=(ev.clientY-rect.top-originY)/scale;
+let box={x:startX,y:startY,w:x-startX,h:y-startY,label:null};
+boxes.push(box);
+saveState();
+showPopup(ev.pageX,ev.pageY,box);
+drawingMode=false;
+};
+};
+}
 
-        function toggleProfile() {
-            const dd = document.getElementById('profileDropdown');
-            dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
-        }
+function draw(){
+ctx.setTransform(scale,0,0,scale,originX,originY);
+ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
+ctx.drawImage(img,0,0);
+boxes.forEach(b=>{
+ctx.strokeStyle="lime";
+ctx.strokeRect(b.x,b.y,b.w,b.h);
+});
+updateList();
+}
 
-        function updateUploadText(input) {
-            if(input.files.length > 0) {
-                input.parentElement.querySelector('div:nth-child(2)').innerText = input.files.length + " files ready";
-            }
-        }
+function enableDraw(){drawingMode=true;}
 
-        function startWork() {
-            const files = document.getElementById('fileInput').files;
-            if(files.length === 0) return alert("Please upload files first.");
-            alert("Workspace session created for " + currentUser.name);
-        }
+function showPopup(x,y,box){
+let pop=document.createElement("div");
+pop.className="label-popup";
+pop.style.left=x+"px";
+pop.style.top=y+"px";
+pop.innerHTML=`
+<select>
+<option>Select</option>
+<option>Car</option>
+<option>Bus</option>
+<option>Truck</option>
+<option>Pedestrian</option>
+</select>
+<button onclick="this.parentElement.remove()">Delete</button>
+`;
+document.body.appendChild(pop);
+pop.querySelector("select").onchange=function(){
+box.label=this.value;
+saveState();
+pop.remove();
+draw();
+};
+}
 
-        function logout() {
-            localStorage.removeItem("antana_user");
-            location.reload();
-        }
+/* PANEL */
+function updateList(){
+annotationList.innerHTML="";
+boxes.forEach((b,i)=>{
+annotationList.innerHTML+=`<div>${i+1}. ${b.label||"Unlabeled"}</div>`;
+});
+}
+function hidePanel(){
+leftPanel.style.display="none";
+workzone.style.left="0";
+showPanelBtn.style.display="block";
+}
+function showPanel(){
+leftPanel.style.display="block";
+workzone.style.left="250px";
+showPanelBtn.style.display="none";
+}
 
-        window.onload = initDashboard;
-    </script>
+/* SAVE STATE */
+function saveState(){
+localStorage.setItem("antana_boxes",JSON.stringify(boxes));
+}
+function loadState(){
+let imgData=localStorage.getItem("antana_image");
+let savedBoxes=localStorage.getItem("antana_boxes");
+if(imgData){
+dashboard.style.display="none";
+workspacePage.style.display="block";
+img.src=imgData;
+img.onload=()=>{
+canvas.width=img.width;
+canvas.height=img.height;
+draw();
+};
+}
+if(savedBoxes)boxes=JSON.parse(savedBoxes);
+}
+
+/* COMPLETE */
+function completeTask(){
+localStorage.removeItem("antana_image");
+localStorage.removeItem("antana_boxes");
+boxes=[];
+workspacePage.style.display="none";
+dashboard.style.display="block";
+}
+
+/* INIT */
+window.onload=()=>{
+initDashboard();
+loadState();
+};
+</script>
 </body>
 </html>
