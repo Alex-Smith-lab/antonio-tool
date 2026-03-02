@@ -38,7 +38,6 @@ background:var(--bg-color);
 #loginLeft{
 flex:1.2;
 background:url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;
-position:relative;
 }
 
 #loginRight{
@@ -117,15 +116,15 @@ font-weight:bold;
 cursor:pointer;
 }
 
-/* WORKSPACE */
+/* WORKSPACE FULL SCREEN */
 #workspacePage{
 display:none;
 position:fixed;
 top:50px;
 left:0;
-width:100%;
-height:calc(100vh - 80px);
-background:#111;
+right:0;
+bottom:20px;
+background:#000;
 z-index:900;
 }
 
@@ -218,7 +217,7 @@ z-index:500;
 
 <div class="work-card">
 <span><b>Upload New Dataset</b></span>
-<label for="fileInput" class="upload-area">
+<label class="upload-area">
 📁
 <input type="file" id="fileInput" accept="image/*">
 </label>
@@ -226,7 +225,6 @@ z-index:500;
 </div>
 </div>
 
-<!-- WORKSPACE -->
 <div id="workspacePage">
 <div id="workspaceTop">
 <button class="complete-btn" onclick="completeImage()">✔ Complete</button>
@@ -277,61 +275,83 @@ dd.style.display=dd.style.display==="block"?"none":"block";
 function startWork(){
 const file=document.getElementById('fileInput').files[0];
 if(!file)return alert("Upload image first");
+
 document.getElementById('dashboard').style.display="none";
 document.getElementById('workspacePage').style.display="block";
+
 canvas=document.getElementById("canvas");
 ctx=canvas.getContext("2d");
+
 let reader=new FileReader();
 reader.onload=e=>img.src=e.target.result;
 reader.readAsDataURL(file);
+
 img.onload=function(){
 canvas.width=img.width;
 canvas.height=img.height;
 draw();
 }
+
 initCanvasEvents();
 }
 
 function initCanvasEvents(){
+
+canvas.oncontextmenu=e=>e.preventDefault();
+
 canvas.onmousedown=e=>{
+const rect=canvas.getBoundingClientRect();
+const x=(e.clientX-rect.left-originX)/scale;
+const y=(e.clientY-rect.top-originY)/scale;
+
+if(e.button===0){ // LEFT CLICK DRAG
+dragging=true;
+}
+if(e.button===2){ // RIGHT CLICK DRAW
 drawing=true;
-startX=(e.offsetX-originX)/scale;
-startY=(e.offsetY-originY)/scale;
+startX=x;
+startY=y;
+}
 };
-canvas.onmouseup=e=>{
-if(!drawing)return;
-drawing=false;
-let endX=(e.offsetX-originX)/scale;
-let endY=(e.offsetY-originY)/scale;
-let box={x:startX,y:startY,w:endX-startX,h:endY-startY,label:null,color:null};
-boxes.push(box);
-showPopup(e.pageX,e.pageY,box);
-};
+
 canvas.onmousemove=e=>{
+const rect=canvas.getBoundingClientRect();
+const x=(e.clientX-rect.left-originX)/scale;
+const y=(e.clientY-rect.top-originY)/scale;
+
+if(dragging){
+originX+=e.movementX;
+originY+=e.movementY;
+draw();
+}
+
 if(drawing){
 draw();
 ctx.strokeStyle="white";
-ctx.strokeRect(startX,startY,(e.offsetX-originX)/scale-startX,(e.offsetY-originY)/scale-startY);
+ctx.strokeRect(startX,startY,x-startX,y-startY);
 }
 };
+
+canvas.onmouseup=e=>{
+const rect=canvas.getBoundingClientRect();
+const x=(e.clientX-rect.left-originX)/scale;
+const y=(e.clientY-rect.top-originY)/scale;
+
+if(drawing){
+drawing=false;
+let box={x:startX,y:startY,w:x-startX,h:y-startY,label:null,color:null};
+boxes.push(box);
+showPopup(e.pageX,e.pageY,box);
+}
+dragging=false;
+};
+
 canvas.onwheel=e=>{
 e.preventDefault();
 scale+=e.deltaY*-0.001;
 scale=Math.min(Math.max(.5,scale),5);
 draw();
 };
-canvas.oncontextmenu=e=>e.preventDefault();
-canvas.onmousedown=function(e){
-if(e.button===1){dragging=true;}
-};
-canvas.onmousemove=function(e){
-if(dragging){
-originX+=e.movementX;
-originY+=e.movementY;
-draw();
-}
-};
-canvas.onmouseup=function(){dragging=false;};
 }
 
 function draw(){
