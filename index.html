@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Antana Labeler - Production</title>
-
 <style>
 body{
   margin:0;
@@ -15,7 +14,7 @@ body{
   overflow:hidden;
 }
 
-/* LOGIN */
+/* ===== LOGIN HOMEPAGE (FULLSCREEN SPLIT) ===== */
 #homepage{
   position:fixed;
   top:0; left:0;
@@ -24,12 +23,13 @@ body{
   z-index:1000;
 }
 
-/* UPDATED 2D BOX DRAWING IMAGE */
+/* Left side image */
 #homeLeft{
   flex:1;
-  background:url('https://images.unsplash.com/photo-1581091870627-3f89d2a7d7c6?q=80&w=2070') center/cover no-repeat;
+  background:url('https://images.unsplash.com/photo-1555949963-aa79dcee981c?q=80&w=2070') center/cover no-repeat;
 }
 
+/* Right side login */
 #homeRight{
   flex:1;
   display:flex;
@@ -51,19 +51,8 @@ input{
   border:none;
 }
 
-button{
-  margin:3px;
-  padding:6px 10px;
-  border:none;
-  border-radius:4px;
-  cursor:pointer;
-}
-.green{background:#28a745;color:white;}
-.red{background:#dc3545;color:white;}
-.gray{background:#6c757d;color:white;}
-.blue{background:#007bff;color:white;}
+/* ===== WORKSPACE ===== */
 
-/* WORKSPACE */
 #leftPanel{
   width:250px;
   background:#181818;
@@ -105,7 +94,25 @@ canvas{
 }
 .imageItem.active{background:#007bff;}
 .imageItem.complete{background:#28a745;}
+.annotation-item{
+  font-size:12px;
+  padding:4px;
+  margin-bottom:4px;
+  background:#2c2c2c;
+}
+button{
+  margin:3px;
+  padding:6px 10px;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
+.green{background:#28a745;color:white;}
+.red{background:#dc3545;color:white;}
+.gray{background:#6c757d;color:white;}
+.blue{background:#007bff;color:white;}
 
+/* Greeting top-left */
 #greeting{
   position:absolute;
   top:10px;
@@ -113,19 +120,29 @@ canvas{
   font-size:15px;
   font-weight:bold;
 }
+
+#labelPopup{
+  position:fixed;
+  background:#222;
+  padding:10px;
+  border:2px solid #555;
+  display:none;
+  z-index:1000;
+}
 </style>
 </head>
 <body>
 
+<!-- LOGIN PAGE -->
 <div id="homepage">
   <div id="homeLeft"></div>
+
   <div id="homeRight">
     <h1>Data Labeler Login</h1>
     <input type="email" id="loginEmail" placeholder="Email">
     <input type="text" id="loginName" placeholder="Full Name (new users)">
     <input type="password" id="loginPass" placeholder="Password">
     <button class="green" onclick="login()">Login / Sign Up</button>
-    <button class="gray" onclick="forgotPassword()">Forgot Password?</button>
   </div>
 </div>
 
@@ -157,11 +174,25 @@ canvas{
   <div id="annotationList"></div>
 </div>
 
+<div id="labelPopup">
+  <select id="labelSelect">
+    <option>Car</option>
+    <option>Bus</option>
+    <option>Truck</option>
+    <option>Pedestrian</option>
+    <option>Train</option>
+  </select>
+  <button onclick="applyLabel()">Apply</button>
+</div>
+
 <script>
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
 const imageLoader=document.getElementById("imageLoader");
 const imageList=document.getElementById("imageList");
+const annotationList=document.getElementById("annotationList");
+const popup=document.getElementById("labelPopup");
+const labelSelect=document.getElementById("labelSelect");
 const loginEmail=document.getElementById("loginEmail");
 const loginPass=document.getElementById("loginPass");
 const loginName=document.getElementById("loginName");
@@ -171,24 +202,32 @@ const greetingDiv=document.getElementById("greeting");
 let dataset=JSON.parse(localStorage.getItem("dataset"))||{};
 let imagesMeta=JSON.parse(localStorage.getItem("imagesMeta"))||{};
 let users=JSON.parse(localStorage.getItem("users"))||[];
-let currentUser=null;
-let currentImage=null;
+let currentImage=null; 
+let currentUser=null; 
 let img=new Image();
 
-function saveData(){
+let scale=1;
+let originX=0;
+let originY=0;
+
+function saveData(){ 
   localStorage.setItem("dataset",JSON.stringify(dataset));
   localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
   localStorage.setItem("users",JSON.stringify(users));
   localStorage.setItem("currentUser",JSON.stringify(currentUser));
 }
 
+/* ===== GREETING BY TIME ===== */
 function getGreeting(name){
   const hour=new Date().getHours();
-  if(hour<12) return "Good Morning, "+name;
-  if(hour<18) return "Good Afternoon, "+name;
-  return "Good Evening, "+name;
+  let greet="Hello";
+  if(hour<12) greet="Good Morning";
+  else if(hour<18) greet="Good Afternoon";
+  else greet="Good Evening";
+  return `${greet}, ${name}`;
 }
 
+/* ===== LOGIN ===== */
 function login(){
   const email=loginEmail.value.trim();
   const pass=loginPass.value.trim();
@@ -200,35 +239,14 @@ function login(){
       if(user.pass!==pass) return alert("Wrong password");
       currentUser=user;
   } else {
-      if(!name) return alert("Enter full name");
+      if(!name) return alert("Enter full name for new account");
       currentUser={name,email,pass};
       users.push(currentUser);
   }
-
   saveData();
   homepage.style.display="none";
   greetingDiv.innerText=getGreeting(currentUser.name);
   renderImageList();
-}
-
-/* ✅ PASSWORD RESET DIRECTLY ON LOGIN PAGE */
-function forgotPassword(){
-  const email = loginEmail.value.trim();
-  if(!email) return alert("Enter your email first");
-
-  const user = users.find(u=>u.email===email);
-  if(!user) return alert("No account found with this email");
-
-  const newPass = prompt("Enter your NEW password");
-  if(!newPass) return alert("Password reset cancelled");
-
-  const confirmPass = prompt("Confirm your NEW password");
-  if(newPass !== confirmPass) return alert("Passwords do not match");
-
-  user.pass = newPass;
-  saveData();
-
-  alert("Password successfully reset! You can now login.");
 }
 
 function logout(){
@@ -245,6 +263,21 @@ function deleteAccount(){
   logout();
 }
 
+/* ===== FREE MOUSE WHEEL ZOOM ===== */
+canvas.addEventListener("wheel", function(e){
+  e.preventDefault();
+  const zoom= e.deltaY < 0 ? 1.1 : 0.9;
+  scale*=zoom;
+  redraw();
+});
+
+function redraw(){
+  ctx.setTransform(scale,0,0,scale,originX,originY);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(img.src) ctx.drawImage(img,0,0);
+}
+
+/* ===== IMAGE LOADING ===== */
 imageLoader.addEventListener("change",e=>{
   if(!currentUser) return alert("Login required");
   [...e.target.files].forEach(file=>{
@@ -265,6 +298,7 @@ function renderImageList(){
       const div=document.createElement("div");
       div.className="imageItem";
       div.innerText=name;
+      if(currentImage===name) div.classList.add("active");
       div.onclick=()=>loadImage(name);
       imageList.appendChild(div);
   }
@@ -276,15 +310,23 @@ function loadImage(name){
   img.onload=()=>{
     canvas.width=img.width;
     canvas.height=img.height;
-    ctx.drawImage(img,0,0);
+    scale=1;
+    redraw();
   };
 }
 
-function deleteSelected(){ if(!currentUser||!currentImage)return; dataset[currentImage]=[]; saveData();}
-function clearCurrent(){ if(!currentUser||!currentImage)return; dataset[currentImage]=[]; saveData();}
-function markComplete(){ if(!currentUser||!currentImage)return; imagesMeta[currentImage].complete=true; saveData();}
+function applyLabel(){
+  if(!currentUser || !currentImage) return;
+  dataset[currentImage][0]={label:labelSelect.value};
+  popup.style.display="none";
+  saveData();
+}
 
-currentUser=JSON.parse(localStorage.getItem("currentUser"));
+function deleteSelected(){ if(!currentUser || !currentImage) return; dataset[currentImage]=[]; saveData(); }
+function clearCurrent(){ if(!currentUser || !currentImage) return; dataset[currentImage]=[]; saveData(); }
+function markComplete(){ if(!currentUser || !currentImage) return; imagesMeta[currentImage].complete=true; saveData(); }
+
+currentUser=JSON.parse(localStorage.getItem("currentUser")); 
 if(currentUser){
   homepage.style.display="none";
   greetingDiv.innerText=getGreeting(currentUser.name);
