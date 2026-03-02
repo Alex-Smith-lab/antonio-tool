@@ -3,18 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <title>Antana Labeler - Production</title>
+
 <style>
 body{
   margin:0;
   font-family:Arial;
-  background:#111;
+  background:#0f0f0f;
   color:white;
   display:flex;
   height:100vh;
   overflow:hidden;
 }
 
-/* ===== LOGIN HOMEPAGE (FULLSCREEN SPLIT) ===== */
+/* ===== LOGIN PAGE (UNCHANGED) ===== */
 #homepage{
   position:fixed;
   top:0; left:0;
@@ -22,14 +23,10 @@ body{
   display:flex;
   z-index:1000;
 }
-
-/* Left side image */
 #homeLeft{
   flex:1;
   background:url('https://images.unsplash.com/photo-1555949963-aa79dcee981c?q=80&w=2070') center/cover no-repeat;
 }
-
-/* Right side login */
 #homeRight{
   flex:1;
   display:flex;
@@ -38,10 +35,7 @@ body{
   flex-direction:column;
   background:#0d6efd;
 }
-
-#homeRight h1{
-  margin-bottom:30px;
-}
+#homeRight h1{ margin-bottom:30px; }
 
 input{
   padding:10px;
@@ -51,73 +45,119 @@ input{
   border:none;
 }
 
-/* ===== WORKSPACE ===== */
-
+/* ===== DARK MODERN DASHBOARD ===== */
 #leftPanel{
-  width:250px;
-  background:#181818;
-  border-right:2px solid #333;
+  width:260px;
+  background:#151515;
+  border-right:1px solid #2c2c2c;
+  padding:15px;
   overflow-y:auto;
-  padding:10px;
 }
-#main{flex:4; display:flex; flex-direction:column;}
+
+#main{
+  flex:4;
+  display:flex;
+  flex-direction:column;
+}
+
 #toolbar{
-  padding:10px;
-  background:#1e1e1e;
+  padding:12px 20px;
+  background:#121212;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid #2a2a2a;
+}
+
+#toolbarLeft{
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+
+#toolbarRight{
   display:flex;
   align-items:center;
   gap:10px;
 }
+
 #workspace{
   flex:1;
-  background:black;
+  background:#000;
   position:relative;
   overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
 }
+
 canvas{
-  display:block;
   background:black;
   cursor:crosshair;
 }
+
+/* ===== RIGHT PANEL ===== */
 #rightPanel{
-  width:300px;
-  background:#1e1e1e;
-  border-left:2px solid #333;
-  padding:10px;
+  width:280px;
+  background:#151515;
+  border-left:1px solid #2c2c2c;
+  padding:15px;
   overflow-y:auto;
 }
-.imageItem{
-  padding:5px;
-  cursor:pointer;
-  background:#2a2a2a;
-  margin-bottom:5px;
-}
-.imageItem.active{background:#007bff;}
-.imageItem.complete{background:#28a745;}
-.annotation-item{
-  font-size:12px;
-  padding:4px;
-  margin-bottom:4px;
-  background:#2c2c2c;
-}
-button{
-  margin:3px;
-  padding:6px 10px;
-  border:none;
-  border-radius:4px;
-  cursor:pointer;
-}
-.green{background:#28a745;color:white;}
-.red{background:#dc3545;color:white;}
-.gray{background:#6c757d;color:white;}
-.blue{background:#007bff;color:white;}
 
-/* Greeting top-left */
+/* ===== IMAGE ITEMS ===== */
+.imageItem{
+  padding:8px;
+  cursor:pointer;
+  background:#1f1f1f;
+  margin-bottom:6px;
+  border-radius:6px;
+  transition:0.2s;
+}
+.imageItem:hover{ background:#292929; }
+.imageItem.active{background:#7b2ff7;}
+.imageItem.complete{background:#28a745;}
+
+/* ===== BUTTONS ===== */
+button{
+  padding:6px 12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:500;
+}
+.green{background:#7b2ff7;color:white;}
+.red{background:#dc3545;color:white;}
+.gray{background:#444;color:white;}
+.blue{background:#0d6efd;color:white;}
+
+/* ===== PROFILE ===== */
+#profile{
+  position:relative;
+  cursor:pointer;
+}
+#profileBox{
+  position:absolute;
+  right:0;
+  top:35px;
+  background:#1f1f1f;
+  padding:12px;
+  width:220px;
+  border-radius:8px;
+  display:none;
+  border:1px solid #333;
+}
+#profileBox button{
+  width:100%;
+  margin-top:6px;
+}
+
+/* Greeting */
 #greeting{
   position:absolute;
   top:10px;
   left:20px;
-  font-size:15px;
+  font-size:14px;
   font-weight:bold;
 }
 
@@ -131,12 +171,12 @@ button{
 }
 </style>
 </head>
+
 <body>
 
 <!-- LOGIN PAGE -->
 <div id="homepage">
   <div id="homeLeft"></div>
-
   <div id="homeRight">
     <h1>Data Labeler Login</h1>
     <input type="email" id="loginEmail" placeholder="Email">
@@ -148,25 +188,45 @@ button{
 
 <div id="greeting"></div>
 
+<!-- LEFT PANEL -->
 <div id="leftPanel">
   <h3>Images</h3>
   <input type="file" id="imageLoader" multiple accept="image/*"><br><br>
   <div id="imageList"></div>
-  <hr>
-  <button class="red" onclick="deleteAccount()">Delete My Account</button>
-  <button class="gray" onclick="logout()">Logout</button>
 </div>
 
+<!-- MAIN -->
 <div id="main">
+
   <div id="toolbar">
-    <h2 style="flex:1;">Antana Labeler - Production</h2>
-    <button class="green" onclick="markComplete()">Mark Complete</button>
-    <button class="red" onclick="deleteSelected()">Delete</button>
-    <button class="gray" onclick="clearCurrent()">Clear Image</button>
+
+    <!-- LEFT -->
+    <div id="toolbarLeft">
+      <h2>Antana Labeler - Production</h2>
+    </div>
+
+    <!-- RIGHT -->
+    <div id="toolbarRight">
+      <button class="green" onclick="markComplete()">✔</button>
+      <button class="gray" onclick="clearCurrent()">🧹</button>
+      <button class="red" onclick="deleteSelected()">🗑</button>
+
+      <div id="profile" onclick="toggleProfile()">
+        👤
+        <div id="profileBox">
+          <div id="coworkerDetails"></div>
+          <button class="gray" onclick="logout()">Logout</button>
+          <button class="red" onclick="deleteAccount()">Delete Account</button>
+        </div>
+      </div>
+    </div>
+
   </div>
+
   <div id="workspace">
     <canvas id="canvas"></canvas>
   </div>
+
 </div>
 
 <div id="rightPanel">
@@ -202,32 +262,21 @@ const greetingDiv=document.getElementById("greeting");
 let dataset=JSON.parse(localStorage.getItem("dataset"))||{};
 let imagesMeta=JSON.parse(localStorage.getItem("imagesMeta"))||{};
 let users=JSON.parse(localStorage.getItem("users"))||[];
-let currentImage=null; 
-let currentUser=null; 
+let currentImage=null;
+let currentUser=null;
 let img=new Image();
 
 let scale=1;
-let originX=0;
-let originY=0;
 
-function saveData(){ 
+/* SAVE */
+function saveData(){
   localStorage.setItem("dataset",JSON.stringify(dataset));
   localStorage.setItem("imagesMeta",JSON.stringify(imagesMeta));
   localStorage.setItem("users",JSON.stringify(users));
   localStorage.setItem("currentUser",JSON.stringify(currentUser));
 }
 
-/* ===== GREETING BY TIME ===== */
-function getGreeting(name){
-  const hour=new Date().getHours();
-  let greet="Hello";
-  if(hour<12) greet="Good Morning";
-  else if(hour<18) greet="Good Afternoon";
-  else greet="Good Evening";
-  return `${greet}, ${name}`;
-}
-
-/* ===== LOGIN ===== */
+/* LOGIN */
 function login(){
   const email=loginEmail.value.trim();
   const pass=loginPass.value.trim();
@@ -245,8 +294,16 @@ function login(){
   }
   saveData();
   homepage.style.display="none";
-  greetingDiv.innerText=getGreeting(currentUser.name);
+  greetingDiv.innerText="Welcome, "+currentUser.name;
+  document.getElementById("coworkerDetails").innerHTML=
+    "<strong>"+currentUser.name+"</strong><br>"+currentUser.email;
   renderImageList();
+}
+
+/* PROFILE */
+function toggleProfile(){
+  const box=document.getElementById("profileBox");
+  box.style.display=box.style.display==="block"?"none":"block";
 }
 
 function logout(){
@@ -257,27 +314,26 @@ function logout(){
 }
 
 function deleteAccount(){
-  if(!currentUser) return;
   users=users.filter(u=>u.email!==currentUser.email);
-  localStorage.setItem("users",JSON.stringify(users));
+  saveData();
   logout();
 }
 
-/* ===== FREE MOUSE WHEEL ZOOM ===== */
-canvas.addEventListener("wheel", function(e){
+/* ZOOM */
+canvas.addEventListener("wheel",function(e){
   e.preventDefault();
-  const zoom= e.deltaY < 0 ? 1.1 : 0.9;
+  const zoom=e.deltaY<0?1.1:0.9;
   scale*=zoom;
   redraw();
 });
 
 function redraw(){
-  ctx.setTransform(scale,0,0,scale,originX,originY);
+  ctx.setTransform(scale,0,0,scale,0,0);
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(img.src) ctx.drawImage(img,0,0);
 }
 
-/* ===== IMAGE LOADING ===== */
+/* IMAGE */
 imageLoader.addEventListener("change",e=>{
   if(!currentUser) return alert("Login required");
   [...e.target.files].forEach(file=>{
@@ -299,6 +355,7 @@ function renderImageList(){
       div.className="imageItem";
       div.innerText=name;
       if(currentImage===name) div.classList.add("active");
+      if(imagesMeta[name].complete) div.classList.add("complete");
       div.onclick=()=>loadImage(name);
       imageList.appendChild(div);
   }
@@ -322,16 +379,34 @@ function applyLabel(){
   saveData();
 }
 
-function deleteSelected(){ if(!currentUser || !currentImage) return; dataset[currentImage]=[]; saveData(); }
-function clearCurrent(){ if(!currentUser || !currentImage) return; dataset[currentImage]=[]; saveData(); }
-function markComplete(){ if(!currentUser || !currentImage) return; imagesMeta[currentImage].complete=true; saveData(); }
+function deleteSelected(){
+  if(!currentImage) return;
+  dataset[currentImage]=[];
+  saveData();
+}
 
-currentUser=JSON.parse(localStorage.getItem("currentUser")); 
+function clearCurrent(){
+  if(!currentImage) return;
+  dataset[currentImage]=[];
+  saveData();
+}
+
+function markComplete(){
+  if(!currentImage) return;
+  imagesMeta[currentImage].complete=true;
+  saveData();
+  renderImageList();
+}
+
+currentUser=JSON.parse(localStorage.getItem("currentUser"));
 if(currentUser){
   homepage.style.display="none";
-  greetingDiv.innerText=getGreeting(currentUser.name);
+  greetingDiv.innerText="Welcome, "+currentUser.name;
+  document.getElementById("coworkerDetails").innerHTML=
+    "<strong>"+currentUser.name+"</strong><br>"+currentUser.email;
   renderImageList();
 }
 </script>
+
 </body>
 </html>
