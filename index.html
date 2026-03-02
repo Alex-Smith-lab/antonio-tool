@@ -24,13 +24,12 @@ body{
   z-index:1000;
 }
 
-/* ✅ LEFT SIDE IMAGE (Highway Annotation Image) */
+/* UPDATED 2D BOX DRAWING IMAGE */
 #homeLeft{
   flex:1;
-  background:url('https://mindkosh.com/wp-content/uploads/2023/05/2D-3D-Data-Annotation.jpg') center/cover no-repeat;
+  background:url('https://images.unsplash.com/photo-1581091870627-3f89d2a7d7c6?q=80&w=2070') center/cover no-repeat;
 }
 
-/* RIGHT SIDE LOGIN */
 #homeRight{
   flex:1;
   display:flex;
@@ -212,6 +211,7 @@ function login(){
   renderImageList();
 }
 
+/* ✅ PASSWORD RESET DIRECTLY ON LOGIN PAGE */
 function forgotPassword(){
   const email = loginEmail.value.trim();
   if(!email) return alert("Enter your email first");
@@ -227,6 +227,7 @@ function forgotPassword(){
 
   user.pass = newPass;
   saveData();
+
   alert("Password successfully reset! You can now login.");
 }
 
