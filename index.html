@@ -37,7 +37,7 @@ background:#000;
 #loginLeft{flex:1.2;background:url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;}
 #loginRight{flex:.8;background:var(--blue);display:flex;align-items:center;justify-content:center;}
 .login-box{width:300px;}
-input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:4px;}
+input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:4px;color: #000;}
 .login-btn{width:100%;padding:10px;background:white;color:var(--blue);border:none;font-weight:bold;cursor:pointer;border-radius:4px;}
 
 /* NAV */
@@ -306,7 +306,7 @@ flex-direction:column;
 <div id="loginLeft"></div>
 <div id="loginRight">
 <div class="login-box">
-<h2>Antana Login</h2>
+<h2 style="margin-bottom: 20px;">Antana Login</h2>
 <input id="userName" placeholder="Full Name">
 <input id="userEmail" placeholder="Email">
 <input id="userPass" placeholder="Password" type="password">
@@ -412,67 +412,78 @@ function updateFileName(input) {
 }
 
 function handleLogin(){
-const name=document.getElementById("userName").value;
-const email=document.getElementById("userEmail").value;
-if(!name||!email)return alert("Fill all");
-currentUser={name,email};
-localStorage.setItem("antana_user",JSON.stringify(currentUser));
-initDashboard();
+    const nameInput = document.getElementById("userName").value;
+    const emailInput = document.getElementById("userEmail").value;
+    const passInput = document.getElementById("userPass").value;
+
+    if(!nameInput || !emailInput || !passInput) {
+        alert("Please fill in all fields (Name, Email, and Password)");
+        return;
+    }
+
+    currentUser = {name: nameInput, email: emailInput};
+    localStorage.setItem("antana_user", JSON.stringify(currentUser));
+    initDashboard();
 }
 
 function initDashboard(){
-let saved=localStorage.getItem("antana_user");
-document.getElementById("paymentDisplay").innerText = "$" + balance.toFixed(3);
+    let saved = localStorage.getItem("antana_user");
+    document.getElementById("paymentDisplay").innerText = "$" + balance.toFixed(3);
 
-if(saved){
-currentUser=JSON.parse(saved);
-document.getElementById("loginPage").style.display="none";
-document.getElementById("displayUserName").innerText=currentUser.name;
-document.getElementById("displayUserEmail").innerText=currentUser.email;
-document.getElementById("footerLeft").innerText="COWORKER: "+currentUser.name.toUpperCase() + " • ANTONY COMPANY";
-document.getElementById("footerRight").innerText="COWORKER: "+currentUser.name.toUpperCase() + " • FB2905 [WASM | WEBGL]";
+    if(saved){
+        currentUser = JSON.parse(saved);
+        document.getElementById("loginPage").style.display="none";
+        document.getElementById("displayUserName").innerText = currentUser.name;
+        document.getElementById("displayUserEmail").innerText = currentUser.email;
+        document.getElementById("footerLeft").innerText = "COWORKER: " + currentUser.name.toUpperCase() + " • ANTONY COMPANY";
+        document.getElementById("footerRight").innerText = "COWORKER: " + currentUser.name.toUpperCase() + " • FB2905 [WASM | WEBGL]";
 
-let h=(new Date()).getHours();
-let greet="Good evening";
-let emoji="☁️";
-if(h>=5 && h<11) { greet="Good morning"; emoji="☀️"; }
-else if(h>=11 && h<17) { greet="Good afternoon"; emoji="🌤️"; }
-else if(h>=17 && h<22) { greet="Good evening"; emoji="☁️"; }
-else { greet="Please get some sleep"; emoji="🌙"; }
+        let h = (new Date()).getHours();
+        let greet = "Good evening";
+        let emoji = "☁️";
+        if(h>=5 && h<11) { greet="Good morning"; emoji="☀️"; }
+        else if(h>=11 && h<17) { greet="Good afternoon"; emoji="🌤️"; }
+        else if(h>=17 && h<22) { greet="Good evening"; emoji="☁️"; }
+        else { greet="Please get some sleep"; emoji="🌙"; }
 
-document.getElementById("greetingText").innerText = greet + ", " + currentUser.name.split(' ')[0] + "! " + emoji;
+        document.getElementById("greetingText").innerText = greet + ", " + currentUser.name.split(' ')[0] + "! " + emoji;
+    }
 }
-}
+
 function toggleProfile(){
     let dd = document.getElementById("profileDropdown");
-    dd.style.display=dd.style.display==="block"?"none":"block";
+    dd.style.display = dd.style.display === "block" ? "none" : "block";
 }
-function logout(){localStorage.clear();location.reload();}
+
+function logout(){
+    localStorage.removeItem("antana_user");
+    location.reload();
+}
 
 function startWork(){
-const file=document.getElementById("fileInput").files[0];
-if(!file)return alert("Upload first");
-document.getElementById("dashboard").style.display="none";
-document.getElementById("workspacePage").style.display="block";
+    const file = document.getElementById("fileInput").files[0];
+    if(!file) return alert("Upload first");
+    document.getElementById("dashboard").style.display="none";
+    document.getElementById("workspacePage").style.display="block";
 
-canvas=document.getElementById("canvas");
-ctx=canvas.getContext("2d");
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
 
-let reader=new FileReader();
-reader.onload=e=>{
-img.src=e.target.result;
-localStorage.setItem("antana_image",img.src);
-};
-reader.readAsDataURL(file);
+    let reader = new FileReader();
+    reader.onload = e => {
+        img.src = e.target.result;
+        localStorage.setItem("antana_image", img.src);
+    };
+    reader.readAsDataURL(file);
 
-img.onload=()=>{
-canvas.width=img.width;
-canvas.height=img.height;
-draw();
-loadBoxes();
-};
+    img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        draw();
+        loadBoxes();
+    };
 
-initCanvas();
+    initCanvas();
 }
 
 function initCanvas(){
@@ -511,16 +522,16 @@ function initCanvas(){
             let y = (e.clientY - rect.top - originY) / scale;
 
             let box = {
-                x:startX,
-                y:startY,
-                w:x-startX,
-                h:y-startY,
-                label:"",
-                id:Date.now()
+                x: startX,
+                y: startY,
+                w: x - startX,
+                h: y - startY,
+                label: "",
+                id: Date.now()
             };
 
             boxes.push(box);
-            updateBalance(0.01); // Update payment for adding/adjusting box
+            updateBalance(0.01); // $0.01 per box adjust/add
             history.push(JSON.stringify(boxes));
             saveBoxes();
             showLabelPopup(e.pageX, e.pageY, box);
@@ -547,43 +558,43 @@ function initCanvas(){
 }
 
 function draw(){
-ctx.setTransform(scale,0,0,scale,originX,originY);
-ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
-ctx.drawImage(img,0,0,canvas.width,canvas.height);
-boxes.forEach(b=>{
-ctx.strokeStyle=b.color||"lime";
-ctx.strokeRect(b.x,b.y,b.w,b.h);
-ctx.fillStyle=b.color||"lime";
-ctx.font="12px Arial";
-if(b.label)ctx.fillText(b.label,b.x,b.y-5);
-});
+    ctx.setTransform(scale,0,0,scale,originX,originY);
+    ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    boxes.forEach(b=>{
+        ctx.strokeStyle = b.color || "lime";
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+        ctx.fillStyle = b.color || "lime";
+        ctx.font = "12px Arial";
+        if(b.label) ctx.fillText(b.label, b.x, b.y - 5);
+    });
 }
 
 function showLabelPopup(x,y,box){
-let pop=document.createElement("div");
-pop.className="label-popup";
-pop.style.left=x+"px";
-pop.style.top=y+"px";
-pop.innerHTML=`<select>
-<option value="">Select</option>
-<option value="Car" data-color="green">Car</option>
-<option value="Bus" data-color="red">Bus</option>
-<option value="Truck" data-color="purple">Truck</option>
-<option value="Motorcycle" data-color="blue">Motorcycle</option>
-<option value="Pedestrian" data-color="cyan">Pedestrian</option>
-<option value="Unknown" data-color="gray">Unknown</option>
-</select>
-<button onclick="deleteBox(${box.id});this.parentElement.remove()">Delete</button>`;
-document.body.appendChild(pop);
-pop.querySelector("select").onchange=function(){
-box.label=this.value;
-box.color=this.options[this.selectedIndex].dataset.color;
-updateBalance(0.001); // Update payment for labeling
-saveBoxes();
-draw();
-pop.remove();
-updateAnnotationList();
-};
+    let pop = document.createElement("div");
+    pop.className = "label-popup";
+    pop.style.left = x + "px";
+    pop.style.top = y + "px";
+    pop.innerHTML = `<select>
+    <option value="">Select</option>
+    <option value="Car" data-color="green">Car</option>
+    <option value="Bus" data-color="red">Bus</option>
+    <option value="Truck" data-color="purple">Truck</option>
+    <option value="Motorcycle" data-color="blue">Motorcycle</option>
+    <option value="Pedestrian" data-color="cyan">Pedestrian</option>
+    <option value="Unknown" data-color="gray">Unknown</option>
+    </select>
+    <button onclick="deleteBox(${box.id});this.parentElement.remove()">Delete</button>`;
+    document.body.appendChild(pop);
+    pop.querySelector("select").onchange = function(){
+        box.label = this.value;
+        box.color = this.options[this.selectedIndex].dataset.color;
+        updateBalance(0.001); // $0.001 per label
+        saveBoxes();
+        draw();
+        pop.remove();
+        updateAnnotationList();
+    };
 }
 
 function enableDraw(){drawMode=true;}
@@ -591,51 +602,60 @@ function deleteLastBox(){if(boxes.length>0){boxes.pop();history.push(JSON.string
 function undoLastBox(){if(history.length>1){history.pop();boxes=JSON.parse(history[history.length-1]);saveBoxes();draw();updateAnnotationList();}}
 
 function updateAnnotationList(){
-document.getElementById("annotationList").innerHTML="";
-boxes.forEach(b=>{
-document.getElementById("annotationList").innerHTML+=`<div>${b.label||"Unlabeled"}</div>`;
-});
+    document.getElementById("annotationList").innerHTML = "";
+    boxes.forEach(b=>{
+        document.getElementById("annotationList").innerHTML += `<div>${b.label||"Unlabeled"}</div>`;
+    });
 }
+
 function hidePanel(){
     document.getElementById("rightPanel").style.display="none";
     document.getElementById("workzone").style.right="0";
     document.getElementById("showPanelBtn").style.display="block";
 }
+
 function showPanel(){
     document.getElementById("rightPanel").style.display="block";
     document.getElementById("workzone").style.right="250px";
     document.getElementById("showPanelBtn").style.display="none";
 }
 
-function deleteBox(id){boxes=boxes.filter(b=>b.id!==id);history.push(JSON.stringify(boxes));saveBoxes();draw();updateAnnotationList();}
+function deleteBox(id){
+    boxes = boxes.filter(b=>b.id !== id);
+    history.push(JSON.stringify(boxes));
+    saveBoxes();
+    draw();
+    updateAnnotationList();
+}
+
 function saveBoxes(){localStorage.setItem("antana_boxes",JSON.stringify(boxes));}
 function loadBoxes(){let saved=localStorage.getItem("antana_boxes");if(saved){boxes=JSON.parse(saved);draw();updateAnnotationList();history.push(JSON.stringify(boxes));}}
 
 function completeTask(){
-localStorage.removeItem("antana_image");
-localStorage.removeItem("antana_boxes");
-boxes=[];
-document.getElementById("workspacePage").style.display="none";
-document.getElementById("dashboard").style.display="block";
-drawMode=false;
+    localStorage.removeItem("antana_image");
+    localStorage.removeItem("antana_boxes");
+    boxes=[];
+    document.getElementById("workspacePage").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+    drawMode=false;
 }
 
 window.onload=()=>{
-initDashboard();
-let imgData=localStorage.getItem("antana_image");
-if(imgData){
-document.getElementById("dashboard").style.display="none";
-document.getElementById("workspacePage").style.display="block";
-canvas=document.getElementById("canvas");
-ctx=canvas.getContext("2d");
-img.src=imgData;
-img.onload=()=>{canvas.width=img.width;canvas.height=img.height;draw();loadBoxes();};
-initCanvas();
-}
+    initDashboard();
+    let imgData = localStorage.getItem("antana_image");
+    if(imgData){
+        document.getElementById("dashboard").style.display="none";
+        document.getElementById("workspacePage").style.display="block";
+        canvas = document.getElementById("canvas");
+        ctx = canvas.getContext("2d");
+        img.src = imgData;
+        img.onload = () => {canvas.width=img.width;canvas.height=img.height;draw();loadBoxes();};
+        initCanvas();
+    }
 };
 </script>
 </body>
-</html>
+</html><!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -674,7 +694,7 @@ background:#000;
 #loginLeft{flex:1.2;background:url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;}
 #loginRight{flex:.8;background:var(--blue);display:flex;align-items:center;justify-content:center;}
 .login-box{width:300px;}
-input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:4px;}
+input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:4px;color: #000;}
 .login-btn{width:100%;padding:10px;background:white;color:var(--blue);border:none;font-weight:bold;cursor:pointer;border-radius:4px;}
 
 /* NAV */
@@ -691,6 +711,17 @@ align-items:center;
 padding:0 20px;
 z-index:1000;
 border-bottom:1px solid #222;
+}
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+#paymentDisplay {
+    color: #00c853;
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 16px;
 }
 .profile-container{position:relative;cursor:pointer;}
 #profileDropdown{
@@ -932,7 +963,7 @@ flex-direction:column;
 <div id="loginLeft"></div>
 <div id="loginRight">
 <div class="login-box">
-<h2>Antana Login</h2>
+<h2 style="margin-bottom: 20px;">Antana Login</h2>
 <input id="userName" placeholder="Full Name">
 <input id="userEmail" placeholder="Email">
 <input id="userPass" placeholder="Password" type="password">
@@ -943,12 +974,15 @@ flex-direction:column;
 
 <div id="topNav">
 <div class="logo" style="font-weight: bold; font-size: 18px;">a<span style="color:var(--purple)">⌵</span></div>
-<div class="profile-container" onclick="toggleProfile()">👤
-<div id="profileDropdown">
-<strong id="displayUserName"></strong><br>
-<small id="displayUserEmail"></small><hr style="border:0; border-top:1px solid #333">
-<button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; width:100%; text-align:left;">Logout</button>
-</div>
+<div class="nav-right">
+    <div id="paymentDisplay">$0.000</div>
+    <div class="profile-container" onclick="toggleProfile()">👤
+        <div id="profileDropdown">
+        <strong id="displayUserName"></strong><br>
+        <small id="displayUserEmail"></small><hr style="border:0; border-top:1px solid #333">
+        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; width:100%; text-align:left;">Logout</button>
+        </div>
+    </div>
 </div>
 </div>
 
@@ -1021,6 +1055,13 @@ let currentUser=null;
 let canvas,ctx,img=new Image();
 let boxes=[],history=[],drawing=false,dragging=false,startX,startY,drawMode=false;
 let scale=1,originX=0,originY=0;
+let balance = parseFloat(localStorage.getItem("antana_balance")) || 0;
+
+function updateBalance(amount) {
+    balance += amount;
+    localStorage.setItem("antana_balance", balance.toFixed(4));
+    document.getElementById("paymentDisplay").innerText = "$" + balance.toFixed(3);
+}
 
 function updateFileName(input) {
     const fileName = input.files[0] ? input.files[0].name : "Click or Drop Files";
@@ -1028,65 +1069,78 @@ function updateFileName(input) {
 }
 
 function handleLogin(){
-const name=document.getElementById("userName").value;
-const email=document.getElementById("userEmail").value;
-if(!name||!email)return alert("Fill all");
-currentUser={name,email};
-localStorage.setItem("antana_user",JSON.stringify(currentUser));
-initDashboard();
+    const nameInput = document.getElementById("userName").value;
+    const emailInput = document.getElementById("userEmail").value;
+    const passInput = document.getElementById("userPass").value;
+
+    if(!nameInput || !emailInput || !passInput) {
+        alert("Please fill in all fields (Name, Email, and Password)");
+        return;
+    }
+
+    currentUser = {name: nameInput, email: emailInput};
+    localStorage.setItem("antana_user", JSON.stringify(currentUser));
+    initDashboard();
 }
 
 function initDashboard(){
-let saved=localStorage.getItem("antana_user");
-if(saved){
-currentUser=JSON.parse(saved);
-document.getElementById("loginPage").style.display="none";
-document.getElementById("displayUserName").innerText=currentUser.name;
-document.getElementById("displayUserEmail").innerText=currentUser.email;
-document.getElementById("footerLeft").innerText="COWORKER: "+currentUser.name.toUpperCase() + " • ANTONY COMPANY";
-document.getElementById("footerRight").innerText="COWORKER: "+currentUser.name.toUpperCase() + " • FB2905 [WASM | WEBGL]";
+    let saved = localStorage.getItem("antana_user");
+    document.getElementById("paymentDisplay").innerText = "$" + balance.toFixed(3);
 
-let h=(new Date()).getHours();
-let greet="Good evening";
-let emoji="☁️";
-if(h>=5 && h<11) { greet="Good morning"; emoji="☀️"; }
-else if(h>=11 && h<17) { greet="Good afternoon"; emoji="🌤️"; }
-else if(h>=17 && h<22) { greet="Good evening"; emoji="☁️"; }
-else { greet="Please get some sleep"; emoji="🌙"; }
+    if(saved){
+        currentUser = JSON.parse(saved);
+        document.getElementById("loginPage").style.display="none";
+        document.getElementById("displayUserName").innerText = currentUser.name;
+        document.getElementById("displayUserEmail").innerText = currentUser.email;
+        document.getElementById("footerLeft").innerText = "COWORKER: " + currentUser.name.toUpperCase() + " • ANTONY COMPANY";
+        document.getElementById("footerRight").innerText = "COWORKER: " + currentUser.name.toUpperCase() + " • FB2905 [WASM | WEBGL]";
 
-document.getElementById("greetingText").innerText = greet + ", " + currentUser.name.split(' ')[0] + "! " + emoji;
+        let h = (new Date()).getHours();
+        let greet = "Good evening";
+        let emoji = "☁️";
+        if(h>=5 && h<11) { greet="Good morning"; emoji="☀️"; }
+        else if(h>=11 && h<17) { greet="Good afternoon"; emoji="🌤️"; }
+        else if(h>=17 && h<22) { greet="Good evening"; emoji="☁️"; }
+        else { greet="Please get some sleep"; emoji="🌙"; }
+
+        document.getElementById("greetingText").innerText = greet + ", " + currentUser.name.split(' ')[0] + "! " + emoji;
+    }
 }
-}
+
 function toggleProfile(){
     let dd = document.getElementById("profileDropdown");
-    dd.style.display=dd.style.display==="block"?"none":"block";
+    dd.style.display = dd.style.display === "block" ? "none" : "block";
 }
-function logout(){localStorage.clear();location.reload();}
+
+function logout(){
+    localStorage.removeItem("antana_user");
+    location.reload();
+}
 
 function startWork(){
-const file=document.getElementById("fileInput").files[0];
-if(!file)return alert("Upload first");
-document.getElementById("dashboard").style.display="none";
-document.getElementById("workspacePage").style.display="block";
+    const file = document.getElementById("fileInput").files[0];
+    if(!file) return alert("Upload first");
+    document.getElementById("dashboard").style.display="none";
+    document.getElementById("workspacePage").style.display="block";
 
-canvas=document.getElementById("canvas");
-ctx=canvas.getContext("2d");
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
 
-let reader=new FileReader();
-reader.onload=e=>{
-img.src=e.target.result;
-localStorage.setItem("antana_image",img.src);
-};
-reader.readAsDataURL(file);
+    let reader = new FileReader();
+    reader.onload = e => {
+        img.src = e.target.result;
+        localStorage.setItem("antana_image", img.src);
+    };
+    reader.readAsDataURL(file);
 
-img.onload=()=>{
-canvas.width=img.width;
-canvas.height=img.height;
-draw();
-loadBoxes();
-};
+    img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        draw();
+        loadBoxes();
+    };
 
-initCanvas();
+    initCanvas();
 }
 
 function initCanvas(){
@@ -1125,15 +1179,16 @@ function initCanvas(){
             let y = (e.clientY - rect.top - originY) / scale;
 
             let box = {
-                x:startX,
-                y:startY,
-                w:x-startX,
-                h:y-startY,
-                label:"",
-                id:Date.now()
+                x: startX,
+                y: startY,
+                w: x - startX,
+                h: y - startY,
+                label: "",
+                id: Date.now()
             };
 
             boxes.push(box);
+            updateBalance(0.01); // $0.01 per box adjust/add
             history.push(JSON.stringify(boxes));
             saveBoxes();
             showLabelPopup(e.pageX, e.pageY, box);
@@ -1160,42 +1215,43 @@ function initCanvas(){
 }
 
 function draw(){
-ctx.setTransform(scale,0,0,scale,originX,originY);
-ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
-ctx.drawImage(img,0,0,canvas.width,canvas.height);
-boxes.forEach(b=>{
-ctx.strokeStyle=b.color||"lime";
-ctx.strokeRect(b.x,b.y,b.w,b.h);
-ctx.fillStyle=b.color||"lime";
-ctx.font="12px Arial";
-if(b.label)ctx.fillText(b.label,b.x,b.y-5);
-});
+    ctx.setTransform(scale,0,0,scale,originX,originY);
+    ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    boxes.forEach(b=>{
+        ctx.strokeStyle = b.color || "lime";
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+        ctx.fillStyle = b.color || "lime";
+        ctx.font = "12px Arial";
+        if(b.label) ctx.fillText(b.label, b.x, b.y - 5);
+    });
 }
 
 function showLabelPopup(x,y,box){
-let pop=document.createElement("div");
-pop.className="label-popup";
-pop.style.left=x+"px";
-pop.style.top=y+"px";
-pop.innerHTML=`<select>
-<option value="">Select</option>
-<option value="Car" data-color="green">Car</option>
-<option value="Bus" data-color="red">Bus</option>
-<option value="Truck" data-color="purple">Truck</option>
-<option value="Motorcycle" data-color="blue">Motorcycle</option>
-<option value="Pedestrian" data-color="cyan">Pedestrian</option>
-<option value="Unknown" data-color="gray">Unknown</option>
-</select>
-<button onclick="deleteBox(${box.id});this.parentElement.remove()">Delete</button>`;
-document.body.appendChild(pop);
-pop.querySelector("select").onchange=function(){
-box.label=this.value;
-box.color=this.options[this.selectedIndex].dataset.color;
-saveBoxes();
-draw();
-pop.remove();
-updateAnnotationList();
-};
+    let pop = document.createElement("div");
+    pop.className = "label-popup";
+    pop.style.left = x + "px";
+    pop.style.top = y + "px";
+    pop.innerHTML = `<select>
+    <option value="">Select</option>
+    <option value="Car" data-color="green">Car</option>
+    <option value="Bus" data-color="red">Bus</option>
+    <option value="Truck" data-color="purple">Truck</option>
+    <option value="Motorcycle" data-color="blue">Motorcycle</option>
+    <option value="Pedestrian" data-color="cyan">Pedestrian</option>
+    <option value="Unknown" data-color="gray">Unknown</option>
+    </select>
+    <button onclick="deleteBox(${box.id});this.parentElement.remove()">Delete</button>`;
+    document.body.appendChild(pop);
+    pop.querySelector("select").onchange = function(){
+        box.label = this.value;
+        box.color = this.options[this.selectedIndex].dataset.color;
+        updateBalance(0.001); // $0.001 per label
+        saveBoxes();
+        draw();
+        pop.remove();
+        updateAnnotationList();
+    };
 }
 
 function enableDraw(){drawMode=true;}
@@ -1203,47 +1259,56 @@ function deleteLastBox(){if(boxes.length>0){boxes.pop();history.push(JSON.string
 function undoLastBox(){if(history.length>1){history.pop();boxes=JSON.parse(history[history.length-1]);saveBoxes();draw();updateAnnotationList();}}
 
 function updateAnnotationList(){
-document.getElementById("annotationList").innerHTML="";
-boxes.forEach(b=>{
-document.getElementById("annotationList").innerHTML+=`<div>${b.label||"Unlabeled"}</div>`;
-});
+    document.getElementById("annotationList").innerHTML = "";
+    boxes.forEach(b=>{
+        document.getElementById("annotationList").innerHTML += `<div>${b.label||"Unlabeled"}</div>`;
+    });
 }
+
 function hidePanel(){
     document.getElementById("rightPanel").style.display="none";
     document.getElementById("workzone").style.right="0";
     document.getElementById("showPanelBtn").style.display="block";
 }
+
 function showPanel(){
     document.getElementById("rightPanel").style.display="block";
     document.getElementById("workzone").style.right="250px";
     document.getElementById("showPanelBtn").style.display="none";
 }
 
-function deleteBox(id){boxes=boxes.filter(b=>b.id!==id);history.push(JSON.stringify(boxes));saveBoxes();draw();updateAnnotationList();}
+function deleteBox(id){
+    boxes = boxes.filter(b=>b.id !== id);
+    history.push(JSON.stringify(boxes));
+    saveBoxes();
+    draw();
+    updateAnnotationList();
+}
+
 function saveBoxes(){localStorage.setItem("antana_boxes",JSON.stringify(boxes));}
 function loadBoxes(){let saved=localStorage.getItem("antana_boxes");if(saved){boxes=JSON.parse(saved);draw();updateAnnotationList();history.push(JSON.stringify(boxes));}}
 
 function completeTask(){
-localStorage.removeItem("antana_image");
-localStorage.removeItem("antana_boxes");
-boxes=[];
-document.getElementById("workspacePage").style.display="none";
-document.getElementById("dashboard").style.display="block";
-drawMode=false;
+    localStorage.removeItem("antana_image");
+    localStorage.removeItem("antana_boxes");
+    boxes=[];
+    document.getElementById("workspacePage").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+    drawMode=false;
 }
 
 window.onload=()=>{
-initDashboard();
-let imgData=localStorage.getItem("antana_image");
-if(imgData){
-document.getElementById("dashboard").style.display="none";
-document.getElementById("workspacePage").style.display="block";
-canvas=document.getElementById("canvas");
-ctx=canvas.getContext("2d");
-img.src=imgData;
-img.onload=()=>{canvas.width=img.width;canvas.height=img.height;draw();loadBoxes();};
-initCanvas();
-}
+    initDashboard();
+    let imgData = localStorage.getItem("antana_image");
+    if(imgData){
+        document.getElementById("dashboard").style.display="none";
+        document.getElementById("workspacePage").style.display="block";
+        canvas = document.getElementById("canvas");
+        ctx = canvas.getContext("2d");
+        img.src = imgData;
+        img.onload = () => {canvas.width=img.width;canvas.height=img.height;draw();loadBoxes();};
+        initCanvas();
+    }
 };
 </script>
 </body>
