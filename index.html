@@ -11,6 +11,7 @@
 --blue:#0d6efd;
 --white:#fff;
 --dim:#999;
+--danger:#ff4444;
 }
 
 body,html{
@@ -20,7 +21,7 @@ font-family:Segoe UI,sans-serif;
 background:var(--bg);
 color:var(--white);
 height:100vh;
-overflow:hidden; /* Prevent body scroll during annotation */
+overflow:hidden; 
 font-size:14px;
 user-select: none;
 }
@@ -105,6 +106,7 @@ z-index: 1001;
     text-align: left;
 }
 .spreadsheet th { background: #222; color: var(--purple); }
+.del-btn { color: var(--danger); cursor: pointer; border:none; background:none; font-size:16px;}
 
 /* DASHBOARD */
 #dashboard{
@@ -149,7 +151,7 @@ left:0;
 right:250px;
 top:0;
 bottom:0;
-overflow:hidden; /* Important: stops image jumping */
+overflow:hidden;
 cursor: crosshair;
 }
 canvas { position: absolute; top: 0; left: 0; }
@@ -191,6 +193,7 @@ border:1px solid #333;
 padding:8px;
 z-index:2000;
 border-radius: 5px;
+text-align: center;
 }
 
 .footer-bar{
@@ -205,6 +208,9 @@ display:flex;
 justify-content:space-between;
 align-items: center;
 padding:0 10px;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+font-weight: bold;
 }
 </style>
 </head>
@@ -240,7 +246,10 @@ padding:0 10px;
 
 <div id="earningsPage">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>My Earnings Statement</h2>
+        <div>
+            <h2>My Earnings Statement</h2>
+            <button class="control-btn" style="background:var(--danger); border:none;" onclick="deleteAllEarnings()">🗑 Clear All Logs</button>
+        </div>
         <button class="control-btn" onclick="toggleEarnings()">Back to Work</button>
     </div>
     <table class="spreadsheet">
@@ -250,10 +259,10 @@ padding:0 10px;
                 <th>Task Type</th>
                 <th>Amount ($)</th>
                 <th>Status</th>
+                <th>Action</th>
             </tr>
         </thead>
-        <tbody id="earningsTableBody">
-            </tbody>
+        <tbody id="earningsTableBody"></tbody>
     </table>
 </div>
 
@@ -265,7 +274,7 @@ padding:0 10px;
             <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="updateFileName(this)">
             <span id="fileLabelText">Click to select image</span>
         </label>
-        <button class="continue-btn" onclick="startWork()">Start Annotating</button>
+        <button class="continue-btn" style="width:100%; margin-top:10px; background:var(--purple); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;" onclick="startWork()">Start Annotating</button>
     </div>
 </div>
 
@@ -285,15 +294,15 @@ padding:0 10px;
     </div>
 
     <div id="rightPanel">
-        <button class="complete-btn" onclick="completeTask()" style="width:100%; margin-bottom:20px;">Complete Task</button>
+        <button class="complete-btn" onclick="completeTask()" style="width:100%; margin-bottom:20px; background:#00c853; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Complete Task</button>
         <h3>Annotations</h3>
         <div id="annotationList"></div>
     </div>
 </div>
 
 <div class="footer-bar">
-    <span id="footerLeft">SYSTEM ACTIVE</span>
-    <span id="footerRight">V 2.0.4 [STABLE]</span>
+    <span id="footerLeft">COWORKER: <span id="footerCoworkerName">---</span></span>
+    <span id="footerRight">COMPANY: ANTANA AI SOLUTIONS</span>
 </div>
 
 <script>
@@ -304,19 +313,28 @@ let scale=1,originX=0,originY=0;
 let balance = parseFloat(localStorage.getItem("antana_balance")) || 0;
 let earningsLog = JSON.parse(localStorage.getItem("antana_logs")) || [];
 
-// Prevent Browser Defaults (Fixes jumping/scrolling)
+// Prevent Browser Defaults
 window.addEventListener('wheel', e => { if(drawMode || dragging) e.preventDefault(); }, {passive:false});
 
 function updateBalance(amount, type) {
     balance += amount;
     const log = {
+        id: Date.now() + Math.random(),
         time: new Date().toLocaleString(),
         task: type,
         amt: amount.toFixed(4)
     };
     earningsLog.unshift(log);
+    saveStorage();
+    refreshUI();
+}
+
+function saveStorage() {
     localStorage.setItem("antana_balance", balance.toFixed(4));
     localStorage.setItem("antana_logs", JSON.stringify(earningsLog));
+}
+
+function refreshUI() {
     document.getElementById("paymentDisplay").innerText = "$" + balance.toFixed(3);
     renderSpreadsheet();
 }
@@ -327,10 +345,44 @@ function renderSpreadsheet() {
         <tr>
             <td>${l.time}</td>
             <td>${l.task}</td>
-            <td style="color:#00c853">+$${l.amt}</td>
-            <td>Paid</td>
+            <td style="color:${parseFloat(l.amt) >= 0 ? '#00c853' : '#ff4444'}">${parseFloat(l.amt) >= 0 ? '+' : ''}$${l.amt}</td>
+            <td>Recorded</td>
+            <td><button class="del-btn" onclick="deleteSingleLog(${l.id})">🗑</button></td>
         </tr>
     `).join('');
+}
+
+function deleteSingleLog(id) {
+    const logItem = earningsLog.find(l => l.id === id);
+    if(logItem) {
+        balance -= parseFloat(logItem.amt);
+        earningsLog = earningsLog.filter(l => l.id !== id);
+        saveStorage();
+        refreshUI();
+    }
+}
+
+function deleteAllEarnings() {
+    if(confirm("Are you sure you want to clear all earnings history? Your balance will reset to $0.000.")){
+        balance = 0;
+        earningsLog = [];
+        saveStorage();
+        refreshUI();
+    }
+}
+
+function setGreeting() {
+    const hour = new Date().getHours();
+    const greetElement = document.getElementById("greetingText");
+    let msg = "";
+    let emoji = "";
+
+    if (hour >= 5 && hour < 12) { msg = "Good Morning"; emoji = "☀️"; }
+    else if (hour >= 12 && hour < 17) { msg = "Good Afternoon"; emoji = "🌤️"; }
+    else if (hour >= 17 && hour < 22) { msg = "Good Evening"; emoji = "🌆"; }
+    else { msg = "Take a rest"; emoji = "🌙"; }
+
+    greetElement.innerText = `${msg}, ${currentUser.name.split(' ')[0]}! ${emoji}`;
 }
 
 function handleLogin(){
@@ -343,13 +395,13 @@ function handleLogin(){
 
 function initDashboard(){
     let saved = localStorage.getItem("antana_user");
-    document.getElementById("paymentDisplay").innerText = "$" + balance.toFixed(3);
     if(saved){
         currentUser = JSON.parse(saved);
         document.getElementById("loginPage").style.display="none";
         document.getElementById("displayUserName").innerText = currentUser.name;
-        document.getElementById("greetingText").innerText = "Welcome, " + currentUser.name + "!";
-        renderSpreadsheet();
+        document.getElementById("footerCoworkerName").innerText = currentUser.name;
+        setGreeting();
+        refreshUI();
     }
 }
 
@@ -418,7 +470,7 @@ function initCanvasEvents(){
             if(box.w > 5){
                 boxes.push(box);
                 showLabelPopup(e.pageX, e.pageY, box);
-                updateBalance(0.010, "BBox Annotation");
+                updateBalance(0.010, "BBox Creation");
             }
             drawMode = false;
             draw();
@@ -426,7 +478,6 @@ function initCanvasEvents(){
         dragging = false;
     };
 
-    // WHEEL ZOOM
     canvas.onwheel = (e) => {
         e.preventDefault();
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -466,12 +517,16 @@ function showLabelPopup(x,y,box){
     pop.className = "label-popup";
     pop.style.left = x + "px"; pop.style.top = y + "px";
     pop.innerHTML = `
-        <select id="pSel" style="background:#222; color:white; border:1px solid #444; padding:5px;">
-            <option value="">Select Label</option>
+        <select id="pSel" style="background:#222; color:white; border:1px solid #444; padding:5px; width:100px;">
+            <option value="">Select</option>
             <option value="Car" data-color="lime">Car</option>
+            <option value="Bus" data-color="orange">Bus</option>
             <option value="Truck" data-color="cyan">Truck</option>
             <option value="Human" data-color="yellow">Human</option>
         </select>
+        <div style="margin-top:8px;">
+            <button onclick="this.parentElement.parentElement.remove(); deleteSpecBox(${box.id})" style="background:none; border:none; color:red; cursor:pointer; font-size:18px;">🗑</button>
+        </div>
     `;
     document.body.appendChild(pop);
     const s = document.getElementById("pSel");
@@ -486,19 +541,42 @@ function showLabelPopup(x,y,box){
     };
 }
 
+function deleteSpecBox(id) {
+    boxes = boxes.filter(b => b.id !== id);
+    updateBalance(-0.010, "BBox Removal (Auto-Deduct)");
+    draw();
+    updateAnnotationList();
+}
+
 function enableDraw(){ drawMode = true; }
 function saveHistory(){ history.push(JSON.stringify(boxes)); }
-function undoLastBox(){ if(history.length){ boxes = JSON.parse(history.pop()); draw(); updateAnnotationList(); } }
-function deleteLastBox(){ boxes.pop(); draw(); updateAnnotationList(); }
+
+function undoLastBox(){ 
+    if(history.length){ 
+        boxes = JSON.parse(history.pop()); 
+        updateBalance(-0.010, "Undo Action (Deduct)");
+        draw(); 
+        updateAnnotationList(); 
+    } 
+}
+
+function deleteLastBox(){ 
+    if(boxes.length > 0) {
+        boxes.pop(); 
+        updateBalance(-0.010, "Manual Delete (Deduct)");
+        draw(); 
+        updateAnnotationList(); 
+    }
+}
 
 function updateAnnotationList(){
     const list = document.getElementById("annotationList");
-    list.innerHTML = boxes.map(b => `<div style="padding:5px; border-bottom:1px solid #222; font-size:11px;">• ${b.label || 'New Box'}</div>`).join('');
+    list.innerHTML = boxes.map(b => `<div style="padding:5px; border-bottom:1px solid #222; font-size:11px;">• ${b.label || 'Unlabeled'}</div>`).join('');
 }
 
 function completeTask(){
     if(confirm("Submit work and earn?")){
-        updateBalance(0.05, "Task Completion Bonus");
+        updateBalance(0.05, "Completion Bonus");
         location.reload();
     }
 }
