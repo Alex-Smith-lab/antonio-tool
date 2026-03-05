@@ -318,7 +318,7 @@ window.addEventListener('wheel', e => { if(drawMode || dragging) e.preventDefaul
 function recordEarning(amount, type, boxId) {
     balance += amount;
     const log = {
-        id: boxId, // Link log to box ID for easy deletion
+        id: boxId,
         time: new Date().toLocaleString(),
         task: type,
         amt: amount.toFixed(4)
@@ -366,7 +366,6 @@ function renderSpreadsheet() {
 }
 
 function deleteSingleLog(id) {
-    // Only manual deletion from spreadsheet UI
     const index = earningsLog.findIndex(l => l.id === id);
     if(index !== -1) {
         balance -= parseFloat(earningsLog[index].amt);
@@ -385,6 +384,32 @@ function deleteAllEarnings() {
     }
 }
 
+// NEW SEASONAL GREETING LOGIC
+function updateGreeting() {
+    const hour = new Date().getHours();
+    const greetElement = document.getElementById("greetingText");
+    const firstName = currentUser ? currentUser.name.split(' ')[0] : "Worker";
+    
+    let msg = "";
+    let emoji = "";
+
+    if (hour >= 5 && hour < 12) {
+        msg = "Good Morning";
+        emoji = "☀️";
+    } else if (hour >= 12 && hour < 17) {
+        msg = "Good Afternoon";
+        emoji = "🌤️";
+    } else if (hour >= 17 && hour < 22) {
+        msg = "Good Evening";
+        emoji = "🌆";
+    } else {
+        msg = "Take some rest";
+        emoji = "🌙";
+    }
+
+    greetElement.innerText = `${msg}, ${firstName}! ${emoji}`;
+}
+
 function initDashboard(){
     let saved = localStorage.getItem("antana_user");
     if(saved){
@@ -392,6 +417,7 @@ function initDashboard(){
         document.getElementById("loginPage").style.display="none";
         document.getElementById("displayUserName").innerText = currentUser.name;
         document.getElementById("footerCoworkerName").innerText = currentUser.name;
+        updateGreeting(); // Trigger greeting
         refreshUI();
         const activeImg = localStorage.getItem("antana_active_img");
         if(activeImg) resumeWork(activeImg);
@@ -498,7 +524,6 @@ function showLabelPopup(x,y,box){
     s.onchange = () => {
         box.label = s.value;
         box.color = s.options[s.selectedIndex].dataset.color;
-        // RECORD EARNING ONLY HERE (Labled Box)
         recordEarning(0.012, "Labeled BBox", box.id); 
         pop.remove();
         draw(); updateAnnotationList(); saveStorage();
@@ -506,7 +531,7 @@ function showLabelPopup(x,y,box){
 }
 
 function deleteSpecBox(id) {
-    voidEarning(id); // Remove money/log silently
+    voidEarning(id);
     boxes = boxes.filter(b => b.id !== id);
     draw(); updateAnnotationList(); saveStorage();
 }
@@ -517,7 +542,7 @@ function saveHistory(){ history.push(JSON.stringify(boxes)); }
 function undoLastBox(){ 
     if(boxes.length){ 
         let last = boxes[boxes.length - 1];
-        voidEarning(last.id); // Remove money/log silently
+        voidEarning(last.id);
         boxes.pop();
         draw(); updateAnnotationList(); saveStorage();
     } 
@@ -526,7 +551,7 @@ function undoLastBox(){
 function deleteLastBox(){ 
     if(boxes.length > 0) {
         let last = boxes[boxes.length - 1];
-        voidEarning(last.id); // Remove money/log silently
+        voidEarning(last.id);
         boxes.pop(); 
         draw(); updateAnnotationList(); saveStorage();
     }
