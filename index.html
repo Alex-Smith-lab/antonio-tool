@@ -4,229 +4,46 @@
 <meta charset="UTF-8">
 <title>Antony Mbali - Production</title>
 <style>
-:root{
---bg:#0b0b0b;
---card:#161616;
---purple:#7b2ff7;
---blue:#0d6efd;
---white:#fff;
---dim:#999;
---danger:#ff4444;
-}
-
-body,html{
-margin:0;
-padding:0;
-font-family:Segoe UI,sans-serif;
-background:var(--bg);
-color:var(--white);
-height:100vh;
-overflow:hidden; 
-font-size:14px;
-user-select: none;
-}
-
-/* LOGIN */
-#loginPage{
-display:flex;
-height:100vh;
-position:fixed;
-width:100%;
-z-index:2000;
-background:#000;
-}
-#loginLeft{flex:1.2;background:url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;}
-#loginRight{flex:.8;background:var(--blue);display:flex;align-items:center;justify-content:center;}
-.login-box{width:300px;}
-input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:4px;color: #000;}
-.login-btn{width:100%;padding:10px;background:white;color:var(--blue);border:none;font-weight:bold;cursor:pointer;border-radius:4px;}
-
-/* NAV */
-#topNav{
-position:fixed;
-top:0;
-left:0;
-right:0;
-height:50px;
-background:#000;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 20px;
-z-index:1000;
-border-bottom:1px solid #222;
-}
-.nav-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-#paymentDisplay {
-    color: #00c853;
-    font-weight: bold;
-    font-family: monospace;
-    font-size: 16px;
-}
-.profile-container{position:relative;cursor:pointer;}
-#profileDropdown{
-position:absolute;
-right:0;
-top:40px;
-background:#111;
-border:1px solid #333;
-padding:10px;
-display:none;
-border-radius: 8px;
-z-index: 1001;
-}
-
-/* SPREADSHEET */
-#earningsPage {
-    display: none;
-    position: fixed;
-    top: 50px;
-    left: 0;
-    width: 100%;
-    height: calc(100% - 50px);
-    background: var(--bg);
-    z-index: 1500;
-    padding: 30px;
-    box-sizing: border-box;
-    overflow-y: auto;
-}
-.spreadsheet {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--card);
-    margin-top: 20px;
-}
-.spreadsheet th, .spreadsheet td {
-    border: 1px solid #333;
-    padding: 12px;
-    text-align: left;
-}
-.spreadsheet th { background: #222; color: var(--purple); }
-.del-btn { color: var(--danger); cursor: pointer; border:none; background:none; font-size:16px;}
-
-/* DASHBOARD */
-#dashboard{
-margin-top:70px;
-padding:0 10%;
-overflow-y: auto;
-height: calc(100vh - 70px);
-}
-
-.work-card{
-    background:var(--card);
-    padding:15px;
-    width:240px;
-    border-radius:12px;
-    border: 1px solid #222;
-}
-
-.upload-area{
-    margin-top:15px;
-    border:1.5px dashed #333;
-    padding:15px;
-    text-align:center;
-    cursor:pointer;
-    border-radius: 8px;
-    display: block;
-}
-
-/* WORKSPACE */
-#workspacePage{
-display:none;
-position:fixed;
-top:50px;
-bottom:20px;
-left:0;
-right:0;
-background:black;
-}
-
-#workzone{
-position:absolute;
-left:0;
-right:250px;
-top:0;
-bottom:0;
-overflow:hidden;
-cursor: crosshair;
-}
-canvas { position: absolute; top: 0; left: 0; }
-
-#rightPanel{
-position:absolute;
-right:0;
-top:0;
-bottom:0;
-width:250px;
-background:#111;
-border-left:1px solid #222;
-padding:10px;
-}
-
-#boxControls{
-position:absolute;
-bottom:20px;
-left:20px;
-display:flex;
-gap:8px;
-z-index: 500;
-}
-.control-btn {
-    background: #222;
-    color: white;
-    border: 1px solid #444;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-}
-.control-btn:hover { background: var(--purple); }
-
-.label-popup{
-position:absolute;
-background:#111;
-border:1px solid #333;
-padding:8px;
-z-index:2000;
-border-radius: 5px;
-text-align: center;
-}
-
-.footer-bar{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-height:20px;
-background:var(--purple);
-font-size:9px;
-display:flex;
-justify-content:space-between;
-align-items: center;
-padding:0 10px;
-text-transform: uppercase;
-letter-spacing: 0.5px;
-font-weight: bold;
-}
+:root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--blue:#0d6efd;--white:#fff;--dim:#999;--danger:#ff4444;}
+body,html{margin:0;padding:0;font-family:Segoe UI,sans-serif;background:var(--bg);color:var(--white);height:100vh;overflow:hidden;font-size:14px;user-select:none;}
+#loginPage,#waitlistPage{display:flex;height:100vh;position:fixed;width:100%;z-index:2000;background:#000;flex-direction:column;align-items:center;justify-content:center;}
+#loginLeft{position:absolute;top:0;left:0;width:100%;height:100%;background:url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;opacity:0.4;z-index:-1;}
+#loginRight{width:350px;background:rgba(22,22,22,0.9);padding:30px;border-radius:12px;border:1px solid #333;text-align:center;}
+input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:4px;color:#000;box-sizing:border-box;}
+.login-btn{width:100%;padding:10px;background:var(--blue);color:white;border:none;font-weight:bold;cursor:pointer;border-radius:4px;}
+#topNav{position:fixed;top:0;left:0;right:0;height:50px;background:#000;display:flex;justify-content:space-between;align-items:center;padding:0 20px;z-index:1000;border-bottom:1px solid #222;}
+#paymentDisplay{color:#00c853;font-weight:bold;font-family:monospace;font-size:16px;}
+#earningsPage{display:none;position:fixed;top:50px;left:0;width:100%;height:calc(100% - 50px);background:var(--bg);z-index:1500;padding:30px;box-sizing:border-box;overflow-y:auto;}
+.spreadsheet{width:100%;border-collapse:collapse;background:var(--card);margin-top:20px;}
+.spreadsheet th,.spreadsheet td{border:1px solid #333;padding:12px;text-align:left;}
+#dashboard{margin-top:70px;padding:0 10%;overflow-y:auto;height:calc(100vh - 70px);}
+.work-card{background:var(--card);padding:15px;width:240px;border-radius:12px;border:1px solid #333;margin-bottom:20px;}
+#workspacePage{display:none;position:fixed;top:50px;bottom:20px;left:0;right:0;background:black;}
+#workzone{position:absolute;left:0;right:250px;top:0;bottom:0;overflow:hidden;cursor:crosshair;}
+canvas{position:absolute;top:0;left:0;}
+#rightPanel{position:absolute;right:0;top:0;bottom:0;width:250px;background:#111;border-left:1px solid #222;padding:10px;}
+.footer-bar{position:fixed;bottom:0;left:0;right:0;height:20px;background:var(--purple);font-size:9px;display:flex;justify-content:space-between;align-items:center;padding:0 10px;text-transform:uppercase;}
+.control-btn{background:#222;color:white;border:1px solid #444;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;}
+.label-popup{position:absolute;background:#111;border:1px solid #333;padding:8px;z-index:2000;border-radius:5px;}
 </style>
 </head>
-<body onpaste="return false;" oncontextmenu="return false;">
+<body oncontextmenu="return false;">
 
 <div id="loginPage">
     <div id="loginLeft"></div>
     <div id="loginRight">
-        <div class="login-box">
-            <h2>Antony Mbali Login</h2>
-            <input id="userName" placeholder="Full Name">
-            <input id="userEmail" placeholder="Email">
-            <input id="userPass" placeholder="Password" type="password">
-            <button class="login-btn" onclick="handleLogin()">Sign In</button>
-        </div>
+        <h2>Antony Mbali Login</h2>
+        <input id="userName" placeholder="Full Name">
+        <input id="userEmail" placeholder="Email">
+        <input id="userPass" placeholder="Password" type="password">
+        <button class="login-btn" onclick="handleLogin()">Sign In</button>
     </div>
+</div>
+
+<div id="waitlistPage" style="display:none;">
+    <h1 style="color:var(--purple)">Access Pending</h1>
+    <p>Your account is currently on the waitlist. Please wait for Admin approval.</p>
+    <button class="control-btn" onclick="logout()">Logout / Refresh</button>
 </div>
 
 <div id="topNav">
@@ -234,65 +51,36 @@ font-weight: bold;
     <div class="nav-right">
         <button onclick="toggleEarnings()" class="control-btn" style="background:var(--card)">📊 Earnings</button>
         <div id="paymentDisplay">$0.000</div>
-        <div class="profile-container" onclick="toggleProfile()">👤
-            <div id="profileDropdown">
-                <strong id="displayUserName"></strong><br>
-                <small id="displayUserEmail"></small><hr>
-                <button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer;">Logout</button>
-            </div>
-        </div>
+        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer;">Logout</button>
     </div>
 </div>
 
 <div id="earningsPage">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-            <h2>My Earnings Statement</h2>
-            <button class="control-btn" style="background:var(--danger); border:none;" onclick="deleteAllEarnings()">🗑 Clear All Logs</button>
-        </div>
+        <h2>My Earnings Statement</h2>
         <button class="control-btn" onclick="toggleEarnings()">Back to Work</button>
     </div>
     <table class="spreadsheet">
-        <thead>
-            <tr>
-                <th>Date/Time</th>
-                <th>Task Type</th>
-                <th>Amount ($)</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Date/Time</th><th>Task Type</th><th>Amount ($)</th><th>Status</th></tr></thead>
         <tbody id="earningsTableBody"></tbody>
     </table>
 </div>
 
 <div id="dashboard">
     <h2 id="greetingText">Welcome!</h2>
-    <div class="work-card">
-        <strong>Upload Dataset</strong>
-        <label class="upload-area">
-            <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="updateFileName(this)">
-            <span id="fileLabelText">Click to select image</span>
-        </label>
-        <button class="continue-btn" style="width:100%; margin-top:10px; background:var(--purple); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;" onclick="startWork()">Start Annotating</button>
+    <div id="assignedTasksList">
+        <p>Checking for assigned tasks...</p>
     </div>
 </div>
 
 <div id="workspacePage">
-    <div id="workzone">
-        <canvas id="canvas"></canvas>
-    </div>
-
+    <div id="workzone"><canvas id="canvas"></canvas></div>
     <div id="boxControls">
         <button class="control-btn" onclick="enableDraw()">+ Add Box</button>
-        <button class="control-btn" onclick="deleteLastBox()">- Delete Last</button>
         <button class="control-btn" onclick="undoLastBox()">⮪ Undo</button>
-        <div style="width:2px; background:#444; margin:0 5px;"></div>
         <button class="control-btn" onclick="adjustZoom(1.2)">Zoom In</button>
-        <button class="control-btn" onclick="adjustZoom(0.8)">Zoom Out</button>
         <button class="control-btn" onclick="resetZoom()">1:1</button>
     </div>
-
     <div id="rightPanel">
         <button class="complete-btn" onclick="completeTask()" style="width:100%; margin-bottom:20px; background:#00c853; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Complete Task</button>
         <h3>Annotations</h3>
@@ -306,144 +94,104 @@ font-weight: bold;
 </div>
 
 <script>
-let currentUser=null;
-let canvas,ctx,img=new Image();
-let boxes=[],history=[],drawing=false,dragging=false,startX,startY,drawMode=false;
-let scale=1,originX=0,originY=0;
-let balance = parseFloat(localStorage.getItem("antana_balance")) || 0;
-let earningsLog = JSON.parse(localStorage.getItem("antana_logs")) || [];
+let currentUser=null, canvas, ctx, img=new Image(), boxes=[], scale=1, originX=0, originY=0, drawMode=false, activeTaskId=null;
+let startX, startY, drawing=false, dragging=false;
 
-window.addEventListener('wheel', e => { if(drawMode || dragging) e.preventDefault(); }, {passive:false});
-
-function recordEarning(amount, type, boxId) {
-    balance += amount;
-    const log = {
-        id: boxId,
-        time: new Date().toLocaleString(),
-        task: type,
-        amt: amount.toFixed(4)
-    };
-    earningsLog.unshift(log);
-    saveStorage();
-    refreshUI();
-}
-
-function voidEarning(boxId) {
-    const index = earningsLog.findIndex(l => l.id === boxId);
-    if(index !== -1) {
-        balance -= parseFloat(earningsLog[index].amt);
-        earningsLog.splice(index, 1);
-        saveStorage();
-        refreshUI();
+function handleLogin(){
+    const name = document.getElementById("userName").value;
+    const email = document.getElementById("userEmail").value;
+    if(!name || !email) return alert("Enter Name and Email");
+    
+    let users = JSON.parse(localStorage.getItem("ant_users") || "[]");
+    let user = users.find(u => u.email === email);
+    
+    if(!user){
+        user = { name, email, status: "pending", balance: 0, logs: [], lastLogin: new Date().toLocaleString() };
+        users.push(user);
+        localStorage.setItem("ant_users", JSON.stringify(users));
+    } else {
+        user.lastLogin = new Date().toLocaleString();
+        localStorage.setItem("ant_users", JSON.stringify(users));
     }
+    
+    localStorage.setItem("antana_user", JSON.stringify(user));
+    location.reload();
 }
 
-function saveStorage() {
-    localStorage.setItem("antana_balance", balance.toFixed(4));
-    localStorage.setItem("antana_logs", JSON.stringify(earningsLog));
-    if(img.src) {
-        localStorage.setItem("antana_active_img", img.src);
-        localStorage.setItem("antana_active_boxes", JSON.stringify(boxes));
-    }
-}
-
-function refreshUI() {
-    document.getElementById("paymentDisplay").innerText = "$" + Math.max(0, balance).toFixed(3);
-    renderSpreadsheet();
-}
-
-function renderSpreadsheet() {
-    const body = document.getElementById("earningsTableBody");
-    body.innerHTML = earningsLog.map(l => `
-        <tr>
-            <td>${l.time}</td>
-            <td>${l.task}</td>
-            <td style="color:#00c853">+$${l.amt}</td>
-            <td>Recorded</td>
-            <td><button class="del-btn" onclick="deleteSingleLog(${l.id})">🗑</button></td>
-        </tr>
-    `).join('');
-}
-
-function deleteSingleLog(id) {
-    const index = earningsLog.findIndex(l => l.id === id);
-    if(index !== -1) {
-        balance -= parseFloat(earningsLog[index].amt);
-        earningsLog.splice(index, 1);
-        saveStorage();
-        refreshUI();
-    }
-}
-
-function deleteAllEarnings() {
-    if(confirm("Clear all logs? Balance will reset to $0.")){
-        balance = 0;
-        earningsLog = [];
-        saveStorage();
-        refreshUI();
-    }
-}
-
-// NEW SEASONAL GREETING LOGIC
 function updateGreeting() {
     const hour = new Date().getHours();
     const greetElement = document.getElementById("greetingText");
     const firstName = currentUser ? currentUser.name.split(' ')[0] : "Worker";
-    
-    let msg = "";
-    let emoji = "";
-
-    if (hour >= 5 && hour < 12) {
-        msg = "Good Morning";
-        emoji = "☀️";
-    } else if (hour >= 12 && hour < 17) {
-        msg = "Good Afternoon";
-        emoji = "🌤️";
-    } else if (hour >= 17 && hour < 22) {
-        msg = "Good Evening";
-        emoji = "🌆";
-    } else {
-        msg = "Take some rest";
-        emoji = "🌙";
-    }
-
-    greetElement.innerText = `${msg}, ${firstName}! ${emoji}`;
+    let msg = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+    greetElement.innerText = `${msg}, ${firstName}! 👋`;
 }
 
 function initDashboard(){
     let saved = localStorage.getItem("antana_user");
-    if(saved){
-        currentUser = JSON.parse(saved);
-        document.getElementById("loginPage").style.display="none";
-        document.getElementById("displayUserName").innerText = currentUser.name;
-        document.getElementById("footerCoworkerName").innerText = currentUser.name;
-        updateGreeting(); // Trigger greeting
+    if(!saved) return;
+    
+    currentUser = JSON.parse(saved);
+    document.getElementById("loginPage").style.display="none";
+    document.getElementById("footerCoworkerName").innerText = currentUser.name;
+    
+    let users = JSON.parse(localStorage.getItem("ant_users") || "[]");
+    let globalUser = users.find(u => u.email === currentUser.email);
+    
+    if(globalUser.status === "pending"){
+        document.getElementById("waitlistPage").style.display="flex";
+    } else {
+        updateGreeting();
         refreshUI();
-        const activeImg = localStorage.getItem("antana_active_img");
-        if(activeImg) resumeWork(activeImg);
+        loadAssignedTasks();
     }
 }
 
-function resumeWork(src) {
+function loadAssignedTasks(){
+    const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
+    const container = document.getElementById("assignedTasksList");
+    const myTasks = tasks.filter(t => t.assignedTo === currentUser.email && !t.completed);
+    
+    if(myTasks.length === 0){
+        container.innerHTML = "<h3>No tasks assigned to you right now.</h3>";
+    } else {
+        container.innerHTML = "<h3>Assigned Tasks:</h3>" + myTasks.map(t => `
+            <div class="work-card">
+                <strong>Task ID: ${t.id.toString().slice(-5)}</strong><br>
+                <small>Assigned: ${t.timestamp}</small>
+                <button class="control-btn" style="width:100%; margin-top:10px; background:var(--purple);" onclick="startWork('${t.id}')">Start Annotating</button>
+            </div>
+        `).join('');
+    }
+}
+
+function startWork(id){
+    const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
+    const task = tasks.find(t => t.id == id);
+    activeTaskId = id;
     document.getElementById("dashboard").style.display="none";
     document.getElementById("workspacePage").style.display="block";
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
-    img.src = src;
-    img.onload = () => {
-        canvas.width = img.width; canvas.height = img.height;
-        const savedBoxes = localStorage.getItem("antana_active_boxes");
-        if(savedBoxes) boxes = JSON.parse(savedBoxes);
-        resetZoom(); initCanvasEvents(); updateAnnotationList();
-    };
+    img.src = task.imgData;
+    img.onload = () => { canvas.width = img.width; canvas.height = img.height; resetZoom(); initCanvasEvents(); };
 }
 
-function startWork(){
-    const file = document.getElementById("fileInput").files[0];
-    if(!file) return alert("Upload image");
-    let reader = new FileReader();
-    reader.onload = e => { resumeWork(e.target.result); };
-    reader.readAsDataURL(file);
+function recordEarning(amount, type) {
+    let users = JSON.parse(localStorage.getItem("ant_users"));
+    let idx = users.findIndex(u => u.email === currentUser.email);
+    users[idx].balance += amount;
+    users[idx].logs.unshift({time: new Date().toLocaleString(), task: type, amt: amount.toFixed(4)});
+    localStorage.setItem("ant_users", JSON.stringify(users));
+    refreshUI();
+}
+
+function refreshUI() {
+    let users = JSON.parse(localStorage.getItem("ant_users"));
+    let me = users.find(u => u.email === currentUser.email);
+    document.getElementById("paymentDisplay").innerText = "$" + me.balance.toFixed(3);
+    document.getElementById("earningsTableBody").innerHTML = me.logs.map(l => `
+        <tr><td>${l.time}</td><td>${l.task}</td><td style="color:#00c853">+$${l.amt}</td><td>Completed</td></tr>
+    `).join('');
 }
 
 function initCanvasEvents(){
@@ -451,8 +199,7 @@ function initCanvasEvents(){
         const rect = canvas.getBoundingClientRect();
         const x = (e.clientX - rect.left - originX) / scale;
         const y = (e.clientY - rect.top - originY) / scale;
-        if(drawMode){ saveHistory(); startX = x; startY = y; drawing = true; } 
-        else { dragging = true; }
+        if(drawMode){ startX = x; startY = y; drawing = true; } else { dragging = true; }
     };
     canvas.onmousemove = (e) => {
         if(drawing){
@@ -460,140 +207,47 @@ function initCanvasEvents(){
             const x = (e.clientX - rect.left - originX) / scale;
             const y = (e.clientY - rect.top - originY) / scale;
             draw();
-            ctx.strokeStyle = "white"; ctx.lineWidth = 2/scale;
-            ctx.strokeRect(startX, startY, x - startX, y - startY);
-        } else if(dragging){
-            originX += e.movementX; originY += e.movementY; draw();
-        }
+            ctx.strokeStyle = "white"; ctx.strokeRect(startX, startY, x - startX, y - startY);
+        } else if(dragging){ originX += e.movementX; originY += e.movementY; draw(); }
     };
     canvas.onmouseup = (e) => {
         if(drawing){
-            drawing = false;
             const rect = canvas.getBoundingClientRect();
             let x = (e.clientX - rect.left - originX) / scale;
             let y = (e.clientY - rect.top - originY) / scale;
-            let box = { x: Math.min(startX, x), y: Math.min(startY, y), 
-                        w: Math.abs(x - startX), h: Math.abs(y - startY), 
-                        label: "", color: "lime", id: Date.now() };
-            if(box.w > 5){
-                boxes.push(box);
-                showLabelPopup(e.pageX, e.pageY, box);
-            }
-            drawMode = false; draw();
+            let box = { x: Math.min(startX, x), y: Math.min(startY, y), w: Math.abs(x - startX), h: Math.abs(y - startY), label: "Box", color: "lime", id: Date.now() };
+            if(box.w > 5){ boxes.push(box); recordEarning(0.012, "Annotation Box"); }
+            drawing = false; drawMode = false; draw(); updateAnnotationList();
         }
         dragging = false;
     };
-    canvas.onwheel = (e) => { e.preventDefault(); adjustZoom(e.deltaY > 0 ? 0.9 : 1.1); };
-}
-
-function adjustZoom(factor){ scale *= factor; scale = Math.max(0.1, Math.min(scale, 10)); draw(); }
-function resetZoom(){ scale = 1; originX = 0; originY = 0; draw(); }
-
-function draw(){
-    if(!ctx) return;
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.translate(originX, originY);
-    ctx.scale(scale, scale);
-    ctx.drawImage(img,0,0);
-    boxes.forEach(b=>{
-        ctx.strokeStyle = b.color; ctx.lineWidth = 2/scale;
-        ctx.strokeRect(b.x, b.y, b.w, b.h);
-        ctx.fillStyle = b.color; ctx.font = `${12/scale}px Arial`;
-        if(b.label) ctx.fillText(b.label, b.x, b.y - (5/scale));
-    });
-}
-
-function showLabelPopup(x,y,box){
-    let pop = document.createElement("div");
-    pop.className = "label-popup";
-    pop.style.left = x + "px"; pop.style.top = y + "px";
-    pop.innerHTML = `
-        <select id="pSel" style="background:#222; color:white; border:1px solid #444; padding:5px; width:100px;">
-            <option value="">Select</option>
-            <option value="Car" data-color="lime">Car</option>
-            <option value="Bus" data-color="orange">Bus</option>
-            <option value="Truck" data-color="cyan">Truck</option>
-            <option value="Human" data-color="yellow">Human</option>
-        </select>
-        <div style="margin-top:8px;"><button onclick="this.parentElement.parentElement.remove(); deleteSpecBox(${box.id})" style="background:none; border:none; color:red; cursor:pointer; font-size:18px;">🗑</button></div>
-    `;
-    document.body.appendChild(pop);
-    const s = document.getElementById("pSel");
-    s.focus();
-    s.onchange = () => {
-        box.label = s.value;
-        box.color = s.options[s.selectedIndex].dataset.color;
-        recordEarning(0.012, "Labeled BBox", box.id); 
-        pop.remove();
-        draw(); updateAnnotationList(); saveStorage();
-    };
-}
-
-function deleteSpecBox(id) {
-    voidEarning(id);
-    boxes = boxes.filter(b => b.id !== id);
-    draw(); updateAnnotationList(); saveStorage();
-}
-
-function enableDraw(){ drawMode = true; }
-function saveHistory(){ history.push(JSON.stringify(boxes)); }
-
-function undoLastBox(){ 
-    if(boxes.length){ 
-        let last = boxes[boxes.length - 1];
-        voidEarning(last.id);
-        boxes.pop();
-        draw(); updateAnnotationList(); saveStorage();
-    } 
-}
-
-function deleteLastBox(){ 
-    if(boxes.length > 0) {
-        let last = boxes[boxes.length - 1];
-        voidEarning(last.id);
-        boxes.pop(); 
-        draw(); updateAnnotationList(); saveStorage();
-    }
-}
-
-function updateAnnotationList(){
-    const list = document.getElementById("annotationList");
-    list.innerHTML = boxes.map(b => `<div style="padding:5px; border-bottom:1px solid #222; font-size:11px;">• ${b.label || 'Unlabeled'}</div>`).join('');
 }
 
 function completeTask(){
-    if(confirm("Submit work and return to home?")){
-        localStorage.removeItem("antana_active_img");
-        localStorage.removeItem("antana_active_boxes");
-        location.reload();
-    }
-}
-
-function handleLogin(){
-    const name = document.getElementById("userName").value;
-    if(!name) return alert("Enter Name");
-    currentUser = {name: name, email: document.getElementById("userEmail").value};
-    localStorage.setItem("antana_user", JSON.stringify(currentUser));
+    if(!confirm("Submit this work to Admin?")) return;
+    let tasks = JSON.parse(localStorage.getItem("ant_tasks"));
+    let idx = tasks.findIndex(t => t.id == activeTaskId);
+    tasks[idx].completed = true;
+    tasks[idx].completedBy = currentUser.name;
+    tasks[idx].finalBoxes = boxes;
+    localStorage.setItem("ant_tasks", JSON.stringify(tasks));
     location.reload();
 }
 
-function toggleEarnings() {
-    const p = document.getElementById("earningsPage");
-    p.style.display = p.style.display === "block" ? "none" : "block";
+function draw(){
+    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.translate(originX, originY); ctx.scale(scale, scale);
+    ctx.drawImage(img,0,0);
+    boxes.forEach(b=>{ ctx.strokeStyle=b.color; ctx.lineWidth=2/scale; ctx.strokeRect(b.x, b.y, b.w, b.h); });
 }
 
-function toggleProfile(){
-    let d = document.getElementById("profileDropdown");
-    d.style.display = d.style.display === "block" ? "none" : "block";
-}
-
-function updateFileName(input) {
-    if(input.files[0]) document.getElementById('fileLabelText').innerText = input.files[0].name;
-}
-
-function logout() { localStorage.removeItem("antana_user"); location.reload(); }
-
+function adjustZoom(f){ scale*=f; draw(); }
+function resetZoom(){ scale=1; originX=0; originY=0; draw(); }
+function undoLastBox(){ boxes.pop(); draw(); updateAnnotationList(); }
+function enableDraw(){ drawMode = true; }
+function toggleEarnings(){ let p=document.getElementById("earningsPage"); p.style.display=p.style.display==="block"?"none":"block"; }
+function updateAnnotationList(){ document.getElementById("annotationList").innerHTML=boxes.map(b=>`<div>• ${b.label}</div>`).join(''); }
+function logout(){ localStorage.removeItem("antana_user"); location.reload(); }
 window.onload = initDashboard;
 </script>
 </body>
