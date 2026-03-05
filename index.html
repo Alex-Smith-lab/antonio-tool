@@ -80,7 +80,7 @@ border-radius: 8px;
 z-index: 1001;
 }
 
-/* SPREADSHEET / EARNINGS MODAL */
+/* SPREADSHEET */
 #earningsPage {
     display: none;
     position: fixed;
@@ -313,7 +313,6 @@ let scale=1,originX=0,originY=0;
 let balance = parseFloat(localStorage.getItem("antana_balance")) || 0;
 let earningsLog = JSON.parse(localStorage.getItem("antana_logs")) || [];
 
-// Prevent Browser Defaults
 window.addEventListener('wheel', e => { if(drawMode || dragging) e.preventDefault(); }, {passive:false});
 
 function updateBalance(amount, type) {
@@ -332,6 +331,11 @@ function updateBalance(amount, type) {
 function saveStorage() {
     localStorage.setItem("antana_balance", balance.toFixed(4));
     localStorage.setItem("antana_logs", JSON.stringify(earningsLog));
+    // Persistence: Save current session
+    if(img.src) {
+        localStorage.setItem("antana_active_img", img.src);
+        localStorage.setItem("antana_active_boxes", JSON.stringify(boxes));
+    }
 }
 
 function refreshUI() {
@@ -363,7 +367,7 @@ function deleteSingleLog(id) {
 }
 
 function deleteAllEarnings() {
-    if(confirm("Are you sure you want to clear all earnings history? Your balance will reset to $0.000.")){
+    if(confirm("Clear all logs? Balance will reset to $0.")){
         balance = 0;
         earningsLog = [];
         saveStorage();
@@ -374,14 +378,11 @@ function deleteAllEarnings() {
 function setGreeting() {
     const hour = new Date().getHours();
     const greetElement = document.getElementById("greetingText");
-    let msg = "";
-    let emoji = "";
-
+    let msg = ""; let emoji = "";
     if (hour >= 5 && hour < 12) { msg = "Good Morning"; emoji = "☀️"; }
     else if (hour >= 12 && hour < 17) { msg = "Good Afternoon"; emoji = "🌤️"; }
     else if (hour >= 17 && hour < 22) { msg = "Good Evening"; emoji = "🌆"; }
     else { msg = "Take a rest"; emoji = "🌙"; }
-
     greetElement.innerText = `${msg}, ${currentUser.name.split(' ')[0]}! ${emoji}`;
 }
 
@@ -402,46 +403,48 @@ function initDashboard(){
         document.getElementById("footerCoworkerName").innerText = currentUser.name;
         setGreeting();
         refreshUI();
+        
+        // Check for active session persistence
+        const activeImg = localStorage.getItem("antana_active_img");
+        if(activeImg) {
+            resumeWork(activeImg);
+        }
     }
 }
 
-function toggleEarnings() {
-    const p = document.getElementById("earningsPage");
-    p.style.display = p.style.display === "block" ? "none" : "block";
+function resumeWork(src) {
+    document.getElementById("dashboard").style.display="none";
+    document.getElementById("workspacePage").style.display="block";
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
+    img.src = src;
+    img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const savedBoxes = localStorage.getItem("antana_active_boxes");
+        if(savedBoxes) boxes = JSON.parse(savedBoxes);
+        resetZoom();
+        initCanvasEvents();
+        updateAnnotationList();
+    };
 }
 
 function startWork(){
     const file = document.getElementById("fileInput").files[0];
     if(!file) return alert("Upload image");
-    document.getElementById("dashboard").style.display="none";
-    document.getElementById("workspacePage").style.display="block";
-    canvas = document.getElementById("canvas");
-    ctx = canvas.getContext("2d");
     let reader = new FileReader();
-    reader.onload = e => { img.src = e.target.result; };
+    reader.onload = e => { resumeWork(e.target.result); };
     reader.readAsDataURL(file);
-    img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        resetZoom();
-        initCanvasEvents();
-    };
 }
 
 function initCanvasEvents(){
     canvas.onmousedown = (e) => {
-        e.preventDefault();
         const rect = canvas.getBoundingClientRect();
         const x = (e.clientX - rect.left - originX) / scale;
         const y = (e.clientY - rect.top - originY) / scale;
-        if(drawMode){
-            saveHistory();
-            startX = x; startY = y; drawing = true;
-        } else {
-            dragging = true;
-        }
+        if(drawMode){ saveHistory(); startX = x; startY = y; drawing = true; } 
+        else { dragging = true; }
     };
-
     canvas.onmousemove = (e) => {
         if(drawing){
             const rect = canvas.getBoundingClientRect();
@@ -452,12 +455,9 @@ function initCanvasEvents(){
             ctx.lineWidth = 2/scale;
             ctx.strokeRect(startX, startY, x - startX, y - startY);
         } else if(dragging){
-            originX += e.movementX;
-            originY += e.movementY;
-            draw();
+            originX += e.movementX; originY += e.movementY; draw();
         }
     };
-
     canvas.onmouseup = (e) => {
         if(drawing){
             drawing = false;
@@ -471,29 +471,17 @@ function initCanvasEvents(){
                 boxes.push(box);
                 showLabelPopup(e.pageX, e.pageY, box);
                 updateBalance(0.010, "BBox Creation");
+                saveStorage();
             }
-            drawMode = false;
-            draw();
+            drawMode = false; draw();
         }
         dragging = false;
     };
-
-    canvas.onwheel = (e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        adjustZoom(delta);
-    };
+    canvas.onwheel = (e) => { e.preventDefault(); adjustZoom(e.deltaY > 0 ? 0.9 : 1.1); };
 }
 
-function adjustZoom(factor){
-    scale *= factor;
-    scale = Math.max(0.1, Math.min(scale, 10));
-    draw();
-}
-
-function resetZoom(){
-    scale = 1; originX = 0; originY = 0; draw();
-}
+function adjustZoom(factor){ scale *= factor; scale = Math.max(0.1, Math.min(scale, 10)); draw(); }
+function resetZoom(){ scale = 1; originX = 0; originY = 0; draw(); }
 
 function draw(){
     if(!ctx) return;
@@ -503,11 +491,9 @@ function draw(){
     ctx.scale(scale, scale);
     ctx.drawImage(img,0,0);
     boxes.forEach(b=>{
-        ctx.strokeStyle = b.color;
-        ctx.lineWidth = 2/scale;
+        ctx.strokeStyle = b.color; ctx.lineWidth = 2/scale;
         ctx.strokeRect(b.x, b.y, b.w, b.h);
-        ctx.fillStyle = b.color;
-        ctx.font = `${12/scale}px Arial`;
+        ctx.fillStyle = b.color; ctx.font = `${12/scale}px Arial`;
         if(b.label) ctx.fillText(b.label, b.x, b.y - (5/scale));
     });
 }
@@ -524,9 +510,7 @@ function showLabelPopup(x,y,box){
             <option value="Truck" data-color="cyan">Truck</option>
             <option value="Human" data-color="yellow">Human</option>
         </select>
-        <div style="margin-top:8px;">
-            <button onclick="this.parentElement.parentElement.remove(); deleteSpecBox(${box.id})" style="background:none; border:none; color:red; cursor:pointer; font-size:18px;">🗑</button>
-        </div>
+        <div style="margin-top:8px;"><button onclick="this.parentElement.parentElement.remove(); deleteSpecBox(${box.id})" style="background:none; border:none; color:red; cursor:pointer; font-size:18px;">🗑</button></div>
     `;
     document.body.appendChild(pop);
     const s = document.getElementById("pSel");
@@ -538,14 +522,14 @@ function showLabelPopup(x,y,box){
         pop.remove();
         draw();
         updateAnnotationList();
+        saveStorage();
     };
 }
 
 function deleteSpecBox(id) {
     boxes = boxes.filter(b => b.id !== id);
-    updateBalance(-0.010, "BBox Removal (Auto-Deduct)");
-    draw();
-    updateAnnotationList();
+    updateBalance(-0.010, "BBox Removal");
+    draw(); updateAnnotationList(); saveStorage();
 }
 
 function enableDraw(){ drawMode = true; }
@@ -554,18 +538,16 @@ function saveHistory(){ history.push(JSON.stringify(boxes)); }
 function undoLastBox(){ 
     if(history.length){ 
         boxes = JSON.parse(history.pop()); 
-        updateBalance(-0.010, "Undo Action (Deduct)");
-        draw(); 
-        updateAnnotationList(); 
+        updateBalance(-0.010, "Undo Action");
+        draw(); updateAnnotationList(); saveStorage();
     } 
 }
 
 function deleteLastBox(){ 
     if(boxes.length > 0) {
         boxes.pop(); 
-        updateBalance(-0.010, "Manual Delete (Deduct)");
-        draw(); 
-        updateAnnotationList(); 
+        updateBalance(-0.010, "Manual Delete");
+        draw(); updateAnnotationList(); saveStorage();
     }
 }
 
@@ -575,10 +557,17 @@ function updateAnnotationList(){
 }
 
 function completeTask(){
-    if(confirm("Submit work and earn?")){
-        updateBalance(0.05, "Completion Bonus");
-        location.reload();
+    if(confirm("Submit work? This will clear the current workspace.")){
+        // Remove active session
+        localStorage.removeItem("antana_active_img");
+        localStorage.removeItem("antana_active_boxes");
+        location.reload(); // Returns to dashboard
     }
+}
+
+function toggleEarnings() {
+    const p = document.getElementById("earningsPage");
+    p.style.display = p.style.display === "block" ? "none" : "block";
 }
 
 function toggleProfile(){
@@ -587,8 +576,10 @@ function toggleProfile(){
 }
 
 function updateFileName(input) {
-    document.getElementById('fileLabelText').innerText = input.files[0].name;
+    if(input.files[0]) document.getElementById('fileLabelText').innerText = input.files[0].name;
 }
+
+function logout() { localStorage.removeItem("antana_user"); location.reload(); }
 
 window.onload = initDashboard;
 </script>
