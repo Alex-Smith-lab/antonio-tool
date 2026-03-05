@@ -253,6 +253,8 @@ cursor:pointer;
 display:flex;
 gap:5px;
 }
+#boxControls button { cursor:pointer; background:#444; color:white; border:none; padding:4px 8px; border-radius:3px;}
+#boxControls button:hover { background:var(--purple); }
 
 #workzone{
 position:absolute;
@@ -266,9 +268,7 @@ canvas{
 position:absolute;
 top:0;
 left:0;
-width:100%;
-height:100%;
-object-fit:contain;
+cursor: crosshair;
 }
 
 .footer-bar{
@@ -295,14 +295,13 @@ padding:5px;
 z-index:1000;
 display:flex;
 flex-direction:column;
+box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
-.label-popup select{margin-bottom:5px;}
+.label-popup select{margin-bottom:5px; background:#222; color:white; border:1px solid #444;}
 .label-popup button{background:red;color:white;border:none;padding:2px 5px;font-size:11px;cursor:pointer;}
 </style>
 </head>
-<body>
-
-<div id="loginPage">
+<body onpaste="return false;"> <div id="loginPage">
 <div id="loginLeft"></div>
 <div id="loginRight">
 <div class="login-box">
@@ -400,6 +399,9 @@ let boxes=[],history=[],drawing=false,dragging=false,startX,startY,drawMode=fals
 let scale=1,originX=0,originY=0;
 let balance = parseFloat(localStorage.getItem("antana_balance")) || 0;
 
+// Prevent paste on whole document
+document.addEventListener('paste', e => e.preventDefault());
+
 function updateBalance(amount) {
     balance += amount;
     localStorage.setItem("antana_balance", balance.toFixed(4));
@@ -417,7 +419,7 @@ function handleLogin(){
     const passInput = document.getElementById("userPass").value;
 
     if(!nameInput || !emailInput || !passInput) {
-        alert("Please fill in all fields (Name, Email, and Password)");
+        alert("Please fill in all fields");
         return;
     }
 
@@ -439,60 +441,55 @@ function initDashboard(){
         document.getElementById("footerRight").innerText = "COWORKER: " + currentUser.name.toUpperCase() + " • FB2905 [WASM | WEBGL]";
 
         let h = (new Date()).getHours();
-        let greet = "Good evening";
-        let emoji = "☁️";
-        if(h>=5 && h<11) { greet="Good morning"; emoji="☀️"; }
-        else if(h>=11 && h<17) { greet="Good afternoon"; emoji="🌤️"; }
-        else if(h>=17 && h<22) { greet="Good evening"; emoji="☁️"; }
-        else { greet="Please get some sleep"; emoji="🌙"; }
-
-        document.getElementById("greetingText").innerText = greet + ", " + currentUser.name.split(' ')[0] + "! " + emoji;
+        let greet = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+        document.getElementById("greetingText").innerText = greet + ", " + currentUser.name.split(' ')[0] + "!";
     }
-}
-
-function toggleProfile(){
-    let dd = document.getElementById("profileDropdown");
-    dd.style.display = dd.style.display === "block" ? "none" : "block";
-}
-
-function logout(){
-    localStorage.removeItem("antana_user");
-    location.reload();
 }
 
 function startWork(){
     const file = document.getElementById("fileInput").files[0];
-    if(!file) return alert("Upload first");
+    if(!file && !localStorage.getItem("antana_image")) return alert("Upload first");
+    
     document.getElementById("dashboard").style.display="none";
     document.getElementById("workspacePage").style.display="block";
 
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
 
-    let reader = new FileReader();
-    reader.onload = e => {
-        img.src = e.target.result;
-        localStorage.setItem("antana_image", img.src);
-    };
-    reader.readAsDataURL(file);
+    if(file){
+        let reader = new FileReader();
+        reader.onload = e => {
+            img.src = e.target.result;
+            localStorage.setItem("antana_image", img.src);
+        };
+        reader.readAsDataURL(file);
+    } else {
+        img.src = localStorage.getItem("antana_image");
+    }
 
     img.onload = () => {
         canvas.width = img.width;
         canvas.height = img.height;
-        draw();
+        initCanvas();
         loadBoxes();
+        draw();
     };
-
-    initCanvas();
 }
 
 function initCanvas(){
-    canvas.ondblclick = function(e){
-        if(!drawMode) return;
+    canvas.onmousedown = function(e){
         const rect = canvas.getBoundingClientRect();
-        startX = (e.clientX - rect.left - originX) / scale;
-        startY = (e.clientY - rect.top - originY) / scale;
-        drawing = true;
+        const x = (e.clientX - rect.left - originX) / scale;
+        const y = (e.clientY - rect.top - originY) / scale;
+
+        if(drawMode){
+            saveHistory();
+            startX = x;
+            startY = y;
+            drawing = true;
+        } else {
+            dragging = true;
+        }
     };
 
     canvas.onmousemove = function(e){
@@ -503,11 +500,9 @@ function initCanvas(){
         if(drawing){
             draw();
             ctx.strokeStyle = "white";
+            ctx.lineWidth = 2 / scale;
             ctx.strokeRect(startX, startY, x - startX, y - startY);
-            return;
-        }
-
-        if(!drawMode && dragging){
+        } else if(dragging){
             originX += e.movementX;
             originY += e.movementY;
             draw();
@@ -522,51 +517,43 @@ function initCanvas(){
             let y = (e.clientY - rect.top - originY) / scale;
 
             let box = {
-                x: startX,
-                y: startY,
-                w: x - startX,
-                h: y - startY,
+                x: Math.min(startX, x),
+                y: Math.min(startY, y),
+                w: Math.abs(x - startX),
+                h: Math.abs(y - startY),
                 label: "",
+                color: "lime",
                 id: Date.now()
             };
 
-            boxes.push(box);
-            updateBalance(0.01); // $0.01 per box adjust/add
-            history.push(JSON.stringify(boxes));
-            saveBoxes();
-            showLabelPopup(e.pageX, e.pageY, box);
-            updateAnnotationList();
+            if(box.w > 5 && box.h > 5){
+                boxes.push(box);
+                showLabelPopup(e.pageX, e.pageY, box);
+                updateBalance(0.01);
+            }
             drawMode = false;
             draw();
-            return;
         }
         dragging = false;
-    };
-
-    canvas.onmousedown = function(e){
-        if(!drawMode){
-            dragging = true;
-        }
-    };
-
-    canvas.onwheel = function(e){
-        e.preventDefault();
-        scale += e.deltaY * -0.001;
-        scale = Math.min(Math.max(.5, scale), 5);
-        draw();
     };
 }
 
 function draw(){
-    ctx.setTransform(scale,0,0,scale,originX,originY);
-    ctx.clearRect(-originX/scale,-originY/scale,canvas.width/scale,canvas.height/scale);
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    if(!ctx) return;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.translate(originX, originY);
+    ctx.scale(scale, scale);
+    
+    ctx.drawImage(img,0,0);
+    
     boxes.forEach(b=>{
-        ctx.strokeStyle = b.color || "lime";
+        ctx.strokeStyle = b.color;
+        ctx.lineWidth = 2 / scale;
         ctx.strokeRect(b.x, b.y, b.w, b.h);
-        ctx.fillStyle = b.color || "lime";
-        ctx.font = "12px Arial";
-        if(b.label) ctx.fillText(b.label, b.x, b.y - 5);
+        ctx.fillStyle = b.color;
+        ctx.font = `${14/scale}px Arial`;
+        if(b.label) ctx.fillText(b.label, b.x, b.y - (5/scale));
     });
 }
 
@@ -575,37 +562,77 @@ function showLabelPopup(x,y,box){
     pop.className = "label-popup";
     pop.style.left = x + "px";
     pop.style.top = y + "px";
-    pop.innerHTML = `<select>
-    <option value="">Select</option>
-    <option value="Car" data-color="green">Car</option>
-    <option value="Bus" data-color="red">Bus</option>
-    <option value="Truck" data-color="purple">Truck</option>
-    <option value="Motorcycle" data-color="blue">Motorcycle</option>
-    <option value="Pedestrian" data-color="cyan">Pedestrian</option>
-    <option value="Unknown" data-color="gray">Unknown</option>
+    pop.innerHTML = `
+    <select id="popSel">
+        <option value="">Select Label</option>
+        <option value="Car" data-color="#00ff00">Car</option>
+        <option value="Bus" data-color="#ff0000">Bus</option>
+        <option value="Truck" data-color="#7b2ff7">Truck</option>
+        <option value="Pedestrian" data-color="#00ffff">Pedestrian</option>
     </select>
-    <button onclick="deleteBox(${box.id});this.parentElement.remove()">Delete</button>`;
+    <button onclick="this.parentElement.remove(); deleteBox(${box.id})">Cancel</button>`;
     document.body.appendChild(pop);
-    pop.querySelector("select").onchange = function(){
+    
+    const sel = pop.querySelector("#popSel");
+    sel.focus();
+    sel.onchange = function(){
         box.label = this.value;
         box.color = this.options[this.selectedIndex].dataset.color;
-        updateBalance(0.001); // $0.001 per label
+        updateBalance(0.005);
         saveBoxes();
         draw();
-        pop.remove();
         updateAnnotationList();
+        pop.remove();
     };
 }
 
-function enableDraw(){drawMode=true;}
-function deleteLastBox(){if(boxes.length>0){boxes.pop();history.push(JSON.stringify(boxes));saveBoxes();draw();updateAnnotationList();}}
-function undoLastBox(){if(history.length>1){history.pop();boxes=JSON.parse(history[history.length-1]);saveBoxes();draw();updateAnnotationList();}}
+function enableDraw(){ drawMode = true; alert("Drawing Mode Active: Click and Drag on image"); }
+
+function saveHistory(){ history.push(JSON.stringify(boxes)); if(history.length > 20) history.shift(); }
+
+function undoLastBox(){
+    if(history.length > 0){
+        boxes = JSON.parse(history.pop());
+        saveBoxes();
+        draw();
+        updateAnnotationList();
+    }
+}
+
+function deleteLastBox(){
+    if(boxes.length > 0){
+        saveHistory();
+        boxes.pop();
+        saveBoxes();
+        draw();
+        updateAnnotationList();
+    }
+}
+
+function deleteBox(id){
+    saveHistory();
+    boxes = boxes.filter(b=>b.id !== id);
+    saveBoxes();
+    draw();
+    updateAnnotationList();
+}
 
 function updateAnnotationList(){
-    document.getElementById("annotationList").innerHTML = "";
-    boxes.forEach(b=>{
-        document.getElementById("annotationList").innerHTML += `<div>${b.label||"Unlabeled"}</div>`;
+    const list = document.getElementById("annotationList");
+    list.innerHTML = "";
+    boxes.forEach(b => {
+        let item = document.createElement("div");
+        item.style.padding = "5px";
+        item.style.borderBottom = "1px solid #222";
+        item.innerHTML = `<span style="color:${b.color}">■</span> ${b.label || 'Drawing...'}`;
+        list.appendChild(item);
     });
+}
+
+function saveBoxes(){ localStorage.setItem("antana_boxes", JSON.stringify(boxes)); }
+function loadBoxes(){ 
+    let saved = localStorage.getItem("antana_boxes"); 
+    if(saved) { boxes = JSON.parse(saved); updateAnnotationList(); }
 }
 
 function hidePanel(){
@@ -613,46 +640,22 @@ function hidePanel(){
     document.getElementById("workzone").style.right="0";
     document.getElementById("showPanelBtn").style.display="block";
 }
-
 function showPanel(){
     document.getElementById("rightPanel").style.display="block";
     document.getElementById("workzone").style.right="250px";
     document.getElementById("showPanelBtn").style.display="none";
 }
 
-function deleteBox(id){
-    boxes = boxes.filter(b=>b.id !== id);
-    history.push(JSON.stringify(boxes));
-    saveBoxes();
-    draw();
-    updateAnnotationList();
-}
-
-function saveBoxes(){localStorage.setItem("antana_boxes",JSON.stringify(boxes));}
-function loadBoxes(){let saved=localStorage.getItem("antana_boxes");if(saved){boxes=JSON.parse(saved);draw();updateAnnotationList();history.push(JSON.stringify(boxes));}}
-
 function completeTask(){
-    localStorage.removeItem("antana_image");
-    localStorage.removeItem("antana_boxes");
-    boxes=[];
-    document.getElementById("workspacePage").style.display="none";
-    document.getElementById("dashboard").style.display="block";
-    drawMode=false;
+    if(confirm("Complete and Save?")){
+        localStorage.removeItem("antana_image");
+        localStorage.removeItem("antana_boxes");
+        boxes = [];
+        location.reload();
+    }
 }
 
-window.onload=()=>{
-    initDashboard();
-    let imgData = localStorage.getItem("antana_image");
-    if(imgData){
-        document.getElementById("dashboard").style.display="none";
-        document.getElementById("workspacePage").style.display="block";
-        canvas = document.getElementById("canvas");
-        ctx = canvas.getContext("2d");
-        img.src = imgData;
-        img.onload = () => {canvas.width=img.width;canvas.height=img.height;draw();loadBoxes();};
-        initCanvas();
-    }
-};
+window.onload = initDashboard;
 </script>
 </body>
 </html>
