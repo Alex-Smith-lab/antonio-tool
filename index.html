@@ -315,10 +315,10 @@ let earningsLog = JSON.parse(localStorage.getItem("antana_logs")) || [];
 
 window.addEventListener('wheel', e => { if(drawMode || dragging) e.preventDefault(); }, {passive:false});
 
-function updateBalance(amount, type) {
+function recordEarning(amount, type, boxId) {
     balance += amount;
     const log = {
-        id: Date.now() + Math.random(),
+        id: boxId, // Link log to box ID for easy deletion
         time: new Date().toLocaleString(),
         task: type,
         amt: amount.toFixed(4)
@@ -328,10 +328,19 @@ function updateBalance(amount, type) {
     refreshUI();
 }
 
+function voidEarning(boxId) {
+    const index = earningsLog.findIndex(l => l.id === boxId);
+    if(index !== -1) {
+        balance -= parseFloat(earningsLog[index].amt);
+        earningsLog.splice(index, 1);
+        saveStorage();
+        refreshUI();
+    }
+}
+
 function saveStorage() {
     localStorage.setItem("antana_balance", balance.toFixed(4));
     localStorage.setItem("antana_logs", JSON.stringify(earningsLog));
-    // Persistence: Save current session
     if(img.src) {
         localStorage.setItem("antana_active_img", img.src);
         localStorage.setItem("antana_active_boxes", JSON.stringify(boxes));
@@ -339,7 +348,7 @@ function saveStorage() {
 }
 
 function refreshUI() {
-    document.getElementById("paymentDisplay").innerText = "$" + balance.toFixed(3);
+    document.getElementById("paymentDisplay").innerText = "$" + Math.max(0, balance).toFixed(3);
     renderSpreadsheet();
 }
 
@@ -349,7 +358,7 @@ function renderSpreadsheet() {
         <tr>
             <td>${l.time}</td>
             <td>${l.task}</td>
-            <td style="color:${parseFloat(l.amt) >= 0 ? '#00c853' : '#ff4444'}">${parseFloat(l.amt) >= 0 ? '+' : ''}$${l.amt}</td>
+            <td style="color:#00c853">+$${l.amt}</td>
             <td>Recorded</td>
             <td><button class="del-btn" onclick="deleteSingleLog(${l.id})">🗑</button></td>
         </tr>
@@ -357,10 +366,11 @@ function renderSpreadsheet() {
 }
 
 function deleteSingleLog(id) {
-    const logItem = earningsLog.find(l => l.id === id);
-    if(logItem) {
-        balance -= parseFloat(logItem.amt);
-        earningsLog = earningsLog.filter(l => l.id !== id);
+    // Only manual deletion from spreadsheet UI
+    const index = earningsLog.findIndex(l => l.id === id);
+    if(index !== -1) {
+        balance -= parseFloat(earningsLog[index].amt);
+        earningsLog.splice(index, 1);
         saveStorage();
         refreshUI();
     }
@@ -375,25 +385,6 @@ function deleteAllEarnings() {
     }
 }
 
-function setGreeting() {
-    const hour = new Date().getHours();
-    const greetElement = document.getElementById("greetingText");
-    let msg = ""; let emoji = "";
-    if (hour >= 5 && hour < 12) { msg = "Good Morning"; emoji = "☀️"; }
-    else if (hour >= 12 && hour < 17) { msg = "Good Afternoon"; emoji = "🌤️"; }
-    else if (hour >= 17 && hour < 22) { msg = "Good Evening"; emoji = "🌆"; }
-    else { msg = "Take a rest"; emoji = "🌙"; }
-    greetElement.innerText = `${msg}, ${currentUser.name.split(' ')[0]}! ${emoji}`;
-}
-
-function handleLogin(){
-    const name = document.getElementById("userName").value;
-    if(!name) return alert("Enter Name");
-    currentUser = {name: name, email: document.getElementById("userEmail").value};
-    localStorage.setItem("antana_user", JSON.stringify(currentUser));
-    location.reload();
-}
-
 function initDashboard(){
     let saved = localStorage.getItem("antana_user");
     if(saved){
@@ -401,14 +392,9 @@ function initDashboard(){
         document.getElementById("loginPage").style.display="none";
         document.getElementById("displayUserName").innerText = currentUser.name;
         document.getElementById("footerCoworkerName").innerText = currentUser.name;
-        setGreeting();
         refreshUI();
-        
-        // Check for active session persistence
         const activeImg = localStorage.getItem("antana_active_img");
-        if(activeImg) {
-            resumeWork(activeImg);
-        }
+        if(activeImg) resumeWork(activeImg);
     }
 }
 
@@ -419,13 +405,10 @@ function resumeWork(src) {
     ctx = canvas.getContext("2d");
     img.src = src;
     img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = img.width; canvas.height = img.height;
         const savedBoxes = localStorage.getItem("antana_active_boxes");
         if(savedBoxes) boxes = JSON.parse(savedBoxes);
-        resetZoom();
-        initCanvasEvents();
-        updateAnnotationList();
+        resetZoom(); initCanvasEvents(); updateAnnotationList();
     };
 }
 
@@ -451,8 +434,7 @@ function initCanvasEvents(){
             const x = (e.clientX - rect.left - originX) / scale;
             const y = (e.clientY - rect.top - originY) / scale;
             draw();
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 2/scale;
+            ctx.strokeStyle = "white"; ctx.lineWidth = 2/scale;
             ctx.strokeRect(startX, startY, x - startX, y - startY);
         } else if(dragging){
             originX += e.movementX; originY += e.movementY; draw();
@@ -470,8 +452,6 @@ function initCanvasEvents(){
             if(box.w > 5){
                 boxes.push(box);
                 showLabelPopup(e.pageX, e.pageY, box);
-                updateBalance(0.010, "BBox Creation");
-                saveStorage();
             }
             drawMode = false; draw();
         }
@@ -518,17 +498,16 @@ function showLabelPopup(x,y,box){
     s.onchange = () => {
         box.label = s.value;
         box.color = s.options[s.selectedIndex].dataset.color;
-        updateBalance(0.002, "Label Refinement");
+        // RECORD EARNING ONLY HERE (Labled Box)
+        recordEarning(0.012, "Labeled BBox", box.id); 
         pop.remove();
-        draw();
-        updateAnnotationList();
-        saveStorage();
+        draw(); updateAnnotationList(); saveStorage();
     };
 }
 
 function deleteSpecBox(id) {
+    voidEarning(id); // Remove money/log silently
     boxes = boxes.filter(b => b.id !== id);
-    updateBalance(-0.010, "BBox Removal");
     draw(); updateAnnotationList(); saveStorage();
 }
 
@@ -536,17 +515,19 @@ function enableDraw(){ drawMode = true; }
 function saveHistory(){ history.push(JSON.stringify(boxes)); }
 
 function undoLastBox(){ 
-    if(history.length){ 
-        boxes = JSON.parse(history.pop()); 
-        updateBalance(-0.010, "Undo Action");
+    if(boxes.length){ 
+        let last = boxes[boxes.length - 1];
+        voidEarning(last.id); // Remove money/log silently
+        boxes.pop();
         draw(); updateAnnotationList(); saveStorage();
     } 
 }
 
 function deleteLastBox(){ 
     if(boxes.length > 0) {
+        let last = boxes[boxes.length - 1];
+        voidEarning(last.id); // Remove money/log silently
         boxes.pop(); 
-        updateBalance(-0.010, "Manual Delete");
         draw(); updateAnnotationList(); saveStorage();
     }
 }
@@ -557,12 +538,19 @@ function updateAnnotationList(){
 }
 
 function completeTask(){
-    if(confirm("Submit work? This will clear the current workspace.")){
-        // Remove active session
+    if(confirm("Submit work and return to home?")){
         localStorage.removeItem("antana_active_img");
         localStorage.removeItem("antana_active_boxes");
-        location.reload(); // Returns to dashboard
+        location.reload();
     }
+}
+
+function handleLogin(){
+    const name = document.getElementById("userName").value;
+    if(!name) return alert("Enter Name");
+    currentUser = {name: name, email: document.getElementById("userEmail").value};
+    localStorage.setItem("antana_user", JSON.stringify(currentUser));
+    location.reload();
 }
 
 function toggleEarnings() {
