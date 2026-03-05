@@ -4,93 +4,107 @@
 <meta charset="UTF-8">
 <title>Antony Mbali - Production</title>
 <style>
-:root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--blue:#0d6efd;--white:#fff;--dim:#999;--danger:#ff4444;}
+:root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--blue:#0d6efd;--white:#fff;--dim:#999;--danger:#ff4444;--success:#00c853;}
 body,html{margin:0;padding:0;font-family:Segoe UI,sans-serif;background:var(--bg);color:var(--white);height:100vh;overflow:hidden;font-size:14px;user-select:none;}
-#loginPage,#waitlistPage{display:flex;height:100vh;position:fixed;width:100%;z-index:2000;background:#000;flex-direction:column;align-items:center;justify-content:center;}
-#loginLeft{position:absolute;top:0;left:0;width:100%;height:100%;background:url('https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=2070') center/cover;opacity:0.4;z-index:-1;}
-#loginRight{width:350px;background:rgba(22,22,22,0.9);padding:30px;border-radius:12px;border:1px solid #333;text-align:center;}
-input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:4px;color:#000;box-sizing:border-box;}
-.login-btn{width:100%;padding:10px;background:var(--blue);color:white;border:none;font-weight:bold;cursor:pointer;border-radius:4px;}
+
+/* NAVIGATION & HEADERS */
 #topNav{position:fixed;top:0;left:0;right:0;height:50px;background:#000;display:flex;justify-content:space-between;align-items:center;padding:0 20px;z-index:1000;border-bottom:1px solid #222;}
-#paymentDisplay{color:#00c853;font-weight:bold;font-family:monospace;font-size:16px;}
-#earningsPage{display:none;position:fixed;top:50px;left:0;width:100%;height:calc(100% - 50px);background:var(--bg);z-index:1500;padding:30px;box-sizing:border-box;overflow-y:auto;}
-.spreadsheet{width:100%;border-collapse:collapse;background:var(--card);margin-top:20px;}
-.spreadsheet th,.spreadsheet td{border:1px solid #333;padding:12px;text-align:left;}
-#dashboard{margin-top:70px;padding:0 10%;overflow-y:auto;height:calc(100vh - 70px);}
-.work-card{background:var(--card);padding:15px;width:240px;border-radius:12px;border:1px solid #333;margin-bottom:20px;}
-#workspacePage{display:none;position:fixed;top:50px;bottom:20px;left:0;right:0;background:black;}
-#workzone{position:absolute;left:0;right:250px;top:0;bottom:0;overflow:hidden;cursor:crosshair;}
-canvas{position:absolute;top:0;left:0;}
-#rightPanel{position:absolute;right:0;top:0;bottom:0;width:250px;background:#111;border-left:1px solid #222;padding:10px;}
-.footer-bar{position:fixed;bottom:0;left:0;right:0;height:20px;background:var(--purple);font-size:9px;display:flex;justify-content:space-between;align-items:center;padding:0 10px;text-transform:uppercase;}
-.control-btn{background:#222;color:white;border:1px solid #444;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;}
-.label-popup{position:absolute;background:#111;border:1px solid #333;padding:8px;z-index:2000;border-radius:5px;}
+#profileHeader{background:var(--card); padding:20px; border-radius:12px; border:1px solid #333; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;}
+.profile-info h3{margin:0; color:var(--purple);}
+.profile-info p{margin:5px 0 0 0; color:var(--dim); font-size:12px;}
+
+/* DASHBOARD & SPREADSHEET */
+#dashboard{margin-top:70px; padding:0 10%; overflow-y:auto; height:calc(100vh - 70px); padding-bottom:50px;}
+.spreadsheet{width:100%; border-collapse:collapse; background:var(--card); margin-top:20px; border-radius:8px; overflow:hidden;}
+.spreadsheet th{background:#222; color:var(--purple); padding:12px; text-align:left; font-size:11px; text-transform:uppercase;}
+.spreadsheet td{border-bottom:1px solid #222; padding:12px; font-size:13px;}
+
+/* WORKSPACE */
+#workspacePage{display:none; position:fixed; top:50px; bottom:20px; left:0; right:0; background:black; z-index:1800;}
+#workzone{position:absolute; left:0; right:250px; top:0; bottom:0; overflow:hidden; background:#050505;}
+canvas{cursor:crosshair; transform-origin: 0 0;}
+#rightPanel{position:absolute; right:0; top:0; bottom:0; width:250px; background:#111; border-left:1px solid #222; padding:15px;}
+.control-bar{position:absolute; bottom:20px; left:20px; display:flex; gap:10px; z-index:1900;}
+
+/* OTHER UI */
+#loginPage,#waitlistPage{display:flex; height:100vh; position:fixed; width:100%; z-index:2000; background:#000; flex-direction:column; align-items:center; justify-content:center;}
+#loginRight{width:350px; background:rgba(22,22,22,0.9); padding:30px; border-radius:12px; border:1px solid #333; text-align:center;}
+input{width:100%; padding:10px; margin:8px 0; border:none; border-radius:4px; color:#000; box-sizing:border-box;}
+.btn{padding:10px 15px; border-radius:6px; border:none; cursor:pointer; font-weight:bold;}
+.footer-bar{position:fixed; bottom:0; left:0; right:0; height:20px; background:var(--purple); font-size:9px; display:flex; justify-content:space-between; align-items:center; padding:0 10px; text-transform:uppercase; z-index:2000;}
 </style>
 </head>
 <body oncontextmenu="return false;">
 
 <div id="loginPage">
-    <div id="loginLeft"></div>
     <div id="loginRight">
         <h2>Antony Mbali Login</h2>
         <input id="userName" placeholder="Full Name">
         <input id="userEmail" placeholder="Email">
         <input id="userPass" placeholder="Password" type="password">
-        <button class="login-btn" onclick="handleLogin()">Sign In</button>
+        <button class="btn" style="background:var(--blue); color:white; width:100%;" onclick="handleLogin()">Sign In</button>
     </div>
 </div>
 
 <div id="waitlistPage" style="display:none;">
     <h1 style="color:var(--purple)">Access Pending</h1>
-    <p>Your account is currently on the waitlist. Please wait for Admin approval.</p>
-    <button class="control-btn" onclick="logout()">Logout / Refresh</button>
+    <p>Please wait for Admin approval to access tasks.</p>
+    <button class="btn" onclick="logout()">Logout</button>
 </div>
 
 <div id="topNav">
     <div class="logo">a<span style="color:var(--purple)">⌵</span> LABELER</div>
     <div class="nav-right">
-        <button onclick="toggleEarnings()" class="control-btn" style="background:var(--card)">📊 Earnings</button>
-        <div id="paymentDisplay">$0.000</div>
-        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer;">Logout</button>
+        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; font-weight:bold;">Logout</button>
     </div>
 </div>
 
-<div id="earningsPage">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>My Earnings Statement</h2>
-        <button class="control-btn" onclick="toggleEarnings()">Back to Work</button>
+<div id="dashboard">
+    <div id="profileHeader">
+        <div class="profile-info">
+            <h3 id="profName">User Name</h3>
+            <p id="profEmail">user@example.com</p>
+            <p id="profStatus" style="color:var(--success)">● Status: Active</p>
+        </div>
+        <div style="text-align:right;">
+            <div style="color:var(--dim); font-size:11px;">CURRENT BALANCE</div>
+            <div id="paymentDisplay" style="font-size:28px; color:var(--success); font-family:monospace;">$0.000</div>
+        </div>
     </div>
+
+    <h2 id="greetingText">Good Morning!</h2>
+    
+    <div id="assignedTasksList">
+        <p>Searching for your assigned tasks...</p>
+    </div>
+
+    <h3>Payment Spreadsheet & Tracker</h3>
     <table class="spreadsheet">
-        <thead><tr><th>Date/Time</th><th>Task Type</th><th>Amount ($)</th><th>Status</th></tr></thead>
+        <thead><tr><th>Timestamp</th><th>Activity</th><th>Amount</th><th>Status</th></tr></thead>
         <tbody id="earningsTableBody"></tbody>
     </table>
 </div>
 
-<div id="dashboard">
-    <h2 id="greetingText">Welcome!</h2>
-    <div id="assignedTasksList">
-        <p>Checking for assigned tasks...</p>
-    </div>
-</div>
-
 <div id="workspacePage">
     <div id="workzone"><canvas id="canvas"></canvas></div>
-    <div id="boxControls">
-        <button class="control-btn" onclick="enableDraw()">+ Add Box</button>
-        <button class="control-btn" onclick="undoLastBox()">⮪ Undo</button>
-        <button class="control-btn" onclick="adjustZoom(1.2)">Zoom In</button>
-        <button class="control-btn" onclick="resetZoom()">1:1</button>
+    
+    <div class="control-bar">
+        <button class="btn" style="background:var(--purple); color:white;" onclick="enableDraw()">+ Draw Box</button>
+        <button class="btn" style="background:#333; color:white;" onclick="undoLastBox()">Undo</button>
+        <button class="btn" style="background:#333; color:white;" onclick="resetZoom()">Reset View</button>
     </div>
+
     <div id="rightPanel">
-        <button class="complete-btn" onclick="completeTask()" style="width:100%; margin-bottom:20px; background:#00c853; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Complete Task</button>
-        <h3>Annotations</h3>
-        <div id="annotationList"></div>
+        <button class="btn" onclick="completeTask()" style="width:100%; background:var(--success); color:white; margin-bottom:20px;">SUBMIT TASK</button>
+        <h4 style="color:var(--purple); margin:0;">Annotations</h4>
+        <hr border="0" style="border-top:1px solid #333; margin:10px 0;">
+        <div id="annotationList" style="font-size:12px; color:var(--dim);"></div>
     </div>
 </div>
 
 <div class="footer-bar">
-    <span id="footerLeft">COWORKER: <span id="footerCoworkerName">---</span></span>
-    <span id="footerRight">COMPANY: ANTONY MBALI</span>
+    <span>COWORKER: <span id="footerCoworkerName">---</span></span>
+    <span>COMPANY: ANTONY MBALI PRODUCTION</span>
 </div>
 
 <script>
@@ -101,38 +115,22 @@ function handleLogin(){
     const name = document.getElementById("userName").value;
     const email = document.getElementById("userEmail").value;
     if(!name || !email) return alert("Enter Name and Email");
-    
     let users = JSON.parse(localStorage.getItem("ant_users") || "[]");
     let user = users.find(u => u.email === email);
-    
     if(!user){
         user = { name, email, status: "pending", balance: 0, logs: [], lastLogin: new Date().toLocaleString() };
         users.push(user);
         localStorage.setItem("ant_users", JSON.stringify(users));
-    } else {
-        user.lastLogin = new Date().toLocaleString();
-        localStorage.setItem("ant_users", JSON.stringify(users));
     }
-    
     localStorage.setItem("antana_user", JSON.stringify(user));
     location.reload();
-}
-
-function updateGreeting() {
-    const hour = new Date().getHours();
-    const greetElement = document.getElementById("greetingText");
-    const firstName = currentUser ? currentUser.name.split(' ')[0] : "Worker";
-    let msg = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
-    greetElement.innerText = `${msg}, ${firstName}! 👋`;
 }
 
 function initDashboard(){
     let saved = localStorage.getItem("antana_user");
     if(!saved) return;
-    
     currentUser = JSON.parse(saved);
     document.getElementById("loginPage").style.display="none";
-    document.getElementById("footerCoworkerName").innerText = currentUser.name;
     
     let users = JSON.parse(localStorage.getItem("ant_users") || "[]");
     let globalUser = users.find(u => u.email === currentUser.email);
@@ -140,10 +138,19 @@ function initDashboard(){
     if(globalUser.status === "pending"){
         document.getElementById("waitlistPage").style.display="flex";
     } else {
+        document.getElementById("profName").innerText = globalUser.name;
+        document.getElementById("profEmail").innerText = globalUser.email;
+        document.getElementById("footerCoworkerName").innerText = globalUser.name;
         updateGreeting();
         refreshUI();
         loadAssignedTasks();
     }
+}
+
+function updateGreeting() {
+    const hour = new Date().getHours();
+    let msg = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+    document.getElementById("greetingText").innerText = `${msg}, ${currentUser.name.split(' ')[0]}! 👋`;
 }
 
 function loadAssignedTasks(){
@@ -151,56 +158,50 @@ function loadAssignedTasks(){
     const container = document.getElementById("assignedTasksList");
     const myTasks = tasks.filter(t => t.assignedTo === currentUser.email && !t.completed);
     
-    if(myTasks.length === 0){
-        container.innerHTML = "<h3>No tasks assigned to you right now.</h3>";
-    } else {
-        container.innerHTML = "<h3>Assigned Tasks:</h3>" + myTasks.map(t => `
-            <div class="work-card">
-                <strong>Task ID: ${t.id.toString().slice(-5)}</strong><br>
-                <small>Assigned: ${t.timestamp}</small>
-                <button class="control-btn" style="width:100%; margin-top:10px; background:var(--purple);" onclick="startWork('${t.id}')">Start Annotating</button>
+    container.innerHTML = myTasks.length === 0 ? "<h4>No pending tasks.</h4>" : 
+        myTasks.map(t => `
+            <div class="panel" style="background:var(--card); padding:15px; border:1px solid #333; margin-bottom:10px; border-radius:8px;">
+                <strong>TASK ID: ${t.id.toString().slice(-6)}</strong> | Assigned: ${t.timestamp}
+                <button class="btn" style="float:right; background:var(--purple); color:white;" onclick="startWork('${t.id}')">Open Workspace</button>
             </div>
         `).join('');
-    }
 }
 
 function startWork(id){
     const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
     const task = tasks.find(t => t.id == id);
     activeTaskId = id;
-    document.getElementById("dashboard").style.display="none";
+    boxes = [];
     document.getElementById("workspacePage").style.display="block";
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     img.src = task.imgData;
-    img.onload = () => { canvas.width = img.width; canvas.height = img.height; resetZoom(); initCanvasEvents(); };
-}
-
-function recordEarning(amount, type) {
-    let users = JSON.parse(localStorage.getItem("ant_users"));
-    let idx = users.findIndex(u => u.email === currentUser.email);
-    users[idx].balance += amount;
-    users[idx].logs.unshift({time: new Date().toLocaleString(), task: type, amt: amount.toFixed(4)});
-    localStorage.setItem("ant_users", JSON.stringify(users));
-    refreshUI();
-}
-
-function refreshUI() {
-    let users = JSON.parse(localStorage.getItem("ant_users"));
-    let me = users.find(u => u.email === currentUser.email);
-    document.getElementById("paymentDisplay").innerText = "$" + me.balance.toFixed(3);
-    document.getElementById("earningsTableBody").innerHTML = me.logs.map(l => `
-        <tr><td>${l.time}</td><td>${l.task}</td><td style="color:#00c853">+$${l.amt}</td><td>Completed</td></tr>
-    `).join('');
+    img.onload = () => { 
+        canvas.width = img.width; 
+        canvas.height = img.height; 
+        resetZoom(); 
+        initCanvasEvents(); 
+    };
 }
 
 function initCanvasEvents(){
+    // Zoom with Mouse Wheel
+    canvas.onwheel = (e) => {
+        e.preventDefault();
+        const zoomSpeed = 0.1;
+        const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
+        scale = Math.min(Math.max(0.1, scale + delta), 5);
+        draw();
+    };
+
     canvas.onmousedown = (e) => {
         const rect = canvas.getBoundingClientRect();
         const x = (e.clientX - rect.left - originX) / scale;
         const y = (e.clientY - rect.top - originY) / scale;
-        if(drawMode){ startX = x; startY = y; drawing = true; } else { dragging = true; }
+        if(drawMode){ startX = x; startY = y; drawing = true; } 
+        else if(e.button === 2 || e.button === 0){ dragging = true; } // Right click or drag
     };
+
     canvas.onmousemove = (e) => {
         if(drawing){
             const rect = canvas.getBoundingClientRect();
@@ -208,30 +209,22 @@ function initCanvasEvents(){
             const y = (e.clientY - rect.top - originY) / scale;
             draw();
             ctx.strokeStyle = "white"; ctx.strokeRect(startX, startY, x - startX, y - startY);
-        } else if(dragging){ originX += e.movementX; originY += e.movementY; draw(); }
+        } else if(dragging){ 
+            originX += e.movementX; originY += e.movementY; draw(); 
+        }
     };
-    canvas.onmouseup = (e) => {
+
+    canvas.onmouseup = () => {
         if(drawing){
             const rect = canvas.getBoundingClientRect();
-            let x = (e.clientX - rect.left - originX) / scale;
-            let y = (e.clientY - rect.top - originY) / scale;
-            let box = { x: Math.min(startX, x), y: Math.min(startY, y), w: Math.abs(x - startX), h: Math.abs(y - startY), label: "Box", color: "lime", id: Date.now() };
-            if(box.w > 5){ boxes.push(box); recordEarning(0.012, "Annotation Box"); }
+            const x = (event.clientX - rect.left - originX) / scale;
+            const y = (event.clientY - rect.top - originY) / scale;
+            let box = { x: Math.min(startX, x), y: Math.min(startY, y), w: Math.abs(x - startX), h: Math.abs(y - startY), label: "Vehicle", color: "lime" };
+            if(box.w > 5){ boxes.push(box); recordEarning(0.012, "Box Created"); }
             drawing = false; drawMode = false; draw(); updateAnnotationList();
         }
         dragging = false;
     };
-}
-
-function completeTask(){
-    if(!confirm("Submit this work to Admin?")) return;
-    let tasks = JSON.parse(localStorage.getItem("ant_tasks"));
-    let idx = tasks.findIndex(t => t.id == activeTaskId);
-    tasks[idx].completed = true;
-    tasks[idx].completedBy = currentUser.name;
-    tasks[idx].finalBoxes = boxes;
-    localStorage.setItem("ant_tasks", JSON.stringify(tasks));
-    location.reload();
 }
 
 function draw(){
@@ -241,12 +234,39 @@ function draw(){
     boxes.forEach(b=>{ ctx.strokeStyle=b.color; ctx.lineWidth=2/scale; ctx.strokeRect(b.x, b.y, b.w, b.h); });
 }
 
-function adjustZoom(f){ scale*=f; draw(); }
+function recordEarning(amount, type) {
+    let users = JSON.parse(localStorage.getItem("ant_users"));
+    let idx = users.findIndex(u => u.email === currentUser.email);
+    users[idx].balance += amount;
+    users[idx].logs.unshift({time: new Date().toLocaleString().split(',')[1], task: type, amt: amount.toFixed(4)});
+    localStorage.setItem("ant_users", JSON.stringify(users));
+    refreshUI();
+}
+
+function refreshUI() {
+    let users = JSON.parse(localStorage.getItem("ant_users"));
+    let me = users.find(u => u.email === currentUser.email);
+    document.getElementById("paymentDisplay").innerText = "$" + me.balance.toFixed(3);
+    document.getElementById("earningsTableBody").innerHTML = me.logs.map(l => `
+        <tr><td>${l.time}</td><td>${l.task}</td><td style="color:var(--success)">+$${l.amt}</td><td>Verified</td></tr>
+    `).join('');
+}
+
+function completeTask(){
+    if(!confirm("Submit annotations for review?")) return;
+    let tasks = JSON.parse(localStorage.getItem("ant_tasks"));
+    let idx = tasks.findIndex(t => t.id == activeTaskId);
+    tasks[idx].completed = true;
+    tasks[idx].completedBy = currentUser.name;
+    tasks[idx].finalBoxes = boxes;
+    localStorage.setItem("ant_tasks", JSON.stringify(tasks));
+    location.reload();
+}
+
 function resetZoom(){ scale=1; originX=0; originY=0; draw(); }
 function undoLastBox(){ boxes.pop(); draw(); updateAnnotationList(); }
 function enableDraw(){ drawMode = true; }
-function toggleEarnings(){ let p=document.getElementById("earningsPage"); p.style.display=p.style.display==="block"?"none":"block"; }
-function updateAnnotationList(){ document.getElementById("annotationList").innerHTML=boxes.map(b=>`<div>• ${b.label}</div>`).join(''); }
+function updateAnnotationList(){ document.getElementById("annotationList").innerHTML=boxes.map((b,i)=>`<div>[${i+1}] ${b.label}</div>`).join(''); }
 function logout(){ localStorage.removeItem("antana_user"); location.reload(); }
 window.onload = initDashboard;
 </script>
