@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin - Antony Mbali Management</title>
+<style>
+:root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--blue:#0d6efd;--white:#fff;}
+body{background:var(--bg); color:white; font-family:'Segoe UI', sans-serif; padding:30px;}
+.grid{display:grid; grid-template-columns: 1fr 1fr; gap:20px;}
+.panel{background:var(--card); padding:20px; border-radius:12px; border:1px solid #333;}
+table{width:100%; border-collapse:collapse; margin-top:15px;}
+th,td{padding:12px; text-align:left; border-bottom:1px solid #222;}
+th{color:var(--purple);}
+.btn{padding:8px 15px; cursor:pointer; border-radius:6px; border:none; font-weight:bold;}
+.approve{background:#00c853; color:white;}
+.danger{background:#ff4444; color:white;}
+input,select{padding:10px; margin:10px 0; width:100%; background:#222; color:white; border:1px solid #444; border-radius:5px;}
+h2{border-bottom:2px solid var(--purple); padding-bottom:10px;}
+</style>
+</head>
+<body>
+    <h1>ANTONY MBALI - ADMIN COMMAND CENTER</h1>
+    
+    <div class="grid">
+        <div class="panel">
+            <h2>Assign New Task</h2>
+            <p>Upload image and select which coworker can see it.</p>
+            <input type="file" id="adminFile" accept="image/*">
+            <select id="assignToDropdown">
+                <option value="">-- Select Approved Coworker --</option>
+            </select>
+            <button class="btn" style="background:var(--purple); color:white; width:100%;" onclick="uploadAdminTask()">Assign Task</button>
+        </div>
+
+        <div class="panel">
+            <h2>Coworker Management</h2>
+            <table id="userTable">
+                <thead><tr><th>Name</th><th>Last Login</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="panel" style="grid-column: span 2;">
+            <h2>Production & Earnings Tracker</h2>
+            <table id="productionTable">
+                <thead><tr><th>Coworker</th><th>Earnings ($)</th><th>Tasks Done</th><th>Latest Activity</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+function refreshAdmin(){
+    const users = JSON.parse(localStorage.getItem("ant_users") || "[]");
+    const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
+
+    // Fill Dropdown
+    const select = document.getElementById("assignToDropdown");
+    select.innerHTML = '<option value="">-- Select Approved Coworker --</option>' + 
+        users.filter(u => u.status === "approved").map(u => `<option value="${u.email}">${u.name}</option>`).join('');
+
+    // Fill User Table
+    const ut = document.getElementById("userTable").querySelector("tbody");
+    ut.innerHTML = users.map(u => `
+        <tr>
+            <td>${u.name}<br><small>${u.email}</small></td>
+            <td>${u.lastLogin || 'Never'}</td>
+            <td style="color:${u.status==='approved'?'#00c853':'#ff9800'}">${u.status.toUpperCase()}</td>
+            <td>
+                ${u.status==='pending' ? `<button class="btn approve" onclick="changeStatus('${u.email}', 'approved')">Approve</button>` : ''}
+                <button class="btn danger" onclick="deleteCoworker('${u.email}')">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+
+    // Fill Production Table
+    const pt = document.getElementById("productionTable").querySelector("tbody");
+    pt.innerHTML = users.map(u => {
+        const completedCount = tasks.filter(t => t.completedBy === u.name).length;
+        const lastLog = u.logs[0] ? u.logs[0].time : 'N/A';
+        return `
+            <tr>
+                <td><strong>${u.name}</strong></td>
+                <td style="color:#00c853">$${u.balance.toFixed(3)}</td>
+                <td>${completedCount} tasks</td>
+                <td>${lastLog}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function uploadAdminTask(){
+    const file = document.getElementById("adminFile").files[0];
+    const email = document.getElementById("assignToDropdown").value;
+    if(!file || !email) return alert("Please select an image and a coworker!");
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
+        tasks.push({
+            id: Date.now(),
+            imgData: e.target.result,
+            assignedTo: email,
+            completed: false,
+            timestamp: new Date().toLocaleString()
+        });
+        localStorage.setItem("ant_tasks", JSON.stringify(tasks));
+        alert("Success: Task assigned to coworker.");
+        refreshAdmin();
+    };
+    reader.readAsDataURL(file);
+}
+
+function changeStatus(email, status){
+    let users = JSON.parse(localStorage.getItem("ant_users"));
+    let idx = users.findIndex(u => u.email === email);
+    users[idx].status = status;
+    localStorage.setItem("ant_users", JSON.stringify(users));
+    refreshAdmin();
+}
+
+function deleteCoworker(email){
+    if(confirm("Permanently delete this coworker?")){
+        let users = JSON.parse(localStorage.getItem("ant_users"));
+        users = users.filter(u => u.email !== email);
+        localStorage.setItem("ant_users", JSON.stringify(users));
+        refreshAdmin();
+    }
+}
+
+window.onload = refreshAdmin;
+</script>
+</body>
+</html>
