@@ -188,48 +188,44 @@ const supabase = window.supabase.createClient(
 )
 
 let currentUser=null
-let canvas,ctx,img=new Image()
-
-let boxes=[]
-let drawMode=false
-let drawing=false
-
-let startX,startY
-
-let scale=1
-let originX=0
-let originY=0
-
-let dragging=false
-let dragStartX,dragStartY
-
-let activeTaskId=null
 
 async function handleLogin(){
 
 const name=document.getElementById("userName").value
 const email=document.getElementById("userEmail").value
 
-if(!name||!email)return alert("Fill fields")
-
-let {data:user}=await supabase
-.from("ant_users")
-.select("*")
-.eq("email",email)
-.single()
-
-if(!user){
-
-await supabase.from("ant_users").insert([{
-name:name,
-email:email
-}])
-
-alert("Account submitted. Wait for approval")
+if(!name||!email){
+alert("Fill all fields")
 return
 }
 
-if(user.status!=="approved"){
+const {data:user,error}=await supabase
+.from("ant_users")
+.select("*")
+.eq("email",email)
+
+if(error){
+console.log(error)
+alert("Database error")
+return
+}
+
+if(user.length===0){
+
+await supabase.from("ant_users").insert([{
+name:name,
+email:email,
+status:"pending",
+role:"worker"
+}])
+
+alert("Account created. Wait for admin approval.")
+return
+}
+
+const u=user[0]
+
+if(u.status!=="approved"){
 
 document.getElementById("loginPage").style.display="none"
 document.getElementById("waitlistPage").style.display="flex"
@@ -237,7 +233,7 @@ document.getElementById("waitlistPage").style.display="flex"
 return
 }
 
-currentUser=user
+currentUser=u
 
 document.getElementById("loginPage").style.display="none"
 
@@ -263,7 +259,7 @@ const {data:tasks}=await supabase
 
 const container=document.getElementById("assignedTasksList")
 
-if(!tasks || tasks.length==0){
+if(!tasks || tasks.length===0){
 
 container.innerHTML="<h3>No pending tasks</h3>"
 return
@@ -282,6 +278,11 @@ TASK ${t.id}
 `).join("")
 
 }
+
+let canvas,ctx,img=new Image()
+
+let boxes=[]
+let activeTaskId=null
 
 async function startWork(id){
 
@@ -310,116 +311,13 @@ canvas.height=img.height
 
 draw()
 
-initCanvas()
-
-updateAnnotationList()
-
-}
-
-}
-
-function initCanvas(){
-
-canvas.onwheel=e=>{
-
-e.preventDefault()
-
-const zoom=e.deltaY<0?1.1:0.9
-
-scale*=zoom
-
-draw()
-
-}
-
-canvas.onmousedown=e=>{
-
-if(drawMode){
-
-const rect=canvas.getBoundingClientRect()
-
-startX=(e.clientX-rect.left-originX)/scale
-startY=(e.clientY-rect.top-originY)/scale
-
-drawing=true
-
-}else{
-
-dragging=true
-dragStartX=e.clientX
-dragStartY=e.clientY
-
-canvas.style.cursor="grabbing"
-
-}
-
-}
-
-canvas.onmousemove=e=>{
-
-if(dragging){
-
-originX+=e.clientX-dragStartX
-originY+=e.clientY-dragStartY
-
-dragStartX=e.clientX
-dragStartY=e.clientY
-
-draw()
-
-}
-
-if(drawing){
-
-const rect=canvas.getBoundingClientRect()
-
-const x=(e.clientX-rect.left-originX)/scale
-const y=(e.clientY-rect.top-originY)/scale
-
-draw()
-
-ctx.strokeStyle="lime"
-ctx.strokeRect(startX,startY,x-startX,y-startY)
-
-}
-
-}
-
-canvas.onmouseup=e=>{
-
-dragging=false
-canvas.style.cursor="grab"
-
-if(!drawing)return
-
-drawing=false
-drawMode=false
-
-const rect=canvas.getBoundingClientRect()
-
-const x=(e.clientX-rect.left-originX)/scale
-const y=(e.clientY-rect.top-originY)/scale
-
-boxes.push({x:startX,y:startY,w:x-startX,h:y-startY})
-
-saveBoxes()
-
-draw()
-
-updateAnnotationList()
-
 }
 
 }
 
 function draw(){
 
-ctx.setTransform(1,0,0,1,0,0)
-
 ctx.clearRect(0,0,canvas.width,canvas.height)
-
-ctx.translate(originX,originY)
-ctx.scale(scale,scale)
 
 ctx.drawImage(img,0,0)
 
@@ -433,36 +331,33 @@ ctx.strokeRect(b.x,b.y,b.w,b.h)
 }
 
 function enableDraw(){
-drawMode=true
-}
 
-function updateAnnotationList(){
+canvas.onmousedown=e=>{
 
-const list=document.getElementById("annotationList")
+const rect=canvas.getBoundingClientRect()
 
-list.innerHTML=boxes.map((b,i)=>`
+const startX=e.clientX-rect.left
+const startY=e.clientY-rect.top
 
-<div class="annotation">
+canvas.onmouseup=e2=>{
 
-Box ${i+1}
+const endX=e2.clientX-rect.left
+const endY=e2.clientY-rect.top
 
-<button onclick="deleteBox(${i})" style="background:red;color:white;">X</button>
-
-</div>
-
-`).join("")
-
-}
-
-function deleteBox(i){
-
-boxes.splice(i,1)
+boxes.push({
+x:startX,
+y:startY,
+w:endX-startX,
+h:endY-startY
+})
 
 saveBoxes()
 
 draw()
 
-updateAnnotationList()
+}
+
+}
 
 }
 
