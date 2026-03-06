@@ -5,8 +5,8 @@
     <title>Admin - Antony Mbali Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--blue:#0d6efd;--white:#fff;--danger:#ff4444;--success:#00c853;}
-        body{background:var(--bg); color:white; font-family:'Segoe UI', sans-serif; margin:0; padding:0;}
+        :root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--danger:#ff4444;--success:#00c853;}
+        body{background:var(--bg); color:white; font-family:sans-serif; margin:0; padding:0;}
         .admin-container { display: flex; height: 100vh; }
         .sidebar { width: 220px; background: #000; border-right: 1px solid #222; padding: 20px; }
         .main-content { flex: 1; padding: 30px; overflow-y: auto; }
@@ -15,24 +15,19 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .panel { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
-        th { color: var(--purple); }
-        .btn { padding: 8px 15px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; }
-        #inspectModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; overflow-y: auto;}
+        .btn { padding: 8px 15px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; color: white; }
+        #inspectModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; }
         .inspect-box { width: 90%; margin: 2% auto; background: var(--card); padding: 20px; border-radius: 10px; }
-        #canvasWrapper { position: relative; background: #000; border: 1px solid #444; overflow: hidden; display: flex; justify-content: center;}
-        canvas { max-width: 100%; height: auto; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="admin-container">
     <div class="sidebar">
-        <h2 style="font-size: 18px;">a<span style="color:var(--purple)">⌵</span> ADMIN</h2>
-        <hr style="border:0; border-top:1px solid #222; margin: 20px 0;">
-        <button class="tab-btn active" onclick="showTab('approvals')">👥 Approvals <span id="approveBadge" style="color:var(--danger); display:none;">●</span></button>
+        <h2>a<span style="color:var(--purple)">⌵</span> ADMIN</h2>
+        <button class="tab-btn active" onclick="showTab('approvals')">👥 Approvals</button>
         <button class="tab-btn" onclick="showTab('assigning')">📤 Assign Tasks</button>
         <button class="tab-btn" onclick="showTab('tracking')">📊 Workflow</button>
         <button class="tab-btn" onclick="showTab('inspection')">🔍 Inspect Review</button>
@@ -41,85 +36,34 @@
     <div class="main-content">
         <div id="approvals" class="tab-content active">
             <h1>Coworker Approvals</h1>
-            <div class="panel">
-                <table id="userTable">
-                    <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            <div class="panel"><table id="userTable"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table></div>
         </div>
 
         <div id="assigning" class="tab-content">
             <h1>Task Assignment</h1>
-            <div class="panel" style="max-width: 500px;">
-                <label>1. Select Image</label>
-                <input type="file" id="adminFile" accept="image/*" style="width:100%; margin:10px 0;">
-                <label>2. Select Approved Coworker</label>
-                <select id="assignToDropdown" style="width:100%; padding:10px; margin:10px 0; background:#222; color:white; border:1px solid #444;"></select>
-                <button class="btn" style="background:var(--purple); color:white; width:100%; margin-top:10px;" onclick="uploadAdminTask()">Send to Coworker</button>
+            <div class="panel" style="max-width: 400px;">
+                <input type="file" id="adminFile" accept="image/*" style="margin-bottom:10px;">
+                <select id="assignToDropdown" style="width:100%; padding:10px; margin-bottom:10px; background:#222; color:white;"></select>
+                <button class="btn" style="background:var(--purple); width:100%;" onclick="uploadAdminTask()">Send Task</button>
             </div>
         </div>
 
         <div id="tracking" class="tab-content">
             <h1>Production Tracking</h1>
-            <div class="panel">
-                <table id="productionTable">
-                    <thead><tr><th>Coworker</th><th>Earnings</th><th>Work Count</th><th>Manage</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            <div class="panel"><table id="productionTable"><thead><tr><th>Coworker</th><th>Earnings</th><th>Status</th></tr></thead><tbody></tbody></table></div>
         </div>
 
         <div id="inspection" class="tab-content">
-            <h1>Inspection & Quality Control</h1>
-            <div class="panel">
-                <table id="inspectTable">
-                    <thead><tr><th>Date</th><th>Coworker</th><th>Task ID</th><th>Action</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="inspectModal">
-    <div class="inspect-box">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h2 id="inspectTitle" style="margin:0;">Visual Review</h2>
-            <button class="btn" onclick="closeInspect()" style="background:#444; color:white;">✕ Close</button>
-        </div>
-        <div style="display:flex; gap:20px;">
-            <div style="flex:3;" id="canvasWrapper">
-                <canvas id="inspectCanvas"></canvas>
-            </div>
-            <div style="flex:1;">
-                <div class="panel" style="background:#000;">
-                    <h3>Submission Info</h3>
-                    <div id="inspectStats" style="line-height:1.6;"></div>
-                    <hr style="border-color:#222; margin:15px 0;">
-                    <button class="btn" style="background:var(--success); width:100%; margin-bottom:10px; padding:12px;" onclick="approveWork()">Approve & Pay</button>
-                    <button class="btn" style="background:var(--danger); width:100%; padding:12px;" onclick="rejectTask()">Reject (Deduct $)</button>
-                </div>
-            </div>
+            <h1>Inspection</h1>
+            <div class="panel"><table id="inspectTable"><thead><tr><th>Date</th><th>Worker</th><th>Action</th></tr></thead><tbody></tbody></table></div>
         </div>
     </div>
 </div>
 
 <script>
-// --- CONFIGURATION ---
 const SB_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w";
-
-const supabase = typeof supabase !== 'undefined' ? supabase : window.supabase.createClient(SB_URL, SB_KEY);
-
-let currentInspectTaskId = null;
-const canvas = document.getElementById("inspectCanvas");
-const ctx = canvas.getContext("2d");
-
-// REALTIME SYNC
-supabase.channel('db-changes')
-  .on('postgres_changes', { event: '*', schema: 'public' }, () => refreshAdmin())
-  .subscribe();
+const supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
 function showTab(id) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -132,104 +76,34 @@ function showTab(id) {
 async function refreshAdmin() {
     const { data: users } = await supabase.from('ant_users').select('*');
     const { data: tasks } = await supabase.from('ant_tasks').select('*');
-    if (!users || !tasks) return;
+    if (!users) return;
 
-    // 1. Approvals
-    const ut = document.getElementById("userTable").querySelector("tbody");
-    const pendingCount = users.filter(u => u.status === 'pending').length;
-    document.getElementById("approveBadge").style.display = pendingCount > 0 ? "inline" : "none";
-    ut.innerHTML = users.sort((a,b) => (a.status === 'pending' ? -1 : 1)).map(u => `
-        <tr>
-            <td>${u.name}</td>
-            <td>${u.email}</td>
-            <td><span class="badge" style="background:${u.status==='approved'?'#00c853':'#ff9800'}">${u.status.toUpperCase()}</span></td>
-            <td>
-                ${u.status==='pending' ? `<button class="btn" style="background:var(--success); color:white;" onclick="changeStatus('${u.email}', 'approved')">Approve</button>` : ''}
-                <button class="btn" style="background:none; color:var(--danger);" onclick="deleteItem('user', '${u.email}')">Delete</button>
-            </td>
-        </tr>
+    // Approvals Table
+    document.getElementById("userTable").querySelector("tbody").innerHTML = users.map(u => `
+        <tr><td>${u.name}</td><td>${u.email}</td><td>${u.status}</td>
+        <td>${u.status==='pending' ? `<button class="btn" style="background:var(--success)" onclick="updateStatus('${u.email}','approved')">Approve</button>` : ''}</td></tr>
     `).join('');
 
-    // 2. Dropdown
-    document.getElementById("assignToDropdown").innerHTML = '<option value="">-- Select Worker --</option>' + 
-        users.filter(u => u.status === "approved").map(u => `<option value="${u.email}">${u.name}</option>`).join('');
-
-    // 3. Tracking
-    const pt = document.getElementById("productionTable").querySelector("tbody");
-    pt.innerHTML = users.map(u => `
-        <tr>
-            <td><strong>${u.name}</strong><br><small>${u.email}</small></td>
-            <td style="color:var(--success)">$${(u.balance || 0).toFixed(3)}</td>
-            <td>${tasks.filter(t => t.completedBy === u.name).length} Completed</td>
-            <td><button class="btn" style="background:none; color:var(--danger);" onclick="deleteItem('user', '${u.email}')">Remove</button></td>
-        </tr>
-    `).join('');
-
-    // 4. Inspection
-    const it = document.getElementById("inspectTable").querySelector("tbody");
-    it.innerHTML = tasks.filter(t => t.completed).map(t => `
-        <tr>
-            <td>${new Date(t.timestamp).toLocaleDateString()}</td>
-            <td>${t.completedBy}</td>
-            <td>#${t.id.toString().slice(-5)}</td>
-            <td>
-                <button class="btn" style="background:var(--purple); color:white;" onclick="openInspect('${t.id}')">Review</button>
-                <button class="btn" style="background:none; color:var(--danger);" onclick="deleteItem('task', '${t.id}')">Delete</button>
-            </td>
-        </tr>
-    `).join('');
+    // Dropdown
+    document.getElementById("assignToDropdown").innerHTML = users.filter(u=>u.status==='approved').map(u=>`<option value="${u.email}">${u.name}</option>`).join('');
 }
 
-async function changeStatus(email, status) {
-    await supabase.from('ant_users').update({ status: status }).eq('email', email);
-    refreshAdmin();
-}
-
-async function deleteItem(type, id) {
-    if(!confirm("Are you sure?")) return;
-    const table = type === 'user' ? 'ant_users' : 'ant_tasks';
-    const col = type === 'user' ? 'email' : 'id';
-    await supabase.from(table).delete().eq(col, id);
+async function updateStatus(email, status) {
+    await supabase.from('ant_users').update({ status }).eq('email', email);
     refreshAdmin();
 }
 
 async function uploadAdminTask() {
     const file = document.getElementById("adminFile").files[0];
     const email = document.getElementById("assignToDropdown").value;
-    if(!file || !email) return alert("Select file and coworker.");
-
     const reader = new FileReader();
     reader.onload = async (e) => {
-        await supabase.from('ant_tasks').insert([{
-            id: Date.now(),
-            imgData: e.target.result,
-            assignedTo: email,
-            completed: false
-        }]);
+        await supabase.from('ant_tasks').insert([{ id: Date.now(), imgData: e.target.result, assignedTo: email }]);
         alert("Task Sent!");
-        refreshAdmin();
     };
     reader.readAsDataURL(file);
 }
 
-async function openInspect(id) {
-    const { data: task } = await supabase.from('ant_tasks').select('*').eq('id', id).single();
-    currentInspectTaskId = id;
-    const img = new Image();
-    img.src = task.imgData;
-    img.onload = () => {
-        canvas.width = img.width; canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        if(task.finalBoxes) {
-            ctx.strokeStyle = "lime"; ctx.lineWidth = 3;
-            task.finalBoxes.forEach(box => ctx.strokeRect(box.x, box.y, box.w, box.h));
-        }
-    };
-    document.getElementById("inspectStats").innerHTML = `<p>Worker: ${task.completedBy}</p><p>ID: ${id}</p>`;
-    document.getElementById("inspectModal").style.display = "block";
-}
-
-function closeInspect() { document.getElementById("inspectModal").style.display = "none"; }
 window.onload = refreshAdmin;
 </script>
 </body>
