@@ -5,21 +5,38 @@
     <title>Admin - Antony Mbali Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--danger:#ff4444;--success:#00c853;}
-        body{background:var(--bg); color:white; font-family:sans-serif; margin:0; padding:0;}
+        :root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--danger:#ff4444;--success:#00c853;--border:#222;}
+        body{background:var(--bg); color:white; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:0; overflow: hidden;}
         .admin-container { display: flex; height: 100vh; }
-        .sidebar { width: 220px; background: #000; border-right: 1px solid #222; padding: 20px; }
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
-        .tab-btn { width: 100%; padding: 12px; margin-bottom: 10px; background: none; border: 1px solid #333; color: white; text-align: left; cursor: pointer; border-radius: 6px; }
-        .tab-btn.active { background: var(--purple); border-color: var(--purple); }
-        .tab-content { display: none; }
+        
+        /* Sidebar Styles */
+        .sidebar { width: 240px; background: #000; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
+        .sidebar h2 { font-size: 20px; margin-bottom: 30px; letter-spacing: 1px; }
+        .tab-btn { width: 100%; padding: 14px; margin-bottom: 8px; background: none; border: 1px solid transparent; color: #999; text-align: left; cursor: pointer; border-radius: 8px; font-size: 15px; transition: 0.2s; }
+        .tab-btn:hover { background: #111; color: white; }
+        .tab-btn.active { background: var(--purple); color: white; border-color: var(--purple); font-weight: bold; }
+        
+        /* Main Content Styles */
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; background: var(--bg); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: block; }
-        .panel { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
-        .btn { padding: 8px 15px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; color: white; }
-        #inspectModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; }
-        .inspect-box { width: 90%; margin: 2% auto; background: var(--card); padding: 20px; border-radius: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .panel { background: var(--card); padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        h1 { margin-top: 0; font-size: 28px; margin-bottom: 25px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; color: #666; font-size: 13px; text-transform: uppercase; padding: 12px; border-bottom: 1px solid var(--border); }
+        td { padding: 15px 12px; border-bottom: 1px solid #1a1a1a; font-size: 15px; }
+        
+        .btn { padding: 10px 18px; cursor: pointer; border-radius: 6px; border: none; font-weight: 600; font-size: 13px; transition: 0.2s; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #00e676; }
+        .btn-outline { background: none; border: 1px solid #333; color: #888; margin-left: 5px; }
+        .btn-outline:hover { border-color: var(--danger); color: var(--danger); }
+        
+        select, input[type="file"] { width: 100%; padding: 12px; margin: 10px 0 20px 0; background: #222; border: 1px solid #444; color: white; border-radius: 6px; }
+        label { font-size: 14px; color: #aaa; }
     </style>
 </head>
 <body>
@@ -27,84 +44,162 @@
 <div class="admin-container">
     <div class="sidebar">
         <h2>a<span style="color:var(--purple)">⌵</span> ADMIN</h2>
-        <button class="tab-btn active" onclick="showTab('approvals')">👥 Approvals</button>
-        <button class="tab-btn" onclick="showTab('assigning')">📤 Assign Tasks</button>
-        <button class="tab-btn" onclick="showTab('tracking')">📊 Workflow</button>
-        <button class="tab-btn" onclick="showTab('inspection')">🔍 Inspect Review</button>
+        <button class="tab-btn active" onclick="switchTab(event, 'approvals')">👥 Approvals</button>
+        <button class="tab-btn" onclick="switchTab(event, 'assigning')">📤 Assign Tasks</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tracking')">📊 Workflow</button>
+        <button class="tab-btn" onclick="switchTab(event, 'inspection')">🔍 Inspect Review</button>
     </div>
 
     <div class="main-content">
         <div id="approvals" class="tab-content active">
             <h1>Coworker Approvals</h1>
-            <div class="panel"><table id="userTable"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+            <div class="panel">
+                <table id="userTable">
+                    <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="assigning" class="tab-content">
-            <h1>Task Assignment</h1>
-            <div class="panel" style="max-width: 400px;">
-                <input type="file" id="adminFile" accept="image/*" style="margin-bottom:10px;">
-                <select id="assignToDropdown" style="width:100%; padding:10px; margin-bottom:10px; background:#222; color:white;"></select>
-                <button class="btn" style="background:var(--purple); width:100%;" onclick="uploadAdminTask()">Send Task</button>
+            <h1>Assign New Task</h1>
+            <div class="panel" style="max-width: 500px;">
+                <label>1. Upload Task Image</label>
+                <input type="file" id="adminFile" accept="image/*">
+                
+                <label>2. Select Approved Coworker</label>
+                <select id="assignToDropdown">
+                    <option value="">-- Loading Coworkers --</option>
+                </select>
+                
+                <button class="btn btn-success" style="width:100%; padding:15px;" onclick="uploadAdminTask()">Send Task to Worker</button>
             </div>
         </div>
 
         <div id="tracking" class="tab-content">
             <h1>Production Tracking</h1>
-            <div class="panel"><table id="productionTable"><thead><tr><th>Coworker</th><th>Earnings</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+            <div class="panel">
+                <table id="productionTable">
+                    <thead><tr><th>Coworker</th><th>Total Earnings</th><th>Completed</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="inspection" class="tab-content">
-            <h1>Inspection</h1>
-            <div class="panel"><table id="inspectTable"><thead><tr><th>Date</th><th>Worker</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+            <h1>Quality Control</h1>
+            <div class="panel">
+                <table id="inspectTable">
+                    <thead><tr><th>Date</th><th>Worker</th><th>Task ID</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
+// CONFIGURATION
 const SB_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w";
 const supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
-function showTab(id) {
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+// TAB SYSTEM FIX
+function switchTab(event, tabId) {
+    // Hide all contents
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    // Deactivate all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // Show current
+    document.getElementById(tabId).classList.add('active');
     event.currentTarget.classList.add('active');
-    refreshAdmin();
+    
+    refreshData();
 }
 
-async function refreshAdmin() {
-    const { data: users } = await supabase.from('ant_users').select('*');
-    const { data: tasks } = await supabase.from('ant_tasks').select('*');
-    if (!users) return;
+async function refreshData() {
+    const { data: users, error: uErr } = await supabase.from('ant_users').select('*');
+    const { data: tasks, error: tErr } = await supabase.from('ant_tasks').select('*');
 
-    // Approvals Table
-    document.getElementById("userTable").querySelector("tbody").innerHTML = users.map(u => `
-        <tr><td>${u.name}</td><td>${u.email}</td><td>${u.status}</td>
-        <td>${u.status==='pending' ? `<button class="btn" style="background:var(--success)" onclick="updateStatus('${u.email}','approved')">Approve</button>` : ''}</td></tr>
-    `).join('');
+    if (uErr || tErr) {
+        console.error("Database Error:", uErr || tErr);
+        return;
+    }
 
-    // Dropdown
-    document.getElementById("assignToDropdown").innerHTML = users.filter(u=>u.status==='approved').map(u=>`<option value="${u.email}">${u.name}</option>`).join('');
+    // 1. Populate Approvals
+    const userBody = document.querySelector("#userTable tbody");
+    userBody.innerHTML = users.map(u => `
+        <tr>
+            <td>${u.name}</td>
+            <td>${u.email}</td>
+            <td><span style="color:${u.status === 'approved' ? 'var(--success)' : '#ffa000'}">${u.status.toUpperCase()}</span></td>
+            <td>
+                ${u.status === 'pending' ? `<button class="btn btn-success" onclick="updateUserStatus('${u.email}', 'approved')">Approve</button>` : ''}
+                <button class="btn btn-outline" onclick="deleteUser('${u.email}')">Remove</button>
+            </td>
+        </tr>
+    `).join('') || '<tr><td colspan="4" style="text-align:center; color:#555;">No requests found</td></tr>';
+
+    // 2. Populate Dropdown for Assigning
+    const dropdown = document.getElementById("assignToDropdown");
+    const approvedUsers = users.filter(u => u.status === 'approved');
+    dropdown.innerHTML = '<option value="">-- Select a Worker --</option>' + 
+        approvedUsers.map(u => `<option value="${u.email}">${u.name}</option>`).join('');
+
+    // 3. Populate Tracking
+    const trackBody = document.querySelector("#productionTable tbody");
+    trackBody.innerHTML = approvedUsers.map(u => {
+        const count = tasks ? tasks.filter(t => t.completedBy === u.name && t.completed).length : 0;
+        return `
+            <tr>
+                <td>${u.name}</td>
+                <td style="color:var(--success)">$${(u.balance || 0).toFixed(2)}</td>
+                <td>${count} Tasks</td>
+                <td><button class="btn btn-outline" onclick="deleteUser('${u.email}')">Delete Account</button></td>
+            </tr>
+        `;
+    }).join('') || '<tr><td colspan="4" style="text-align:center; color:#555;">No approved workers yet</td></tr>';
 }
 
-async function updateStatus(email, status) {
-    await supabase.from('ant_users').update({ status }).eq('email', email);
-    refreshAdmin();
+async function updateUserStatus(email, status) {
+    const { error } = await supabase.from('ant_users').update({ status }).eq('email', email);
+    if (!error) refreshData();
+}
+
+async function deleteUser(email) {
+    if(confirm("Permanently remove this coworker?")) {
+        await supabase.from('ant_users').delete().eq('email', email);
+        refreshData();
+    }
 }
 
 async function uploadAdminTask() {
     const file = document.getElementById("adminFile").files[0];
     const email = document.getElementById("assignToDropdown").value;
+    
+    if(!file || !email) return alert("Please select an image and a coworker!");
+
     const reader = new FileReader();
     reader.onload = async (e) => {
-        await supabase.from('ant_tasks').insert([{ id: Date.now(), imgData: e.target.result, assignedTo: email }]);
-        alert("Task Sent!");
+        const { error } = await supabase.from('ant_tasks').insert([{
+            id: Date.now(),
+            imgData: e.target.result,
+            assignedTo: email,
+            completed: false
+        }]);
+        
+        if (error) alert("Error sending task: " + error.message);
+        else {
+            alert("Task assigned successfully!");
+            document.getElementById("adminFile").value = "";
+        }
     };
     reader.readAsDataURL(file);
 }
 
-window.onload = refreshAdmin;
+// Initial Load
+window.onload = refreshData;
 </script>
 </body>
 </html>
