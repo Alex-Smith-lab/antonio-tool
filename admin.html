@@ -39,6 +39,8 @@ canvas { max-width: 100%; height: auto; }
         <button class="tab-btn" onclick="showTab('assigning')">📤 Assign Tasks</button>
         <button class="tab-btn" onclick="showTab('tracking')">📊 Workflow</button>
         <button class="tab-btn" onclick="showTab('inspection')">🔍 Inspect Review</button>
+        
+        <button class="btn" style="background:#333; color:white; width:100%; margin-top:20px; font-size:12px;" onclick="syncData()">🔄 Sync from Other Device</button>
     </div>
 
     <div class="main-content">
@@ -121,16 +123,35 @@ function showTab(id) {
     refreshAdmin();
 }
 
+// FOR CROSS-DEVICE VISIBILITY: Manual Sync
+function syncData() {
+    const rawData = prompt("Paste the User Data String from the other device (or type 'GET' to copy current):");
+    if(!rawData) return;
+    
+    if(rawData.toUpperCase() === 'GET') {
+        const currentData = localStorage.getItem("ant_users");
+        navigator.clipboard.writeText(currentData);
+        alert("Current user list copied to clipboard. Paste this on the other device.");
+    } else {
+        try {
+            const newData = JSON.parse(rawData);
+            localStorage.setItem("ant_users", JSON.stringify(newData));
+            alert("Data synced successfully!");
+            refreshAdmin();
+        } catch(e) {
+            alert("Invalid data format.");
+        }
+    }
+}
+
 function refreshAdmin(){
     const users = JSON.parse(localStorage.getItem("ant_users") || "[]");
     const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
 
-    // FIX 1: Ensure all users are parsed and displayed correctly in the table
     const ut = document.getElementById("userTable").querySelector("tbody");
     const pendingCount = users.filter(u => u.status === 'pending').length;
     document.getElementById("approveBadge").style.display = pendingCount > 0 ? "inline" : "none";
     
-    // Sort so pending users appear at the top
     const sortedUsers = [...users].sort((a,b) => (a.status === 'pending' ? -1 : 1));
 
     ut.innerHTML = sortedUsers.map(u => `
@@ -145,11 +166,9 @@ function refreshAdmin(){
         </tr>
     `).join('');
 
-    // Update Dropdown
     document.getElementById("assignToDropdown").innerHTML = '<option value="">-- Select Worker --</option>' + 
         users.filter(u => u.status === "approved").map(u => `<option value="${u.email}">${u.name}</option>`).join('');
 
-    // Update Tracking
     const pt = document.getElementById("productionTable").querySelector("tbody");
     pt.innerHTML = users.map(u => `
         <tr>
@@ -160,7 +179,6 @@ function refreshAdmin(){
         </tr>
     `).join('');
 
-    // Update Inspection
     const it = document.getElementById("inspectTable").querySelector("tbody");
     it.innerHTML = tasks.filter(t => t.completed).map(t => `
         <tr>
@@ -175,7 +193,6 @@ function refreshAdmin(){
     `).join('');
 }
 
-// FIX 2: More reliable Status Change
 function changeStatus(email, status){
     let users = JSON.parse(localStorage.getItem("ant_users") || "[]");
     const userIndex = users.findIndex(u => u.email === email);
@@ -185,8 +202,6 @@ function changeStatus(email, status){
         localStorage.setItem("ant_users", JSON.stringify(users));
         alert(email + " has been approved.");
         refreshAdmin();
-    } else {
-        alert("User not found!");
     }
 }
 
@@ -231,7 +246,7 @@ function rejectTask(){
     const worker = users.find(u => u.name === task.completedBy);
     if(worker) {
         const penalty = (task.finalBoxes ? task.finalBoxes.length : 0) * 0.012;
-        worker.balance -= penalty;
+        worker.balance -= (worker.balance >= penalty) ? penalty : worker.balance;
     }
     
     task.completed = false; 
@@ -276,8 +291,9 @@ function uploadAdminTask(){
 }
 
 function closeInspect() { document.getElementById("inspectModal").style.display = "none"; }
-// Refresh every 5 seconds to catch new signups
-setInterval(refreshAdmin, 5000);
+// Listen for storage changes from other tabs on the same device
+window.addEventListener('storage', () => refreshAdmin());
+setInterval(refreshAdmin, 3000);
 window.onload = refreshAdmin;
 </script>
 </body>
