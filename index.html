@@ -11,7 +11,6 @@ body,html{margin:0;padding:0;font-family:Segoe UI,sans-serif;background:var(--bg
 #topNav{position:fixed;top:0;left:0;right:0;height:50px;background:#000;display:flex;justify-content:space-between;align-items:center;padding:0 20px;z-index:1000;border-bottom:1px solid #222;}
 #profileHeader{background:var(--card); padding:20px; border-radius:12px; border:1px solid #333; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;}
 .profile-info h3{margin:0; color:var(--purple);}
-.profile-info p{margin:5px 0 0 0; color:var(--dim); font-size:12px;}
 
 /* DASHBOARD & SPREADSHEET */
 #dashboard{margin-top:70px; padding:0 10%; overflow-y:auto; height:calc(100vh - 70px); padding-bottom:50px;}
@@ -22,14 +21,12 @@ body,html{margin:0;padding:0;font-family:Segoe UI,sans-serif;background:var(--bg
 /* WORKSPACE */
 #workspacePage{display:none; position:fixed; top:50px; bottom:20px; left:0; right:0; background:black; z-index:1800;}
 #workzone{position:absolute; left:0; right:250px; top:0; bottom:0; overflow:hidden; background:#050505;}
-canvas{cursor:crosshair; transform-origin: 0 0;}
+canvas{cursor:crosshair;}
 #rightPanel{position:absolute; right:0; top:0; bottom:0; width:250px; background:#111; border-left:1px solid #222; padding:15px;}
 .control-bar{position:absolute; bottom:20px; left:20px; display:flex; gap:10px; z-index:1900;}
 
-/* OTHER UI */
+/* LOGIN & WAITLIST */
 #loginPage,#waitlistPage{display:flex; height:100vh; position:fixed; width:100%; z-index:2000; background:#000; flex-direction:column; align-items:center; justify-content:center;}
-#loginRight{width:350px; background:rgba(22,22,22,0.9); padding:30px; border-radius:12px; border:1px solid #333; text-align:center;}
-input{width:100%; padding:10px; margin:8px 0; border:none; border-radius:4px; color:#000; box-sizing:border-box;}
 .btn{padding:10px 15px; border-radius:6px; border:none; cursor:pointer; font-weight:bold;}
 .footer-bar{position:fixed; bottom:0; left:0; right:0; height:20px; background:var(--purple); font-size:9px; display:flex; justify-content:space-between; align-items:center; padding:0 10px; text-transform:uppercase; z-index:2000;}
 </style>
@@ -37,34 +34,31 @@ input{width:100%; padding:10px; margin:8px 0; border:none; border-radius:4px; co
 <body oncontextmenu="return false;">
 
 <div id="loginPage">
-    <div id="loginRight">
+    <div style="width:350px; background:rgba(22,22,22,0.9); padding:30px; border-radius:12px; border:1px solid #333; text-align:center;">
         <h2>Antony Mbali Login</h2>
-        <input id="userName" placeholder="Full Name">
-        <input id="userEmail" placeholder="Email">
-        <input id="userPass" placeholder="Password" type="password">
+        <input id="userName" placeholder="Full Name" style="width:100%; padding:10px; margin:8px 0; border-radius:4px; color:#000;">
+        <input id="userEmail" placeholder="Email" style="width:100%; padding:10px; margin:8px 0; border-radius:4px; color:#000;">
         <button class="btn" style="background:var(--blue); color:white; width:100%;" onclick="handleLogin()">Sign In</button>
     </div>
 </div>
 
 <div id="waitlistPage" style="display:none;">
     <h1 style="color:var(--purple)">Access Pending</h1>
-    <p>Please wait for Admin approval to access tasks.</p>
-    <button class="btn" onclick="logout()">Logout</button>
+    <p>Your account is on the waitlist. Please wait for Admin approval.</p>
+    <button class="btn" onclick="logout()">Refresh / Logout</button>
 </div>
 
 <div id="topNav">
     <div class="logo">a<span style="color:var(--purple)">⌵</span> LABELER</div>
-    <div class="nav-right">
-        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; font-weight:bold;">Logout</button>
-    </div>
+    <div class="nav-right"><button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer;">Logout</button></div>
 </div>
 
 <div id="dashboard">
     <div id="profileHeader">
         <div class="profile-info">
             <h3 id="profName">User Name</h3>
-            <p id="profEmail">user@example.com</p>
-            <p id="profStatus" style="color:var(--success)">● Status: Active</p>
+            <p id="profEmail" style="color:var(--dim); font-size:12px; margin:5px 0;">user@example.com</p>
+            <p id="profStatus" style="color:var(--success)">● Status: Approved</p>
         </div>
         <div style="text-align:right;">
             <div style="color:var(--dim); font-size:11px;">CURRENT BALANCE</div>
@@ -72,33 +66,27 @@ input{width:100%; padding:10px; margin:8px 0; border:none; border-radius:4px; co
         </div>
     </div>
 
-    <h2 id="greetingText">Good Morning!</h2>
-    
-    <div id="assignedTasksList">
-        <p>Searching for your assigned tasks...</p>
-    </div>
+    <h2 id="greetingText">Welcome Back!</h2>
+    <div id="assignedTasksList"><p>Checking tasks...</p></div>
 
-    <h3>Payment Spreadsheet & Tracker</h3>
+    <h3>Payment Spreadsheet</h3>
     <table class="spreadsheet">
-        <thead><tr><th>Timestamp</th><th>Activity</th><th>Amount</th><th>Status</th></tr></thead>
+        <thead><tr><th>Time</th><th>Activity</th><th>Amount</th><th>Status</th></tr></thead>
         <tbody id="earningsTableBody"></tbody>
     </table>
 </div>
 
 <div id="workspacePage">
     <div id="workzone"><canvas id="canvas"></canvas></div>
-    
     <div class="control-bar">
         <button class="btn" style="background:var(--purple); color:white;" onclick="enableDraw()">+ Draw Box</button>
         <button class="btn" style="background:#333; color:white;" onclick="undoLastBox()">Undo</button>
         <button class="btn" style="background:#333; color:white;" onclick="resetZoom()">Reset View</button>
     </div>
-
     <div id="rightPanel">
-        <button class="btn" onclick="completeTask()" style="width:100%; background:var(--success); color:white; margin-bottom:20px;">SUBMIT TASK</button>
+        <button class="btn" onclick="completeTask()" style="width:100%; background:var(--success); color:white; margin-bottom:20px;">COMPLETE TASK</button>
         <h4 style="color:var(--purple); margin:0;">Annotations</h4>
-        <hr border="0" style="border-top:1px solid #333; margin:10px 0;">
-        <div id="annotationList" style="font-size:12px; color:var(--dim);"></div>
+        <div id="annotationList" style="font-size:12px; color:var(--dim); margin-top:10px;"></div>
     </div>
 </div>
 
@@ -114,11 +102,11 @@ let startX, startY, drawing=false, dragging=false;
 function handleLogin(){
     const name = document.getElementById("userName").value;
     const email = document.getElementById("userEmail").value;
-    if(!name || !email) return alert("Enter Name and Email");
+    if(!name || !email) return alert("Required field empty");
     let users = JSON.parse(localStorage.getItem("ant_users") || "[]");
     let user = users.find(u => u.email === email);
     if(!user){
-        user = { name, email, status: "pending", balance: 0, logs: [], lastLogin: new Date().toLocaleString() };
+        user = { name, email, status: "pending", balance: 0, logs: [] };
         users.push(user);
         localStorage.setItem("ant_users", JSON.stringify(users));
     }
@@ -135,16 +123,21 @@ function initDashboard(){
     let users = JSON.parse(localStorage.getItem("ant_users") || "[]");
     let globalUser = users.find(u => u.email === currentUser.email);
     
-    if(globalUser.status === "pending"){
+    if(globalUser.status !== "approved"){
         document.getElementById("waitlistPage").style.display="flex";
-    } else {
-        document.getElementById("profName").innerText = globalUser.name;
-        document.getElementById("profEmail").innerText = globalUser.email;
-        document.getElementById("footerCoworkerName").innerText = globalUser.name;
-        updateGreeting();
-        refreshUI();
-        loadAssignedTasks();
+        return;
     }
+
+    document.getElementById("profName").innerText = globalUser.name;
+    document.getElementById("profEmail").innerText = globalUser.email;
+    document.getElementById("footerCoworkerName").innerText = globalUser.name;
+    updateGreeting();
+    refreshUI();
+    loadAssignedTasks();
+
+    // PERSISTENCE CHECK: Resume work if session exists
+    let activeSession = localStorage.getItem("ant_active_session");
+    if(activeSession) startWork(activeSession);
 }
 
 function updateGreeting() {
@@ -157,51 +150,45 @@ function loadAssignedTasks(){
     const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
     const container = document.getElementById("assignedTasksList");
     const myTasks = tasks.filter(t => t.assignedTo === currentUser.email && !t.completed);
-    
-    container.innerHTML = myTasks.length === 0 ? "<h4>No pending tasks.</h4>" : 
-        myTasks.map(t => `
-            <div class="panel" style="background:var(--card); padding:15px; border:1px solid #333; margin-bottom:10px; border-radius:8px;">
-                <strong>TASK ID: ${t.id.toString().slice(-6)}</strong> | Assigned: ${t.timestamp}
-                <button class="btn" style="float:right; background:var(--purple); color:white;" onclick="startWork('${t.id}')">Open Workspace</button>
-            </div>
-        `).join('');
+    container.innerHTML = myTasks.length === 0 ? "<h4>No tasks assigned.</h4>" : myTasks.map(t => `
+        <div style="background:var(--card); padding:15px; border:1px solid #333; margin-bottom:10px; border-radius:8px;">
+            <strong>TASK: ${t.id.toString().slice(-6)}</strong>
+            <button class="btn" style="float:right; background:var(--purple); color:white;" onclick="startWork('${t.id}')">Start Annotating</button>
+        </div>
+    `).join('');
 }
 
 function startWork(id){
     const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
     const task = tasks.find(t => t.id == id);
     activeTaskId = id;
-    boxes = [];
+    localStorage.setItem("ant_active_session", id); // Lock session
+
+    // Check for saved boxes from previous session
+    let savedBoxes = localStorage.getItem(`boxes_${id}`);
+    boxes = savedBoxes ? JSON.parse(savedBoxes) : [];
+
+    document.getElementById("dashboard").style.display="none";
     document.getElementById("workspacePage").style.display="block";
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     img.src = task.imgData;
-    img.onload = () => { 
-        canvas.width = img.width; 
-        canvas.height = img.height; 
-        resetZoom(); 
-        initCanvasEvents(); 
-    };
+    img.onload = () => { canvas.width = img.width; canvas.height = img.height; resetZoom(); initCanvasEvents(); updateAnnotationList(); };
 }
 
 function initCanvasEvents(){
-    // Zoom with Mouse Wheel
     canvas.onwheel = (e) => {
         e.preventDefault();
-        const zoomSpeed = 0.1;
-        const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
-        scale = Math.min(Math.max(0.1, scale + delta), 5);
+        scale = Math.min(Math.max(0.1, scale + (e.deltaY > 0 ? -0.1 : 0.1)), 5);
         draw();
     };
-
     canvas.onmousedown = (e) => {
         const rect = canvas.getBoundingClientRect();
         const x = (e.clientX - rect.left - originX) / scale;
         const y = (e.clientY - rect.top - originY) / scale;
         if(drawMode){ startX = x; startY = y; drawing = true; } 
-        else if(e.button === 2 || e.button === 0){ dragging = true; } // Right click or drag
+        else { dragging = true; }
     };
-
     canvas.onmousemove = (e) => {
         if(drawing){
             const rect = canvas.getBoundingClientRect();
@@ -209,36 +196,30 @@ function initCanvasEvents(){
             const y = (e.clientY - rect.top - originY) / scale;
             draw();
             ctx.strokeStyle = "white"; ctx.strokeRect(startX, startY, x - startX, y - startY);
-        } else if(dragging){ 
-            originX += e.movementX; originY += e.movementY; draw(); 
-        }
+        } else if(dragging){ originX += e.movementX; originY += e.movementY; draw(); }
     };
-
-    canvas.onmouseup = () => {
+    canvas.onmouseup = (e) => {
         if(drawing){
             const rect = canvas.getBoundingClientRect();
-            const x = (event.clientX - rect.left - originX) / scale;
-            const y = (event.clientY - rect.top - originY) / scale;
+            const x = (e.clientX - rect.left - originX) / scale;
+            const y = (e.clientY - rect.top - originY) / scale;
             let box = { x: Math.min(startX, x), y: Math.min(startY, y), w: Math.abs(x - startX), h: Math.abs(y - startY), label: "Vehicle", color: "lime" };
-            if(box.w > 5){ boxes.push(box); recordEarning(0.012, "Box Created"); }
+            if(box.w > 5){ boxes.push(box); recordEarning(0.012, "Box Created"); saveProgress(); }
             drawing = false; drawMode = false; draw(); updateAnnotationList();
         }
         dragging = false;
     };
 }
 
-function draw(){
-    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.translate(originX, originY); ctx.scale(scale, scale);
-    ctx.drawImage(img,0,0);
-    boxes.forEach(b=>{ ctx.strokeStyle=b.color; ctx.lineWidth=2/scale; ctx.strokeRect(b.x, b.y, b.w, b.h); });
+function saveProgress(){
+    localStorage.setItem(`boxes_${activeTaskId}`, JSON.stringify(boxes));
 }
 
 function recordEarning(amount, type) {
     let users = JSON.parse(localStorage.getItem("ant_users"));
     let idx = users.findIndex(u => u.email === currentUser.email);
     users[idx].balance += amount;
-    users[idx].logs.unshift({time: new Date().toLocaleString().split(',')[1], task: type, amt: amount.toFixed(4)});
+    users[idx].logs.unshift({time: new Date().toLocaleTimeString(), task: type, amt: amount.toFixed(4)});
     localStorage.setItem("ant_users", JSON.stringify(users));
     refreshUI();
 }
@@ -248,23 +229,33 @@ function refreshUI() {
     let me = users.find(u => u.email === currentUser.email);
     document.getElementById("paymentDisplay").innerText = "$" + me.balance.toFixed(3);
     document.getElementById("earningsTableBody").innerHTML = me.logs.map(l => `
-        <tr><td>${l.time}</td><td>${l.task}</td><td style="color:var(--success)">+$${l.amt}</td><td>Verified</td></tr>
+        <tr><td>${l.time}</td><td>${l.task}</td><td style="color:var(--success)">+$${l.amt}</td><td>Pending Review</td></tr>
     `).join('');
 }
 
+function draw(){
+    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.translate(originX, originY); ctx.scale(scale, scale);
+    ctx.drawImage(img,0,0);
+    boxes.forEach(b=>{ ctx.strokeStyle=b.color; ctx.lineWidth=2/scale; ctx.strokeRect(b.x, b.y, b.w, b.h); });
+}
+
 function completeTask(){
-    if(!confirm("Submit annotations for review?")) return;
+    if(!confirm("Submit work? This clears current workspace.")) return;
     let tasks = JSON.parse(localStorage.getItem("ant_tasks"));
     let idx = tasks.findIndex(t => t.id == activeTaskId);
     tasks[idx].completed = true;
-    tasks[idx].completedBy = currentUser.name;
     tasks[idx].finalBoxes = boxes;
     localStorage.setItem("ant_tasks", JSON.stringify(tasks));
+    
+    // Cleanup persistence
+    localStorage.removeItem("ant_active_session");
+    localStorage.removeItem(`boxes_${activeTaskId}`);
     location.reload();
 }
 
 function resetZoom(){ scale=1; originX=0; originY=0; draw(); }
-function undoLastBox(){ boxes.pop(); draw(); updateAnnotationList(); }
+function undoLastBox(){ boxes.pop(); saveProgress(); draw(); updateAnnotationList(); }
 function enableDraw(){ drawMode = true; }
 function updateAnnotationList(){ document.getElementById("annotationList").innerHTML=boxes.map((b,i)=>`<div>[${i+1}] ${b.label}</div>`).join(''); }
 function logout(){ localStorage.removeItem("antana_user"); location.reload(); }
