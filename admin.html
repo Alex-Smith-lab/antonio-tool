@@ -7,7 +7,6 @@
 :root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--blue:#0d6efd;--white:#fff;--danger:#ff4444;--success:#00c853;}
 body{background:var(--bg); color:white; font-family:'Segoe UI', sans-serif; margin:0; padding:0;}
 
-/* SIDEBAR & TABS */
 .admin-container { display: flex; height: 100vh; }
 .sidebar { width: 220px; background: #000; border-right: 1px solid #222; padding: 20px; }
 .main-content { flex: 1; padding: 30px; overflow-y: auto; }
@@ -16,18 +15,17 @@ body{background:var(--bg); color:white; font-family:'Segoe UI', sans-serif; marg
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* UI COMPONENTS */
 .panel { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
 table { width: 100%; border-collapse: collapse; margin-top: 15px; }
 th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
 th { color: var(--purple); }
 .btn { padding: 8px 15px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; }
-input, select { padding: 10px; margin: 10px 0; width: 100%; background: #222; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box;}
 
 /* INSPECTION MODAL */
-#inspectModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; }
-.inspect-box { width: 80%; margin: 2% auto; background: var(--card); padding: 20px; border-radius: 10px; position: relative; }
-#inspectCanvas { max-width: 100%; border: 1px solid #444; }
+#inspectModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; overflow-y: auto;}
+.inspect-box { width: 90%; margin: 2% auto; background: var(--card); padding: 20px; border-radius: 10px; }
+#canvasWrapper { position: relative; background: #000; border: 1px solid #444; overflow: hidden; display: flex; justify-content: center;}
+canvas { max-width: 100%; height: auto; }
 .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
 </style>
 </head>
@@ -39,8 +37,8 @@ input, select { padding: 10px; margin: 10px 0; width: 100%; background: #222; co
         <hr style="border:0; border-top:1px solid #222; margin: 20px 0;">
         <button class="tab-btn active" onclick="showTab('approvals')">👥 Approvals <span id="approveBadge" style="color:var(--danger); display:none;">●</span></button>
         <button class="tab-btn" onclick="showTab('assigning')">📤 Assign Tasks</button>
-        <button class="tab-btn" onclick="showTab('tracking')">📊 Workflow & Earnings</button>
-        <button class="tab-btn" onclick="showTab('inspection')">🔍 Inspect Submissions</button>
+        <button class="tab-btn" onclick="showTab('tracking')">📊 Workflow</button>
+        <button class="tab-btn" onclick="showTab('inspection')">🔍 Inspect Review</button>
     </div>
 
     <div class="main-content">
@@ -58,10 +56,10 @@ input, select { padding: 10px; margin: 10px 0; width: 100%; background: #222; co
             <h1>Task Assignment</h1>
             <div class="panel" style="max-width: 500px;">
                 <label>1. Select Image</label>
-                <input type="file" id="adminFile" accept="image/*">
-                <label>2. Select Coworker</label>
-                <select id="assignToDropdown"></select>
-                <button class="btn" style="background:var(--purple); color:white; width:100%; margin-top:10px;" onclick="uploadAdminTask()">Assign Task</button>
+                <input type="file" id="adminFile" accept="image/*" style="width:100%; margin:10px 0;">
+                <label>2. Select Approved Coworker</label>
+                <select id="assignToDropdown" style="width:100%; padding:10px; margin:10px 0; background:#222; color:white; border:1px solid #444;"></select>
+                <button class="btn" style="background:var(--purple); color:white; width:100%; margin-top:10px;" onclick="uploadAdminTask()">Send to Coworker</button>
             </div>
         </div>
 
@@ -69,17 +67,17 @@ input, select { padding: 10px; margin: 10px 0; width: 100%; background: #222; co
             <h1>Production Tracking</h1>
             <div class="panel">
                 <table id="productionTable">
-                    <thead><tr><th>Coworker</th><th>Total Earnings</th><th>Total Work</th><th>Last Seen</th></tr></thead>
+                    <thead><tr><th>Coworker</th><th>Earnings</th><th>Work Count</th><th>Manage</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
         </div>
 
         <div id="inspection" class="tab-content">
-            <h1>Workflow Inspection</h1>
+            <h1>Inspection & Quality Control</h1>
             <div class="panel">
                 <table id="inspectTable">
-                    <thead><tr><th>Date</th><th>Coworker</th><th>Task ID</th><th>Status</th><th>Action</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Coworker</th><th>Task ID</th><th>Action</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -89,18 +87,22 @@ input, select { padding: 10px; margin: 10px 0; width: 100%; background: #222; co
 
 <div id="inspectModal">
     <div class="inspect-box">
-        <h2 id="inspectTitle">Inspecting Task</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 id="inspectTitle" style="margin:0;">Visual Review</h2>
+            <button class="btn" onclick="closeInspect()" style="background:#444; color:white;">✕ Close</button>
+        </div>
         <div style="display:flex; gap:20px;">
-            <div style="flex:2;">
-                <img id="inspectImg" style="width:100%; border:1px solid #333;">
+            <div style="flex:3;" id="canvasWrapper">
+                <canvas id="inspectCanvas"></canvas>
             </div>
             <div style="flex:1;">
-                <h3>Submission Data</h3>
-                <div id="inspectStats"></div>
-                <hr style="border-color:#333;">
-                <button class="btn" style="background:var(--success); width:100%; margin-bottom:10px;" onclick="closeInspect()">Approve Work</button>
-                <button class="btn" style="background:var(--danger); width:100%;" onclick="rejectTask()">Reject Task (Deduct Earnings)</button>
-                <button class="btn" style="background:none; border:1px solid #444; width:100%; margin-top:20px; color:white;" onclick="closeInspect()">Close</button>
+                <div class="panel" style="background:#000;">
+                    <h3>Submission Info</h3>
+                    <div id="inspectStats" style="line-height:1.6;"></div>
+                    <hr style="border-color:#222; margin:15px 0;">
+                    <button class="btn" style="background:var(--success); width:100%; margin-bottom:10px; padding:12px;" onclick="approveWork()">Approve & Pay</button>
+                    <button class="btn" style="background:var(--danger); width:100%; padding:12px;" onclick="rejectTask()">Reject (Deduct $)</button>
+                </div>
             </div>
         </div>
     </div>
@@ -108,6 +110,8 @@ input, select { padding: 10px; margin: 10px 0; width: 100%; background: #222; co
 
 <script>
 let currentInspectTaskId = null;
+const canvas = document.getElementById("inspectCanvas");
+const ctx = canvas.getContext("2d");
 
 function showTab(id) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -132,25 +136,24 @@ function refreshAdmin(){
             <td>${u.email}</td>
             <td><span class="badge" style="background:${u.status==='approved'?'#00c853':'#ff9800'}">${u.status.toUpperCase()}</span></td>
             <td>
-                ${u.status==='pending' ? `<button class="btn approve" onclick="changeStatus('${u.email}', 'approved')">Approve</button>` : ''}
-                <button class="btn danger" style="background:none; color:red;" onclick="deleteCoworker('${u.email}')">Delete</button>
+                ${u.status==='pending' ? `<button class="btn" style="background:var(--success); color:white;" onclick="changeStatus('${u.email}', 'approved')">Approve</button>` : ''}
+                <button class="btn" style="background:none; color:var(--danger);" onclick="deleteItem('user', '${u.email}')">Delete Account</button>
             </td>
         </tr>
     `).join('');
 
     // 2. Assignment Dropdown
-    const select = document.getElementById("assignToDropdown");
-    select.innerHTML = '<option value="">-- Choose Approved Coworker --</option>' + 
+    document.getElementById("assignToDropdown").innerHTML = '<option value="">-- Select Worker --</option>' + 
         users.filter(u => u.status === "approved").map(u => `<option value="${u.email}">${u.name}</option>`).join('');
 
     // 3. Tracking Table
     const pt = document.getElementById("productionTable").querySelector("tbody");
     pt.innerHTML = users.map(u => `
         <tr>
-            <td><strong>${u.name}</strong></td>
+            <td><strong>${u.name}</strong><br><small>${u.email}</small></td>
             <td style="color:var(--success)">$${(u.balance || 0).toFixed(3)}</td>
-            <td>${tasks.filter(t => t.completedBy === u.name).length} Tasks</td>
-            <td><small>${u.lastLogin || 'N/A'}</small></td>
+            <td>${tasks.filter(t => t.completedBy === u.name).length} Completed</td>
+            <td><button class="btn" style="background:none; color:var(--danger);" onclick="deleteItem('user', '${u.email}')">Remove</button></td>
         </tr>
     `).join('');
 
@@ -161,16 +164,85 @@ function refreshAdmin(){
             <td>${t.timestamp}</td>
             <td>${t.completedBy}</td>
             <td>#${t.id.toString().slice(-5)}</td>
-            <td><span class="badge" style="background:var(--blue)">SUBMITTED</span></td>
-            <td><button class="btn" style="background:var(--purple); color:white;" onclick="openInspect('${t.id}')">Inspect Work</button></td>
+            <td>
+                <button class="btn" style="background:var(--purple); color:white;" onclick="openInspect('${t.id}')">Review Annotations</button>
+                <button class="btn" style="background:none; color:var(--danger);" onclick="deleteItem('task', '${t.id}')">Delete</button>
+            </td>
         </tr>
     `).join('');
+}
+
+function openInspect(id){
+    const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
+    const task = tasks.find(t => t.id == id);
+    currentInspectTaskId = id;
+    
+    const img = new Image();
+    img.src = task.imgData;
+    img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        // Draw Coworker's Boxes
+        if(task.finalBoxes) {
+            ctx.strokeStyle = "lime";
+            ctx.lineWidth = 3;
+            task.finalBoxes.forEach(box => {
+                ctx.strokeRect(box.x, box.y, box.w, box.h);
+            });
+        }
+    };
+
+    document.getElementById("inspectStats").innerHTML = `
+        <p><strong>Worker:</strong> ${task.completedBy}</p>
+        <p><strong>Boxes Detected:</strong> <span style="color:lime; font-weight:bold;">${task.finalBoxes ? task.finalBoxes.length : 0}</span></p>
+        <p><strong>Task ID:</strong> ${id}</p>
+    `;
+    document.getElementById("inspectModal").style.display = "block";
+}
+
+function approveWork(){
+    alert("Work approved and payment finalized.");
+    deleteItem('task', currentInspectTaskId);
+    closeInspect();
+}
+
+function rejectTask(){
+    if(!confirm("Deduct earnings and send back for rework?")) return;
+    const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
+    const users = JSON.parse(localStorage.getItem("ant_users") || "[]");
+    const task = tasks.find(t => t.id == currentInspectTaskId);
+    
+    const worker = users.find(u => u.name === task.completedBy);
+    if(worker) {
+        const penalty = (task.finalBoxes ? task.finalBoxes.length : 0) * 0.012;
+        worker.balance -= penalty;
+    }
+    
+    task.completed = false; // Send back to worker dashboard
+    localStorage.setItem("ant_tasks", JSON.stringify(tasks));
+    localStorage.setItem("ant_users", JSON.stringify(users));
+    closeInspect();
+    refreshAdmin();
+}
+
+function deleteItem(type, id){
+    if(!confirm("Are you sure? This cannot be undone.")) return;
+    if(type === 'user'){
+        const users = JSON.parse(localStorage.getItem("ant_users") || "[]");
+        localStorage.setItem("ant_users", JSON.stringify(users.filter(u => u.email !== id)));
+    } else {
+        const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
+        localStorage.setItem("ant_tasks", JSON.stringify(tasks.filter(t => t.id != id)));
+    }
+    refreshAdmin();
 }
 
 function uploadAdminTask(){
     const file = document.getElementById("adminFile").files[0];
     const email = document.getElementById("assignToDropdown").value;
-    if(!file || !email) return alert("Select image and coworker!");
+    if(!file || !email) return alert("Missing data");
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -183,57 +255,10 @@ function uploadAdminTask(){
             timestamp: new Date().toLocaleString()
         });
         localStorage.setItem("ant_tasks", JSON.stringify(tasks));
-        alert("Task Sent to coworker.");
+        alert("Task Assigned!");
         refreshAdmin();
     };
     reader.readAsDataURL(file);
-}
-
-function openInspect(id){
-    const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
-    const task = tasks.find(t => t.id == id);
-    currentInspectTaskId = id;
-    
-    document.getElementById("inspectImg").src = task.imgData;
-    document.getElementById("inspectStats").innerHTML = `
-        <p><strong>Worker:</strong> ${task.completedBy}</p>
-        <p><strong>Boxes Drawn:</strong> ${task.finalBoxes ? task.finalBoxes.length : 0}</p>
-        <p><strong>Status:</strong> Waiting for Admin Review</p>
-    `;
-    document.getElementById("inspectModal").style.display = "block";
-}
-
-function rejectTask(){
-    if(!confirm("REJECT THIS TASK? The worker's earnings will be deducted and they must redo the work.")) return;
-    
-    let tasks = JSON.parse(localStorage.getItem("ant_tasks"));
-    let users = JSON.parse(localStorage.getItem("ant_users"));
-    
-    let task = tasks.find(t => t.id == currentInspectTaskId);
-    let userIdx = users.findIndex(u => u.name === task.completedBy);
-    
-    // 1. Calculate Deduction (number of boxes * 0.012)
-    const boxCount = task.finalBoxes ? task.finalBoxes.length : 0;
-    const deduction = boxCount * 0.012;
-    
-    // 2. Update User Account
-    users[userIdx].balance -= deduction;
-    users[userIdx].logs.unshift({
-        time: new Date().toLocaleString(),
-        task: "REJECTION DEDUCTION",
-        amt: (-deduction).toFixed(4)
-    });
-    
-    // 3. Reset Task status to incomplete so it reappears on worker's dashboard
-    task.completed = false;
-    task.finalBoxes = []; 
-    
-    localStorage.setItem("ant_tasks", JSON.stringify(tasks));
-    localStorage.setItem("ant_users", JSON.stringify(users));
-    
-    alert("Task Rejected. Coworker balance reduced by $" + deduction.toFixed(3));
-    closeInspect();
-    refreshAdmin();
 }
 
 function changeStatus(email, status){
@@ -244,17 +269,7 @@ function changeStatus(email, status){
     refreshAdmin();
 }
 
-function deleteCoworker(email){
-    if(confirm("Delete this coworker?")) {
-        let users = JSON.parse(localStorage.getItem("ant_users"));
-        localStorage.setItem("ant_users", JSON.stringify(users.filter(u => u.email !== email)));
-        refreshAdmin();
-    }
-}
-
 function closeInspect() { document.getElementById("inspectModal").style.display = "none"; }
-
-// Automatic Refresh (detects new coworkers every 5 seconds)
 setInterval(refreshAdmin, 5000);
 window.onload = refreshAdmin;
 </script>
