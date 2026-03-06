@@ -1,112 +1,500 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Antonio Tool - Labeling Portal</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root{--bg:#0b0b0b;--purple:#7b2ff7;--card:#161616;}
-        body{background:var(--bg); color:white; font-family:sans-serif; margin:0; display:flex; justify-content:center; align-items:center; height:100vh;}
-        .login-box { background:var(--card); padding:30px; border-radius:12px; border:1px solid #333; text-align:center; width:320px; }
-        .hidden { display: none !important; }
-        input { width:100%; padding:12px; margin:10px 0; background:#222; border:1px solid #444; color:white; border-radius:6px; box-sizing:border-box;}
-        button { width:100%; padding:12px; background:var(--purple); border:none; color:white; font-weight:bold; cursor:pointer; border-radius:6px; }
-        #tool-interface { width:100%; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-    </style>
+<meta charset="UTF-8">
+<title>Antony Mbali - Labeling Workspace</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+:root{
+--bg:#0b0b0b;
+--card:#161616;
+--purple:#7b2ff7;
+--white:#fff;
+--dim:#999;
+}
+
+body,html{
+margin:0;
+padding:0;
+font-family:Segoe UI;
+background:var(--bg);
+color:white;
+overflow:hidden;
+}
+
+#loginPage,#waitlistPage{
+display:flex;
+height:100vh;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+background:black;
+}
+
+input{
+width:280px;
+padding:10px;
+margin:6px;
+border:none;
+border-radius:4px;
+}
+
+button{
+padding:10px 15px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+#topNav{
+position:fixed;
+top:0;
+left:0;
+right:0;
+height:50px;
+background:black;
+border-bottom:1px solid #222;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 20px;
+}
+
+#dashboard{
+margin-top:60px;
+padding:40px;
+}
+
+.taskCard{
+background:#161616;
+border:1px solid #333;
+padding:15px;
+margin-bottom:10px;
+}
+
+#workspacePage{
+display:none;
+position:fixed;
+top:50px;
+bottom:0;
+left:0;
+right:0;
+background:black;
+}
+
+#workzone{
+position:absolute;
+top:0;
+left:0;
+bottom:0;
+right:250px;
+background:#050505;
+}
+
+#rightPanel{
+position:absolute;
+right:0;
+top:0;
+bottom:0;
+width:250px;
+background:#111;
+border-left:1px solid #222;
+padding:15px;
+overflow:auto;
+}
+
+canvas{
+cursor:grab;
+}
+
+.annotation{
+background:#222;
+padding:6px;
+margin:5px 0;
+display:flex;
+justify-content:space-between;
+}
+
+</style>
 </head>
+
 <body>
 
-<div id="login-section" class="login-box">
-    <h2>Worker Login</h2>
-    <p style="color:#888; font-size:13px;">Enter your email to access tasks</p>
-    <input type="email" id="workerEmail" placeholder="yourname@email.com">
-    <button onclick="checkAccess()">Open Tool</button>
+<div id="loginPage">
+
+<h2>Antony Mbali Login</h2>
+
+<input id="userName" placeholder="Full Name">
+<input id="userEmail" placeholder="Email">
+
+<button onclick="handleLogin()" style="background:#0d6efd;color:white;">Login</button>
+
 </div>
 
-<div id="tool-interface" class="hidden">
-    <div style="padding:20px; border-bottom:1px solid #222; width:100%; display:flex; justify-content:space-between;">
-        <span id="welcomeMsg"></span>
-        <button onclick="location.reload()" style="width:auto; padding:5px 15px;">Logout</button>
-    </div>
-    
-    <div id="task-area" style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-        <h3 id="status-text">Checking for assigned tasks...</h3>
-        <canvas id="labelCanvas" class="hidden" style="border:1px solid var(--purple); max-width:90%;"></canvas>
-        <button id="submitBtn" class="hidden" style="margin-top:20px; width:200px;" onclick="submitTask()">Submit Completed Work</button>
-    </div>
+<div id="waitlistPage" style="display:none;">
+
+<h2 style="color:#7b2ff7;">Waiting For Approval</h2>
+
+<button onclick="location.reload()">Logout</button>
+
+</div>
+
+<div id="topNav">
+
+<div>a⌵ LABELER</div>
+
+<button onclick="location.reload()" style="background:none;color:red;">Logout</button>
+
+</div>
+
+<div id="dashboard">
+
+<h2 id="greetingText"></h2>
+
+<div id="assignedTasksList"></div>
+
+</div>
+
+<div id="workspacePage">
+
+<div id="workzone">
+<canvas id="canvas"></canvas>
+</div>
+
+<div id="rightPanel">
+
+<button style="background:#00c853;color:white;width:100%;" onclick="completeTask()">COMPLETE TASK</button>
+
+<h3>Annotations</h3>
+
+<div id="annotationList"></div>
+
+<button onclick="enableDraw()" style="margin-top:10px;background:#7b2ff7;color:white;width:100%;">
+Draw Box
+</button>
+
+</div>
+
 </div>
 
 <script>
-const SB_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w";
-const supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
-let currentWorker = null;
-let currentTask = null;
+const supabase = window.supabase.createClient(
+"https://qhftvfatzsogxbbqzxry.supabase.co",
+"public-anon-key"
+)
 
-async function checkAccess() {
-    const email = document.getElementById('workerEmail').value;
-    if(!email) return alert("Enter email");
+let currentUser=null
+let canvas,ctx,img=new Image()
 
-    // Check if worker exists and is approved
-    const { data: user, error } = await supabase.from('ant_users').select('*').eq('email', email).single();
+let boxes=[]
+let drawMode=false
+let drawing=false
 
-    if (error || !user) {
-        alert("Account not found. Please sign up first.");
-    } else if (user.status !== 'approved') {
-        alert("Access Pending: Antony hasn't approved your account yet.");
-    } else {
-        // SUCCESS: Show the tool
-        currentWorker = user;
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('tool-interface').classList.remove('hidden');
-        document.getElementById('welcomeMsg').innerText = "Worker: " + user.name;
-        fetchTask();
-    }
+let startX,startY
+
+let scale=1
+let originX=0
+let originY=0
+
+let dragging=false
+let dragStartX,dragStartY
+
+let activeTaskId=null
+
+async function handleLogin(){
+
+const name=document.getElementById("userName").value
+const email=document.getElementById("userEmail").value
+
+if(!name||!email)return alert("Fill fields")
+
+let {data:user}=await supabase
+.from("ant_users")
+.select("*")
+.eq("email",email)
+.single()
+
+if(!user){
+
+await supabase.from("ant_users").insert([{
+name:name,
+email:email,
+status:"pending"
+}])
+
+alert("Account submitted. Wait for approval")
+return
 }
 
-async function fetchTask() {
-    const { data: tasks } = await supabase.from('ant_tasks')
-        .select('*')
-        .eq('assignedTo', currentWorker.email)
-        .eq('completed', false)
-        .limit(1);
+if(user.status!=="approved"){
 
-    if (tasks && tasks.length > 0) {
-        currentTask = tasks[0];
-        document.getElementById('status-text').innerText = "Task Assigned! Start Labeling.";
-        displayImage(currentTask.imgData);
-    } else {
-        document.getElementById('status-text').innerText = "No tasks assigned to you right now. Check back later!";
-    }
+document.getElementById("loginPage").style.display="none"
+document.getElementById("waitlistPage").style.display="flex"
+
+return
 }
 
-function displayImage(base64) {
-    const canvas = document.getElementById('labelCanvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.src = base64;
-    img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        canvas.classList.remove('hidden');
-        document.getElementById('submitBtn').classList.remove('hidden');
-    };
+currentUser=user
+
+document.getElementById("loginPage").style.display="none"
+
+initDashboard()
+
 }
 
-async function submitTask() {
-    if(!confirm("Submit this work to Antony?")) return;
-    
-    const { error } = await supabase.from('ant_tasks')
-        .update({ completed: true, completedBy: currentWorker.name })
-        .eq('id', currentTask.id);
+function initDashboard(){
 
-    if(!error) {
-        alert("Work Submitted!");
-        location.reload();
-    }
+document.getElementById("greetingText").innerText="Welcome "+currentUser.name
+
+loadAssignedTasks()
+
 }
+
+async function loadAssignedTasks(){
+
+const {data:tasks}=await supabase
+.from("ant_tasks")
+.select("*")
+.eq("assignedto",currentUser.email)
+.eq("completed",false)
+
+const container=document.getElementById("assignedTasksList")
+
+if(!tasks.length){
+
+container.innerHTML="<h3>No pending tasks</h3>"
+return
+}
+
+container.innerHTML=tasks.map(t=>`
+
+<div class="taskCard">
+
+TASK ${t.id}
+
+<button onclick="startWork('${t.id}')">Open Workspace</button>
+
+</div>
+
+`).join("")
+
+}
+
+async function startWork(id){
+
+activeTaskId=id
+
+document.getElementById("dashboard").style.display="none"
+document.getElementById("workspacePage").style.display="block"
+
+canvas=document.getElementById("canvas")
+ctx=canvas.getContext("2d")
+
+const {data}=await supabase
+.from("ant_tasks")
+.select("*")
+.eq("id",id)
+.single()
+
+boxes=data.annotations || []
+
+img.src=data.imgdata
+
+img.onload=()=>{
+
+canvas.width=img.width
+canvas.height=img.height
+
+draw()
+
+initCanvas()
+
+updateAnnotationList()
+
+}
+
+}
+
+function initCanvas(){
+
+canvas.onwheel=e=>{
+
+e.preventDefault()
+
+const zoom=e.deltaY<0?1.1:0.9
+
+scale*=zoom
+
+draw()
+
+}
+
+canvas.onmousedown=e=>{
+
+if(drawMode){
+
+const rect=canvas.getBoundingClientRect()
+
+startX=(e.clientX-rect.left-originX)/scale
+startY=(e.clientY-rect.top-originY)/scale
+
+drawing=true
+
+}else{
+
+dragging=true
+dragStartX=e.clientX
+dragStartY=e.clientY
+
+canvas.style.cursor="grabbing"
+
+}
+
+}
+
+canvas.onmousemove=e=>{
+
+if(dragging){
+
+originX+=e.clientX-dragStartX
+originY+=e.clientY-dragStartY
+
+dragStartX=e.clientX
+dragStartY=e.clientY
+
+draw()
+
+}
+
+if(drawing){
+
+const rect=canvas.getBoundingClientRect()
+
+const x=(e.clientX-rect.left-originX)/scale
+const y=(e.clientY-rect.top-originY)/scale
+
+draw()
+
+ctx.strokeStyle="lime"
+ctx.strokeRect(startX,startY,x-startX,y-startY)
+
+}
+
+}
+
+canvas.onmouseup=e=>{
+
+dragging=false
+canvas.style.cursor="grab"
+
+if(!drawing)return
+
+drawing=false
+drawMode=false
+
+const rect=canvas.getBoundingClientRect()
+
+const x=(e.clientX-rect.left-originX)/scale
+const y=(e.clientY-rect.top-originY)/scale
+
+boxes.push({x:startX,y:startY,w:x-startX,h:y-startY})
+
+saveBoxes()
+
+draw()
+
+updateAnnotationList()
+
+}
+
+}
+
+function draw(){
+
+ctx.setTransform(1,0,0,1,0,0)
+
+ctx.clearRect(0,0,canvas.width,canvas.height)
+
+ctx.translate(originX,originY)
+ctx.scale(scale,scale)
+
+ctx.drawImage(img,0,0)
+
+boxes.forEach(b=>{
+
+ctx.strokeStyle="lime"
+ctx.strokeRect(b.x,b.y,b.w,b.h)
+
+})
+
+}
+
+function enableDraw(){
+
+drawMode=true
+
+}
+
+function updateAnnotationList(){
+
+const list=document.getElementById("annotationList")
+
+list.innerHTML=boxes.map((b,i)=>`
+
+<div class="annotation">
+
+Box ${i+1}
+
+<button onclick="deleteBox(${i})" style="background:red;color:white;">X</button>
+
+</div>
+
+`).join("")
+
+}
+
+function deleteBox(i){
+
+boxes.splice(i,1)
+
+saveBoxes()
+
+draw()
+
+updateAnnotationList()
+
+}
+
+async function saveBoxes(){
+
+await supabase
+.from("ant_tasks")
+.update({annotations:boxes})
+.eq("id",activeTaskId)
+
+}
+
+async function completeTask(){
+
+await supabase
+.from("ant_tasks")
+.update({
+completed:true,
+completedby:currentUser.email
+})
+.eq("id",activeTaskId)
+
+alert("Task submitted")
+
+location.reload()
+
+}
+
 </script>
+
 </body>
 </html>
