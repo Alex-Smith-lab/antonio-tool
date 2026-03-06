@@ -1,33 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Admin - Antony Mbali Management</title>
-<style>
-:root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--blue:#0d6efd;--white:#fff;--danger:#ff4444;--success:#00c853;}
-body{background:var(--bg); color:white; font-family:'Segoe UI', sans-serif; margin:0; padding:0;}
-
-.admin-container { display: flex; height: 100vh; }
-.sidebar { width: 220px; background: #000; border-right: 1px solid #222; padding: 20px; }
-.main-content { flex: 1; padding: 30px; overflow-y: auto; }
-.tab-btn { width: 100%; padding: 12px; margin-bottom: 10px; background: none; border: 1px solid #333; color: white; text-align: left; cursor: pointer; border-radius: 6px; }
-.tab-btn.active { background: var(--purple); border-color: var(--purple); }
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-
-.panel { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
-th { color: var(--purple); }
-.btn { padding: 8px 15px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; }
-
-/* INSPECTION MODAL */
-#inspectModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; overflow-y: auto;}
-.inspect-box { width: 90%; margin: 2% auto; background: var(--card); padding: 20px; border-radius: 10px; }
-#canvasWrapper { position: relative; background: #000; border: 1px solid #444; overflow: hidden; display: flex; justify-content: center;}
-canvas { max-width: 100%; height: auto; }
-.badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-</style>
+    <meta charset="UTF-8">
+    <title>Admin - Antony Mbali Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root{--bg:#0b0b0b;--card:#161616;--purple:#7b2ff7;--blue:#0d6efd;--white:#fff;--danger:#ff4444;--success:#00c853;}
+        body{background:var(--bg); color:white; font-family:'Segoe UI', sans-serif; margin:0; padding:0;}
+        .admin-container { display: flex; height: 100vh; }
+        .sidebar { width: 220px; background: #000; border-right: 1px solid #222; padding: 20px; }
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .tab-btn { width: 100%; padding: 12px; margin-bottom: 10px; background: none; border: 1px solid #333; color: white; text-align: left; cursor: pointer; border-radius: 6px; }
+        .tab-btn.active { background: var(--purple); border-color: var(--purple); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .panel { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
+        th { color: var(--purple); }
+        .btn { padding: 8px 15px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; }
+        #inspectModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; overflow-y: auto;}
+        .inspect-box { width: 90%; margin: 2% auto; background: var(--card); padding: 20px; border-radius: 10px; }
+        #canvasWrapper { position: relative; background: #000; border: 1px solid #444; overflow: hidden; display: flex; justify-content: center;}
+        canvas { max-width: 100%; height: auto; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    </style>
 </head>
 <body>
 
@@ -39,8 +36,6 @@ canvas { max-width: 100%; height: auto; }
         <button class="tab-btn" onclick="showTab('assigning')">📤 Assign Tasks</button>
         <button class="tab-btn" onclick="showTab('tracking')">📊 Workflow</button>
         <button class="tab-btn" onclick="showTab('inspection')">🔍 Inspect Review</button>
-        
-        <button class="btn" style="background:#333; color:white; width:100%; margin-top:20px; font-size:12px;" onclick="syncData()">🔄 Sync from Other Device</button>
     </div>
 
     <div class="main-content">
@@ -111,9 +106,20 @@ canvas { max-width: 100%; height: auto; }
 </div>
 
 <script>
+// --- CONFIGURATION ---
+const SB_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w";
+
+const supabase = typeof supabase !== 'undefined' ? supabase : window.supabase.createClient(SB_URL, SB_KEY);
+
 let currentInspectTaskId = null;
 const canvas = document.getElementById("inspectCanvas");
 const ctx = canvas.getContext("2d");
+
+// REALTIME SYNC
+supabase.channel('db-changes')
+  .on('postgres_changes', { event: '*', schema: 'public' }, () => refreshAdmin())
+  .subscribe();
 
 function showTab(id) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -123,52 +129,32 @@ function showTab(id) {
     refreshAdmin();
 }
 
-// FOR CROSS-DEVICE VISIBILITY: Manual Sync
-function syncData() {
-    const rawData = prompt("Paste the User Data String from the other device (or type 'GET' to copy current):");
-    if(!rawData) return;
-    
-    if(rawData.toUpperCase() === 'GET') {
-        const currentData = localStorage.getItem("ant_users");
-        navigator.clipboard.writeText(currentData);
-        alert("Current user list copied to clipboard. Paste this on the other device.");
-    } else {
-        try {
-            const newData = JSON.parse(rawData);
-            localStorage.setItem("ant_users", JSON.stringify(newData));
-            alert("Data synced successfully!");
-            refreshAdmin();
-        } catch(e) {
-            alert("Invalid data format.");
-        }
-    }
-}
+async function refreshAdmin() {
+    const { data: users } = await supabase.from('ant_users').select('*');
+    const { data: tasks } = await supabase.from('ant_tasks').select('*');
+    if (!users || !tasks) return;
 
-function refreshAdmin(){
-    const users = JSON.parse(localStorage.getItem("ant_users") || "[]");
-    const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
-
+    // 1. Approvals
     const ut = document.getElementById("userTable").querySelector("tbody");
     const pendingCount = users.filter(u => u.status === 'pending').length;
     document.getElementById("approveBadge").style.display = pendingCount > 0 ? "inline" : "none";
-    
-    const sortedUsers = [...users].sort((a,b) => (a.status === 'pending' ? -1 : 1));
-
-    ut.innerHTML = sortedUsers.map(u => `
+    ut.innerHTML = users.sort((a,b) => (a.status === 'pending' ? -1 : 1)).map(u => `
         <tr>
             <td>${u.name}</td>
             <td>${u.email}</td>
             <td><span class="badge" style="background:${u.status==='approved'?'#00c853':'#ff9800'}">${u.status.toUpperCase()}</span></td>
             <td>
                 ${u.status==='pending' ? `<button class="btn" style="background:var(--success); color:white;" onclick="changeStatus('${u.email}', 'approved')">Approve</button>` : ''}
-                <button class="btn" style="background:none; color:var(--danger);" onclick="deleteItem('user', '${u.email}')">Delete Account</button>
+                <button class="btn" style="background:none; color:var(--danger);" onclick="deleteItem('user', '${u.email}')">Delete</button>
             </td>
         </tr>
     `).join('');
 
+    // 2. Dropdown
     document.getElementById("assignToDropdown").innerHTML = '<option value="">-- Select Worker --</option>' + 
         users.filter(u => u.status === "approved").map(u => `<option value="${u.email}">${u.name}</option>`).join('');
 
+    // 3. Tracking
     const pt = document.getElementById("productionTable").querySelector("tbody");
     pt.innerHTML = users.map(u => `
         <tr>
@@ -179,121 +165,71 @@ function refreshAdmin(){
         </tr>
     `).join('');
 
+    // 4. Inspection
     const it = document.getElementById("inspectTable").querySelector("tbody");
     it.innerHTML = tasks.filter(t => t.completed).map(t => `
         <tr>
-            <td>${t.timestamp}</td>
+            <td>${new Date(t.timestamp).toLocaleDateString()}</td>
             <td>${t.completedBy}</td>
             <td>#${t.id.toString().slice(-5)}</td>
             <td>
-                <button class="btn" style="background:var(--purple); color:white;" onclick="openInspect('${t.id}')">Review Annotations</button>
+                <button class="btn" style="background:var(--purple); color:white;" onclick="openInspect('${t.id}')">Review</button>
                 <button class="btn" style="background:none; color:var(--danger);" onclick="deleteItem('task', '${t.id}')">Delete</button>
             </td>
         </tr>
     `).join('');
 }
 
-function changeStatus(email, status){
-    let users = JSON.parse(localStorage.getItem("ant_users") || "[]");
-    const userIndex = users.findIndex(u => u.email === email);
-    
-    if(userIndex !== -1) {
-        users[userIndex].status = status;
-        localStorage.setItem("ant_users", JSON.stringify(users));
-        alert(email + " has been approved.");
-        refreshAdmin();
-    }
-}
-
-function openInspect(id){
-    const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
-    const task = tasks.find(t => t.id == id);
-    currentInspectTaskId = id;
-    
-    const img = new Image();
-    img.src = task.imgData;
-    img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        if(task.finalBoxes) {
-            ctx.strokeStyle = "lime";
-            ctx.lineWidth = 3;
-            task.finalBoxes.forEach(box => { ctx.strokeRect(box.x, box.y, box.w, box.h); });
-        }
-    };
-
-    document.getElementById("inspectStats").innerHTML = `
-        <p><strong>Worker:</strong> ${task.completedBy}</p>
-        <p><strong>Boxes Detected:</strong> <span style="color:lime; font-weight:bold;">${task.finalBoxes ? task.finalBoxes.length : 0}</span></p>
-        <p><strong>Task ID:</strong> ${id}</p>
-    `;
-    document.getElementById("inspectModal").style.display = "block";
-}
-
-function approveWork(){
-    alert("Work approved and payment finalized.");
-    deleteItem('task', currentInspectTaskId);
-    closeInspect();
-}
-
-function rejectTask(){
-    if(!confirm("Deduct earnings and send back for rework?")) return;
-    const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
-    const users = JSON.parse(localStorage.getItem("ant_users") || "[]");
-    const task = tasks.find(t => t.id == currentInspectTaskId);
-    
-    const worker = users.find(u => u.name === task.completedBy);
-    if(worker) {
-        const penalty = (task.finalBoxes ? task.finalBoxes.length : 0) * 0.012;
-        worker.balance -= (worker.balance >= penalty) ? penalty : worker.balance;
-    }
-    
-    task.completed = false; 
-    localStorage.setItem("ant_tasks", JSON.stringify(tasks));
-    localStorage.setItem("ant_users", JSON.stringify(users));
-    closeInspect();
+async function changeStatus(email, status) {
+    await supabase.from('ant_users').update({ status: status }).eq('email', email);
     refreshAdmin();
 }
 
-function deleteItem(type, id){
-    if(!confirm("Are you sure? This cannot be undone.")) return;
-    if(type === 'user'){
-        const users = JSON.parse(localStorage.getItem("ant_users") || "[]");
-        localStorage.setItem("ant_users", JSON.stringify(users.filter(u => u.email !== id)));
-    } else {
-        const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
-        localStorage.setItem("ant_tasks", JSON.stringify(tasks.filter(t => t.id != id)));
-    }
+async function deleteItem(type, id) {
+    if(!confirm("Are you sure?")) return;
+    const table = type === 'user' ? 'ant_users' : 'ant_tasks';
+    const col = type === 'user' ? 'email' : 'id';
+    await supabase.from(table).delete().eq(col, id);
     refreshAdmin();
 }
 
-function uploadAdminTask(){
+async function uploadAdminTask() {
     const file = document.getElementById("adminFile").files[0];
     const email = document.getElementById("assignToDropdown").value;
-    if(!file || !email) return alert("Please select a file and a coworker.");
+    if(!file || !email) return alert("Select file and coworker.");
 
     const reader = new FileReader();
-    reader.onload = (e) => {
-        const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
-        tasks.push({
+    reader.onload = async (e) => {
+        await supabase.from('ant_tasks').insert([{
             id: Date.now(),
             imgData: e.target.result,
             assignedTo: email,
-            completed: false,
-            timestamp: new Date().toLocaleString()
-        });
-        localStorage.setItem("ant_tasks", JSON.stringify(tasks));
-        alert("Task Assigned to " + email);
+            completed: false
+        }]);
+        alert("Task Sent!");
         refreshAdmin();
     };
     reader.readAsDataURL(file);
 }
 
+async function openInspect(id) {
+    const { data: task } = await supabase.from('ant_tasks').select('*').eq('id', id).single();
+    currentInspectTaskId = id;
+    const img = new Image();
+    img.src = task.imgData;
+    img.onload = () => {
+        canvas.width = img.width; canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        if(task.finalBoxes) {
+            ctx.strokeStyle = "lime"; ctx.lineWidth = 3;
+            task.finalBoxes.forEach(box => ctx.strokeRect(box.x, box.y, box.w, box.h));
+        }
+    };
+    document.getElementById("inspectStats").innerHTML = `<p>Worker: ${task.completedBy}</p><p>ID: ${id}</p>`;
+    document.getElementById("inspectModal").style.display = "block";
+}
+
 function closeInspect() { document.getElementById("inspectModal").style.display = "none"; }
-// Listen for storage changes from other tabs on the same device
-window.addEventListener('storage', () => refreshAdmin());
-setInterval(refreshAdmin, 3000);
 window.onload = refreshAdmin;
 </script>
 </body>
