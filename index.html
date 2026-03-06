@@ -184,7 +184,7 @@ Draw Box
 
 const supabase = window.supabase.createClient(
 "https://qhftvfatzsogxbbqzxry.supabase.co",
-"public-anon-key"
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w"
 )
 
 let currentUser=null
@@ -222,8 +222,7 @@ if(!user){
 
 await supabase.from("ant_users").insert([{
 name:name,
-email:email,
-status:"pending"
+email:email
 }])
 
 alert("Account submitted. Wait for approval")
@@ -264,7 +263,7 @@ const {data:tasks}=await supabase
 
 const container=document.getElementById("assignedTasksList")
 
-if(!tasks.length){
+if(!tasks || tasks.length==0){
 
 container.innerHTML="<h3>No pending tasks</h3>"
 return
@@ -434,9 +433,7 @@ ctx.strokeRect(b.x,b.y,b.w,b.h)
 }
 
 function enableDraw(){
-
 drawMode=true
-
 }
 
 function updateAnnotationList(){
