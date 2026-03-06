@@ -125,12 +125,15 @@ function refreshAdmin(){
     const users = JSON.parse(localStorage.getItem("ant_users") || "[]");
     const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
 
-    // 1. Approvals Table
+    // FIX 1: Ensure all users are parsed and displayed correctly in the table
     const ut = document.getElementById("userTable").querySelector("tbody");
     const pendingCount = users.filter(u => u.status === 'pending').length;
     document.getElementById("approveBadge").style.display = pendingCount > 0 ? "inline" : "none";
     
-    ut.innerHTML = users.map(u => `
+    // Sort so pending users appear at the top
+    const sortedUsers = [...users].sort((a,b) => (a.status === 'pending' ? -1 : 1));
+
+    ut.innerHTML = sortedUsers.map(u => `
         <tr>
             <td>${u.name}</td>
             <td>${u.email}</td>
@@ -142,11 +145,11 @@ function refreshAdmin(){
         </tr>
     `).join('');
 
-    // 2. Assignment Dropdown
+    // Update Dropdown
     document.getElementById("assignToDropdown").innerHTML = '<option value="">-- Select Worker --</option>' + 
         users.filter(u => u.status === "approved").map(u => `<option value="${u.email}">${u.name}</option>`).join('');
 
-    // 3. Tracking Table
+    // Update Tracking
     const pt = document.getElementById("productionTable").querySelector("tbody");
     pt.innerHTML = users.map(u => `
         <tr>
@@ -157,7 +160,7 @@ function refreshAdmin(){
         </tr>
     `).join('');
 
-    // 4. Inspection Table
+    // Update Inspection
     const it = document.getElementById("inspectTable").querySelector("tbody");
     it.innerHTML = tasks.filter(t => t.completed).map(t => `
         <tr>
@@ -172,6 +175,21 @@ function refreshAdmin(){
     `).join('');
 }
 
+// FIX 2: More reliable Status Change
+function changeStatus(email, status){
+    let users = JSON.parse(localStorage.getItem("ant_users") || "[]");
+    const userIndex = users.findIndex(u => u.email === email);
+    
+    if(userIndex !== -1) {
+        users[userIndex].status = status;
+        localStorage.setItem("ant_users", JSON.stringify(users));
+        alert(email + " has been approved.");
+        refreshAdmin();
+    } else {
+        alert("User not found!");
+    }
+}
+
 function openInspect(id){
     const tasks = JSON.parse(localStorage.getItem("ant_tasks") || "[]");
     const task = tasks.find(t => t.id == id);
@@ -183,14 +201,10 @@ function openInspect(id){
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
-        
-        // Draw Coworker's Boxes
         if(task.finalBoxes) {
             ctx.strokeStyle = "lime";
             ctx.lineWidth = 3;
-            task.finalBoxes.forEach(box => {
-                ctx.strokeRect(box.x, box.y, box.w, box.h);
-            });
+            task.finalBoxes.forEach(box => { ctx.strokeRect(box.x, box.y, box.w, box.h); });
         }
     };
 
@@ -220,7 +234,7 @@ function rejectTask(){
         worker.balance -= penalty;
     }
     
-    task.completed = false; // Send back to worker dashboard
+    task.completed = false; 
     localStorage.setItem("ant_tasks", JSON.stringify(tasks));
     localStorage.setItem("ant_users", JSON.stringify(users));
     closeInspect();
@@ -242,7 +256,7 @@ function deleteItem(type, id){
 function uploadAdminTask(){
     const file = document.getElementById("adminFile").files[0];
     const email = document.getElementById("assignToDropdown").value;
-    if(!file || !email) return alert("Missing data");
+    if(!file || !email) return alert("Please select a file and a coworker.");
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -255,21 +269,14 @@ function uploadAdminTask(){
             timestamp: new Date().toLocaleString()
         });
         localStorage.setItem("ant_tasks", JSON.stringify(tasks));
-        alert("Task Assigned!");
+        alert("Task Assigned to " + email);
         refreshAdmin();
     };
     reader.readAsDataURL(file);
 }
 
-function changeStatus(email, status){
-    let users = JSON.parse(localStorage.getItem("ant_users"));
-    let idx = users.findIndex(u => u.email === email);
-    users[idx].status = status;
-    localStorage.setItem("ant_users", JSON.stringify(users));
-    refreshAdmin();
-}
-
 function closeInspect() { document.getElementById("inspectModal").style.display = "none"; }
+// Refresh every 5 seconds to catch new signups
 setInterval(refreshAdmin, 5000);
 window.onload = refreshAdmin;
 </script>
