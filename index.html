@@ -8,69 +8,78 @@
         :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; }
         body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
         #topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
+        .profile-area { display: flex; align-items: center; gap: 15px; }
+        .spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; }
         #dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
-        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
         .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-        .card-header { height: 60px; background: var(--blue); padding: 10px; }
-        .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .card-header { height: 80px; background: var(--blue); padding: 15px; }
+        .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
         #workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; }
         #workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; display: flex; align-items: center; justify-content: center; }
         #sidePanel { position: absolute; right: 0; top: 0; width: 300px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; }
+        .anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; }
         #labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 8px; }
-        .label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; text-align: left; }
+        .label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; }
+        .label-btn:hover { background: var(--purple); }
         .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: var(--purple); color: white; display: none; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; }
-        .auth-page { text-align: center; padding-top: 150px; }
+        .workspace-controls { position: absolute; bottom: 60px; left: 20px; display: flex; gap: 10px; }
+        .control-btn { padding: 10px 15px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .auth-page { text-align: center; padding-top: 100px; }
         .auth-page input { padding: 12px; margin: 10px; width: 250px; background: #222; color: white; border: 1px solid #444; border-radius: 5px; }
-        #waitMessage { color: #ff9800; display: none; font-weight: bold; margin-top: 20px; border: 1px solid #ff9800; padding: 10px; display: inline-block; }
+        .main-btn { padding: 12px 40px; background: var(--blue); color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #waitMessage { color: #ff9800; margin-top: 20px; display: none; font-weight: bold; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
 <div id="loginPage" class="auth-page">
-    <h2>Antony Mbali - Worker Portal</h2>
+    <h2>Antony Mbali - Worker Login</h2>
     <input id="userName" placeholder="Full Name">
     <input id="userEmail" placeholder="Email Address">
     <br>
-    <button style="padding:12px 40px; background:var(--blue); color:white; border:none; border-radius:5px; cursor:pointer;" onclick="handleLogin()">Login / Register</button>
-    <br>
-    <div id="waitMessage">ACCESS DENIED: Your account is awaiting Admin Approval.</div>
+    <button class="main-btn" onclick="handleLogin()">Login / Register</button>
+    <div id="waitMessage">Account pending admin approval. Please wait...</div>
 </div>
 
 <div id="topNav">
     <div style="font-weight: bold;">a⌵ LABELER</div>
-    <div style="display:flex; align-items:center; gap:15px;">
-        <div style="background: #1d6f42; padding:6px 12px; border-radius:4px; font-size:12px;">Earnings: $<span id="balance">0.00</span></div>
-        <div id="workerProfile"></div>
-        <button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer;">Logout</button>
+    <div class="profile-area">
+        <div class="spreadsheet-btn">Earnings: $<span id="balance">0.00</span></div>
+        <div id="workerProfile" style="font-size: 14px;"></div>
+        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer;">Logout</button>
     </div>
 </div>
 
 <div id="dashboard">
     <h2 id="greet"></h2>
+    <p style="opacity: 0.6;">Work Available</p>
     <div id="tasks" class="task-grid"></div>
 </div>
 
 <div id="workspacePage">
     <div id="workzone"><canvas id="canvas"></canvas></div>
     <div id="sidePanel">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
             <span>ANNOTATIONS</span>
-            <button onclick="closeWorkspace()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">×</button>
+            <button onclick="closeWorkspace()" style="background:none; border:none; color:#777; cursor:pointer;">×</button>
         </div>
-        <div id="annoList" style="height:70%; overflow-y:auto;"></div>
-        <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; padding:15px; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">SUBMIT REVIEW</button>
+        <div id="annoList" style="height:calc(100% - 150px); overflow-y:auto;"></div>
+        <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:10px;">SUBMIT FOR REVIEW</button>
     </div>
 
     <div id="labelPopup">
         <button class="label-btn" onclick="assignLabel('Car')">Car</button>
+        <button class="label-btn" onclick="assignLabel('Bus')">Bus</button>
         <button class="label-btn" onclick="assignLabel('Truck')">Truck</button>
         <button class="label-btn" onclick="assignLabel('Pedestrian')">Pedestrian</button>
-        <button onclick="deleteBox()" style="color:red; background:none; border:none; cursor:pointer;">Delete Box</button>
+        <button onclick="deleteBox()" style="color:#ff4444; background:none; border:none; cursor:pointer; margin-top:5px;">Delete Box</button>
     </div>
 
-    <div style="position:absolute; bottom:60px; left:20px; display:flex; gap:10px;">
-        <button id="drawBtn" style="padding:10px 20px; background:var(--purple); border:none; color:white; border-radius:5px; cursor:pointer;" onclick="toggleDrawMode()">ADD BOX</button>
-        <button style="padding:10px 20px; background:#444; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="undo()">UNDO</button>
+    <div class="workspace-controls">
+        <button class="control-btn box-btn" style="background:var(--purple);" onclick="toggleDrawMode()">ADD BOX</button>
+        <button class="control-btn" style="background:#555;" onclick="undo()">UNDO</button>
     </div>
 </div>
 
@@ -80,7 +89,7 @@
 </div>
 
 <script>
-const supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
+const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
 let user = null, activeId = null, boxes = [], selectedBoxIdx = -1, isDrawMode = false;
 let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, isResizing = false;
@@ -89,12 +98,12 @@ let canvas, ctx, img = new Image();
 async function handleLogin() {
     const email = document.getElementById("userEmail").value.trim();
     const name = document.getElementById("userName").value.trim();
-    if(!email) return;
+    if(!email || !name) return alert("Enter details");
 
-    const { data: existing } = await supabase.from("ant_users").select("*").eq("email", email).single();
+    const { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
     
     if (!existing) {
-        await supabase.from("ant_users").insert([{ email, name, status: 'pending', balance: 0 }]);
+        await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'pending', balance: 0 }]);
         document.getElementById("waitMessage").style.display = "block";
     } else if (existing.status === 'pending') {
         document.getElementById("waitMessage").style.display = "block";
@@ -114,13 +123,17 @@ async function showDashboard() {
     document.getElementById("footerWorker").innerText = "COWORKER: " + user.name.toUpperCase();
     document.getElementById("balance").innerText = (user.balance || 0).toFixed(3);
 
-    const { data: tasks } = await supabase.from("ant_tasks").select("*").eq("assignedto", user.email).or('review_status.is.null,review_status.eq.returned');
+    const { data: tasks } = await sb.from("ant_tasks")
+        .select("*")
+        .eq("assignedto", user.email)
+        .or('review_status.is.null,review_status.eq.returned');
     
     document.getElementById("tasks").innerHTML = (tasks || []).map(t => `
         <div class="batch-card">
-            <div class="card-header">Task: ${t.id.toString().slice(-6)}</div>
-            <div style="padding:15px;">
-                <button class="start-work-btn" onclick="openWork('${t.id}')">Start Annotation</button>
+            <div class="card-header"><span class="status-badge">${t.review_status || 'Available'}</span></div>
+            <div class="card-body" style="padding:15px;">
+                <h3>Task #${t.id.toString().slice(-5)}</h3>
+                <button class="start-work-btn" onclick="openWork('${t.id}')">Start Working →</button>
             </div>
         </div>
     `).join("");
@@ -133,7 +146,7 @@ async function openWork(id) {
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
 
-    const { data } = await supabase.from("ant_tasks").select("*").eq("id", id).single();
+    const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
     boxes = data.annotations || [];
     img.src = data.imgdata;
     img.onload = () => { resetView(); draw(); updateSidePanel(); };
@@ -142,9 +155,9 @@ async function openWork(id) {
         const mx = (e.clientX - offsetX) / scale;
         const my = (e.clientY - offsetY) / scale;
 
+        // Check for resize handle (Bottom-Right corner)
         if (selectedBoxIdx > -1) {
             const b = boxes[selectedBoxIdx];
-            // Refinement Check: Bottom-Right Handle
             if (Math.abs(mx - (b.x + b.w)) < 15/scale && Math.abs(my - (b.y + b.h)) < 15/scale) {
                 isResizing = true; return;
             }
@@ -164,8 +177,10 @@ async function openWork(id) {
             };
         } else {
             selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
-            if (selectedBoxIdx === -1) { isDragging = true; lastX = e.clientX; lastY = e.clientY; document.getElementById("labelPopup").style.display = "none"; }
-            else { showLabelPopup(e.clientX, e.clientY); }
+            if (selectedBoxIdx === -1) { 
+                isDragging = true; lastX = e.clientX; lastY = e.clientY; 
+                document.getElementById("labelPopup").style.display = "none";
+            } else { showLabelPopup(e.clientX, e.clientY); }
             draw();
         }
     };
@@ -195,7 +210,7 @@ function draw() {
         ctx.lineWidth = 2 / scale;
         ctx.strokeRect(b.x, b.y, b.w, b.h);
         if(i === selectedBoxIdx) {
-            ctx.fillStyle = "white"; // Refinement handle
+            ctx.fillStyle = "white"; // Resize handle visible
             ctx.fillRect(b.x + b.w - 5/scale, b.y + b.h - 5/scale, 10/scale, 10/scale);
         }
         ctx.fillStyle = "lime"; ctx.font = `${14/scale}px sans-serif`;
@@ -218,16 +233,16 @@ function assignLabel(l) {
 }
 
 function updateSidePanel() {
-    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `<div style="background:#222; padding:10px; margin-bottom:5px; border-radius:4px;">#${i+1} ${b.label}</div>`).join("");
+    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `<div class="anno-item">#${i+1} <b>${b.label}</b></div>`).join("");
 }
 
-async function saveProgress() { if(activeId) await supabase.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
-function toggleDrawMode() { isDrawMode = !isDrawMode; document.getElementById("drawBtn").style.opacity = isDrawMode?0.5:1; }
+async function saveProgress() { if(activeId) await sb.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
+function toggleDrawMode() { isDrawMode = !isDrawMode; }
 function undo() { boxes.pop(); draw(); updateSidePanel(); saveProgress(); }
 function resetView() { scale = 0.8; offsetX = 50; offsetY = 50; }
 async function submitForReview() {
-    await supabase.from("ant_tasks").update({ review_status: "review_pending" }).eq("id", activeId);
-    alert("Batch submitted to Admin."); location.reload();
+    await sb.from("ant_tasks").update({ review_status: "review_pending" }).eq("id", activeId);
+    alert("Submitted!"); location.reload();
 }
 function logout() { localStorage.clear(); location.reload(); }
 function closeWorkspace() { document.getElementById("workspacePage").style.display = "none"; showDashboard(); }
