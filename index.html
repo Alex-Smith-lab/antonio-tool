@@ -5,97 +5,104 @@
     <title>Labeler - Workspace</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
+        :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; }
         
+        /* Anti-Copy & Anti-Screenshot Protections */
+        body { 
+            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden;
+            user-select: none; -webkit-user-select: none; -ms-user-select: none;
+        }
+        @media print { body { display:none; } }
+
         /* Navigation & Profile */
         #topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
         .profile-area { display: flex; align-items: center; gap: 15px; position: absolute; right: 40px; }
-        .spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; text-decoration: none; cursor: pointer; }
-
-        /* Login & Waitlist */
-        #loginPage, #waitlistPage { display: flex; height: 100vh; align-items: center; justify-content: center; flex-direction: column; background: black; }
-        input { width: 280px; padding: 12px; margin: 8px; border-radius: 4px; border: none; background: #222; color: white; }
-        .main-btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--purple); color: white; }
+        .spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
 
         /* Dashboard Cards */
         #dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
         .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
-        .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; position: relative; transition: 0.3s; }
-        .batch-card:hover { border-color: var(--purple); transform: translateY(-5px); }
-        
-        /* UPDATED CARD HEADER */
-        .card-header { height: 80px; background: linear-gradient(to right, #000, #1a1a1a); padding: 15px; position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
-        .antana-logo { width: 30px; height: 30px; background: var(--purple); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; box-shadow: 0 0 10px rgba(123, 47, 247, 0.5); }
-        
-        .card-body { padding: 20px; }
-        
-        /* NEW PHASE BADGE */
-        .phase-badge { position: absolute; top: 15px; left: 15px; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        .badge-1st { background: #7b2ff7; color: white; }
-        .badge-review { background: #ff9800; color: black; }
-        
-        .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; position: absolute; top: 15px; right: 15px; }
-        .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; }
+        .card-header { height: 80px; background: var(--blue); padding: 15px; display: flex; align-items: flex-start; }
+        .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
 
-        /* Workspace */
+        /* Workspace & Side Panel */
         #workspacePage { display: none; position: fixed; top: 0; bottom: 0; left: 0; right: 0; background: #050505; z-index: 200; }
-        #workzone { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        canvas { cursor: crosshair; image-rendering: pixelated; }
+        #workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        #sidePanel { position: absolute; right: 0; top: 0; width: 300px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; }
+        .side-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        .anno-list { height: calc(100% - 140px); overflow-y: auto; }
+        .anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; }
 
-        /* Bottom Taskbar */
-        .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: #7b2ff7; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; box-sizing: border-box; }
+        /* Label Pop-up */
+        #labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 8px; min-width: 150px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; text-align: left; }
+        .label-btn:hover { background: var(--purple); }
+
+        /* Bottom Bar */
+        .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: var(--purple); color: white; display: none; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; box-sizing: border-box; }
         
-        /* Floating Controls */
         .workspace-controls { position: absolute; bottom: 60px; left: 20px; display: flex; gap: 10px; }
         .control-btn { padding: 10px 15px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
-        .comp-btn { background: #00c853; }
-        .box-btn { background: var(--purple); }
-        .del-btn { background: #ff4444; }
-        .undo-btn { background: #555; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;" onkeydown="return disableShortcuts(event)">
 
-<div id="loginPage">
+<div id="loginPage" class="auth-page">
     <h2>Antony Mbali - Worker Login</h2>
     <input id="userName" placeholder="Full Name">
     <input id="userEmail" placeholder="Email Address">
     <button class="main-btn" onclick="handleLogin()">Login</button>
 </div>
 
-<div id="waitlistPage" style="display:none;">
-    <h2 style="color:var(--purple);">Awaiting Approval</h2>
-    <p>Please wait... Admin is reviewing your profile.</p>
-</div>
-
 <div id="topNav">
     <div style="font-weight: bold;">a⌵ LABELER</div>
-    <div class="profile-area" id="profileArea">
-        <div class="spreadsheet-btn" onclick="toggleEarnings()">Earnings: $<span id="balance">0.00</span></div>
-        <div id="workerProfile" style="font-size: 14px; opacity: 0.8;"></div>
+    <div class="profile-area">
+        <div class="spreadsheet-btn">Earnings: $<span id="balance">0.00</span></div>
+        <div id="workerProfile" style="font-size: 14px;"></div>
         <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer;">Logout</button>
     </div>
 </div>
 
 <div id="dashboard">
     <h2 id="greet"></h2>
-    <p style="opacity: 0.6;">Available Work Batches</p>
+    <p style="opacity: 0.6;">Work Available</p>
     <div id="tasks" class="task-grid"></div>
 </div>
 
 <div id="workspacePage">
     <div id="workzone"><canvas id="canvas"></canvas></div>
     
+    <div id="sidePanel">
+        <div class="side-header">
+            <span>ANNOTATIONS</span>
+            <button onclick="closeWorkspace()" style="background:none; border:none; color:#777; cursor:pointer; font-size:20px;">×</button>
+        </div>
+        <div id="annoList" class="anno-list"></div>
+        <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:10px;">SUBMIT FOR REVIEW</button>
+    </div>
+
+    <div id="labelPopup">
+        <div style="font-size: 10px; opacity: 0.5; margin-bottom: 5px;">SELECT CLASS</div>
+        <button class="label-btn" onclick="assignLabel('Car')">Car</button>
+        <button class="label-btn" onclick="assignLabel('Bus')">Bus</button>
+        <button class="label-btn" onclick="assignLabel('Train')">Train</button>
+        <button class="label-btn" onclick="assignLabel('Truck')">Truck</button>
+        <button class="label-btn" onclick="assignLabel('Motorcycle')">Motorcycle</button>
+        <button class="label-btn" onclick="assignLabel('Pedestrian')">Pedestrian</button>
+        <button class="label-btn" onclick="assignLabel('Animal')">Animal</button>
+        <button onclick="deleteBox()" style="background:none; border:none; color:#ff4444; font-size:11px; margin-top:5px; cursor:pointer;">Delete Box</button>
+    </div>
+
     <div class="workspace-controls">
-        <button class="control-btn comp-btn" onclick="completeTask()">COMPLETE</button>
-        <button class="control-btn box-btn" onclick="toggleDrawMode()">ADD BOX</button>
-        <button class="control-btn undo-btn" onclick="undo()">UNDO</button>
-        <button class="control-btn del-btn" onclick="deleteBox()">DELETE</button>
+        <button class="control-btn" style="background:#00c853;" onclick="completeTask()">COMPLETE</button>
+        <button class="control-btn box-btn" style="background:var(--purple);" onclick="toggleDrawMode()">ADD BOX</button>
+        <button class="control-btn" style="background:#555;" onclick="undo()">UNDO</button>
     </div>
 </div>
 
-<div class="bottom-bar" id="footerBar" style="display:none;">
+<div class="bottom-bar" id="footerBar">
     <div id="footerWorker">COWORKER: </div>
     <div>ANTONY MBALI MANAGEMENT</div>
 </div>
@@ -103,97 +110,77 @@
 <script>
 const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
-let user = null;
-let earnings = 0;
-let isDrawMode = false;
-let scale = 1, offsetX = 0, offsetY = 0;
-let isDragging = false, lastX, lastY;
+let user = null, activeId = null, boxes = [], selectedBoxIdx = -1, isDrawMode = false;
+let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, isResizing = false;
 let canvas, ctx, img = new Image();
-let boxes = [];
-let activeId, selectedBoxIdx = -1;
 
-// Persist login
+function disableShortcuts(e) {
+    if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67))) return false;
+}
+
 window.onload = () => {
     const savedEmail = localStorage.getItem('workerEmail');
+    const savedTaskId = localStorage.getItem('activeTask');
     if(savedEmail) {
         document.getElementById("userEmail").value = savedEmail;
-        handleLogin();
+        handleLogin(savedTaskId);
     }
 }
 
-function getSeasonalGreeting() {
+function getSeasonalGreeting(name) {
     const hour = new Date().getHours();
-    if (hour < 5) return "You should be resting now! 🌙";
-    if (hour < 12) return "Good Morning! ☀️";
-    if (hour < 18) return "Good Afternoon! ⛅";
-    return "Good Evening! 🌙";
+    let msg = "";
+    if (hour < 5) msg = "take some rest";
+    else if (hour < 12) msg = "Good Morning";
+    else if (hour < 18) msg = "Good Afternoon";
+    else msg = "Good Evening";
+    return `${name}, ${msg} ${hour < 5 ? '.' : '!'}`;
 }
 
-async function handleLogin() {
+async function handleLogin(resumeTaskId = null) {
     const email = document.getElementById("userEmail").value;
-    const name = document.getElementById("userName").value;
-    if(!email) return;
-
-    const { data } = await _supabase.from("ant_users").select("*").eq("email", email);
-    
-    if (data.length === 0 && name) {
-        await _supabase.from("ant_users").insert([{ name, email, role: "worker", status: "pending", balance: 0 }]);
-        checkApproval(email);
-    } else if (data.length > 0 && data[0].status === "approved") {
-        user = data[0];
+    const { data } = await _supabase.from("ant_users").select("*").eq("email", email).single();
+    if (data && data.status === "approved") {
+        user = data;
         localStorage.setItem('workerEmail', email);
-        showDashboard();
-    } else {
-        checkApproval(email);
+        if(resumeTaskId) openWork(resumeTaskId);
+        else showDashboard();
     }
-}
-
-function checkApproval(email) {
-    document.getElementById("loginPage").style.display = "none";
-    document.getElementById("waitlistPage").style.display = "flex";
-    setInterval(async () => {
-        const { data } = await _supabase.from("ant_users").select("*").eq("email", email).single();
-        if (data.status === "approved") location.reload();
-    }, 5000);
 }
 
 async function showDashboard() {
     document.getElementById("loginPage").style.display = "none";
+    document.getElementById("workspacePage").style.display = "none";
     document.getElementById("topNav").style.display = "flex";
     document.getElementById("footerBar").style.display = "flex";
     document.getElementById("dashboard").style.display = "block";
-    document.getElementById("greet").innerText = getSeasonalGreeting();
+    document.getElementById("greet").innerText = getSeasonalGreeting(user.name);
     document.getElementById("workerProfile").innerText = user.name;
     document.getElementById("footerWorker").innerText = "COWORKER: " + user.name.toUpperCase();
     document.getElementById("balance").innerText = (user.balance || 0).toFixed(3);
 
-    const { data: tasks } = await _supabase.from("ant_tasks").select("*").eq("assignedto", user.email).eq("completed", false);
+    // Filters out tasks that are already completed OR waiting for review
+    const { data: tasks } = await _supabase.from("ant_tasks")
+        .select("*")
+        .eq("assignedto", user.email)
+        .eq("completed", false)
+        .is("review_status", null);
     
-    document.getElementById("tasks").innerHTML = tasks.map(t => {
-        const phase = t.phase || '1st Pass';
-        const badgeClass = phase === 'Review' ? 'badge-review' : 'badge-1st';
-        
-        return `
+    document.getElementById("tasks").innerHTML = tasks.map(t => `
         <div class="batch-card">
-            <div class="card-header">
-                <div class="phase-badge ${badgeClass}">${phase}</div>
-                <div class="antana-logo">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 19h20L12 2zm0 3l7.5 13h-15L12 5z"/></svg>
-                </div>
-                <span class="status-badge">Available</span>
-            </div>
+            <div class="card-header"><span class="status-badge">Available</span></div>
             <div class="card-body">
-                <h3>Batch ${t.id.toString().slice(-4)}</h3>
-                <p style="font-size:12px; opacity:0.6;">Click to start working on this batch.</p>
+                <h3>Work Available</h3>
+                <p style="font-size:12px; opacity:0.6;">ID: ${t.id}</p>
                 <button class="start-work-btn" onclick="openWork('${t.id}')">Start Working →</button>
             </div>
         </div>
-        `;
-    }).join("");
+    `).join("");
 }
 
 async function openWork(id) {
     activeId = id;
+    localStorage.setItem('activeTask', id);
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("workspacePage").style.display = "block";
     canvas = document.getElementById("canvas");
@@ -202,86 +189,107 @@ async function openWork(id) {
     const { data } = await _supabase.from("ant_tasks").select("*").eq("id", id).single();
     boxes = data.annotations || [];
     img.src = data.imgdata;
-    img.onload = () => { resetView(); draw(); };
+    img.onload = () => { resetView(); draw(); updateSidePanel(); };
 
-    // Zoom and Drag Events
-    canvas.addEventListener('wheel', e => {
-        e.preventDefault();
-        const zoom = e.deltaY > 0 ? 0.9 : 1.1;
-        scale *= zoom;
+    canvas.onmousedown = handleMouseDown;
+    window.onmousemove = handleMouseMove;
+    window.onmouseup = () => { isDragging = false; isResizing = false; saveProgress(); };
+    canvas.addEventListener('wheel', e => { e.preventDefault(); scale *= e.deltaY > 0 ? 0.9 : 1.1; draw(); });
+}
+
+function handleMouseDown(e) {
+    const mx = (e.clientX - offsetX) / scale;
+    const my = (e.clientY - offsetY) / scale;
+    if (selectedBoxIdx > -1) {
+        const b = boxes[selectedBoxIdx];
+        if (Math.abs(mx - (b.x + b.w)) < 10/scale && Math.abs(my - (b.y + b.h)) < 10/scale) {
+            isResizing = true; return;
+        }
+    }
+    if (isDrawMode) { startDrawing(e); } 
+    else {
+        selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
+        if (selectedBoxIdx === -1) { isDragging = true; lastX = e.clientX; lastY = e.clientY; document.getElementById("labelPopup").style.display = "none"; }
+        else { showLabelPopup(e.clientX, e.clientY); }
         draw();
-    });
+    }
+}
 
-    canvas.onmousedown = e => {
-        if (!isDrawMode) {
-            isDragging = true;
-            lastX = e.clientX; lastY = e.clientY;
-        } else {
-            startDrawing(e);
-        }
+function handleMouseMove(e) {
+    if (isDragging) {
+        offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
+    } else if (isResizing) {
+        const b = boxes[selectedBoxIdx];
+        b.w = ((e.clientX - offsetX) / scale) - b.x;
+        b.h = ((e.clientY - offsetY) / scale) - b.y;
+    }
+    draw();
+}
+
+function startDrawing(e) {
+    const sx = (e.clientX - offsetX) / scale;
+    const sy = (e.clientY - offsetY) / scale;
+    canvas.onmouseup = e2 => {
+        const ex = (e2.clientX - offsetX) / scale;
+        const ey = (e2.clientY - offsetY) / scale;
+        boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Unlabeled' });
+        selectedBoxIdx = boxes.length - 1;
+        updateEarnings(0.019);
+        showLabelPopup(e2.clientX, e2.clientY);
+        toggleDrawMode();
+        draw(); updateSidePanel();
+        canvas.onmouseup = () => { isDragging = false; isResizing = false; saveProgress(); };
     };
+}
 
-    window.onmousemove = e => {
-        if (isDragging) {
-            offsetX += e.clientX - lastX;
-            offsetY += e.clientY - lastY;
-            lastX = e.clientX; lastY = e.clientY;
-            draw();
-        }
-    };
+function showLabelPopup(x, y) {
+    const pop = document.getElementById("labelPopup");
+    pop.style.display = "flex";
+    pop.style.left = x + "px"; pop.style.top = y + "px";
+}
 
-    window.onmouseup = () => isDragging = false;
+function assignLabel(l) {
+    if(selectedBoxIdx > -1) {
+        boxes[selectedBoxIdx].label = l;
+        document.getElementById("labelPopup").style.display = "none";
+        draw(); updateSidePanel(); saveProgress();
+    }
+}
+
+function updateSidePanel() {
+    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
+        <div class="anno-item">
+            <span>#${i+1} <b>${b.label}</b></span>
+            <span style="font-size:10px; opacity:0.5;">[${Math.round(b.w)}x${Math.round(b.h)}]</span>
+        </div>
+    `).join("");
 }
 
 function resetView() {
     scale = 0.8;
-    offsetX = (window.innerWidth / 2) - (img.width * scale / 2);
-    offsetY = (window.innerHeight / 2) - (img.height * scale / 2);
+    offsetX = (window.innerWidth - 300) / 2 - (img.width * scale / 2);
+    offsetY = window.innerHeight / 2 - (img.height * scale / 2);
 }
 
 function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
+    canvas.width = window.innerWidth - 300; canvas.height = window.innerHeight;
     ctx.save();
-    ctx.translate(offsetX, offsetY);
-    ctx.scale(scale, scale);
+    ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
     ctx.drawImage(img, 0, 0);
-    
     boxes.forEach((b, i) => {
         ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
         ctx.lineWidth = 2 / scale;
         ctx.strokeRect(b.x, b.y, b.w, b.h);
-        // Corner handles
         if(i === selectedBoxIdx) {
             ctx.fillStyle = "white";
-            ctx.fillRect(b.x + b.w - 5/scale, b.y + b.h - 5/scale, 10/scale, 10/scale);
+            ctx.fillRect(b.x + b.w - 4/scale, b.y + b.h - 4/scale, 8/scale, 8/scale);
         }
+        ctx.fillStyle = "lime"; ctx.font = `${12/scale}px Arial`;
+        ctx.fillText(b.label, b.x, b.y - 5/scale);
     });
     ctx.restore();
-}
-
-function toggleDrawMode() {
-    isDrawMode = !isDrawMode;
-    document.querySelector('.box-btn').style.border = isDrawMode ? "2px solid white" : "none";
-}
-
-function startDrawing(e) {
-    const rect = canvas.getBoundingClientRect();
-    const sx = (e.clientX - offsetX) / scale;
-    const sy = (e.clientY - offsetY) / scale;
-    
-    canvas.onmouseup = e2 => {
-        const ex = (e2.clientX - offsetX) / scale;
-        const ey = (e2.clientY - offsetY) / scale;
-        const newBox = { x: sx, y: sy, w: ex-sx, h: ey-sy };
-        boxes.push(newBox);
-        updateEarnings(0.019);
-        draw();
-        saveProgress();
-        canvas.onmouseup = null;
-    };
 }
 
 async function updateEarnings(amt) {
@@ -290,37 +298,34 @@ async function updateEarnings(amt) {
     await _supabase.from("ant_users").update({ balance: user.balance }).eq("email", user.email);
 }
 
-function undo() { if(boxes.length) { boxes.pop(); updateEarnings(-0.019); draw(); saveProgress(); } }
-
 function deleteBox() {
-    if (selectedBoxIdx > -1) {
+    if(selectedBoxIdx > -1) {
         boxes.splice(selectedBoxIdx, 1);
         selectedBoxIdx = -1;
         updateEarnings(-0.019);
-        draw();
-        saveProgress();
-    } else {
-        alert("Click a box to select it first");
+        document.getElementById("labelPopup").style.display = "none";
+        draw(); updateSidePanel(); saveProgress();
     }
 }
 
-// Simple box selection
-canvas.onclick = e => {
-    if(isDrawMode) return;
-    const mouseX = (e.clientX - offsetX) / scale;
-    const mouseY = (e.clientY - offsetY) / scale;
-    selectedBoxIdx = boxes.findIndex(b => mouseX > b.x && mouseX < b.x + b.w && mouseY > b.y && mouseY < b.y + b.h);
-    draw();
-}
+function undo() { if(boxes.length) { boxes.pop(); updateEarnings(-0.019); draw(); updateSidePanel(); saveProgress(); } }
+function toggleDrawMode() { isDrawMode = !isDrawMode; document.querySelector('.box-btn').style.opacity = isDrawMode ? "0.5" : "1"; }
+async function saveProgress() { if(activeId) await _supabase.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
+function closeWorkspace() { localStorage.removeItem('activeTask'); showDashboard(); }
 
-async function saveProgress() { await _supabase.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
+async function submitForReview() {
+    if(!confirm("Submit this batch for admin review?")) return;
+    await _supabase.from("ant_tasks").update({ review_status: "review_pending" }).eq("id", activeId);
+    alert("Batch submitted for review!");
+    localStorage.removeItem('activeTask');
+    location.reload();
+}
 
 async function completeTask() {
     await _supabase.from("ant_tasks").update({ completed: true, completedby: user.email }).eq("id", activeId);
-    alert("Task Completed!");
-    location.href = location.href; // Refresh to dashboard
+    localStorage.removeItem('activeTask');
+    location.reload();
 }
-
 function logout() { localStorage.clear(); location.reload(); }
 </script>
 </body>
