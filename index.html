@@ -2,163 +2,326 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Labeling Workspace - Antony Mbali</title>
+    <title>Labeler - Workspace</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root{ --bg:#0b0b0b; --purple:#7b2ff7; }
-        body,html{ margin:0; padding:0; font-family:sans-serif; background:var(--bg); color:white; }
-        #loginPage,#waitlistPage{ display:flex; height:100vh; align-items:center; justify-content:center; flex-direction:column; background:black; }
-        input{ width:280px; padding:12px; margin:6px; border-radius:4px; border:none; background:#222; color:white; }
-        button{ padding:10px 20px; border:none; border-radius:6px; cursor:pointer; background:var(--purple); color:white; font-weight:bold; }
-        #topNav{ position:fixed; top:0; width:100%; height:50px; background:black; border-bottom:1px solid #222; display:none; align-items:center; justify-content:space-between; padding:0 20px; }
-        #dashboard{ margin-top:60px; padding:40px; display:none; }
-        .taskCard{ background:#161616; border:1px solid #333; padding:15px; margin-bottom:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;}
-        #workspacePage{ display:none; position:fixed; top:50px; bottom:0; left:0; right:0; background:black; }
-        #workzone{ position:absolute; top:0; left:0; bottom:0; right:250px; background:#050505; display:flex; align-items:center; justify-content:center; }
-        #rightPanel{ position:absolute; right:0; top:0; bottom:0; width:250px; background:#111; border-left:1px solid #222; padding:15px; }
-        canvas{ border:1px solid #444; cursor:crosshair; }
+        :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
+        
+        /* Navigation & Profile */
+        #topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
+        .profile-area { display: flex; align-items: center; gap: 15px; position: absolute; right: 40px; }
+        .spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; text-decoration: none; cursor: pointer; }
+
+        /* Login & Waitlist */
+        #loginPage, #waitlistPage { display: flex; height: 100vh; align-items: center; justify-content: center; flex-direction: column; background: black; }
+        input { width: 280px; padding: 12px; margin: 8px; border-radius: 4px; border: none; background: #222; color: white; }
+        .main-btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: var(--purple); color: white; }
+
+        /* Dashboard Cards */
+        #dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
+        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
+        .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; position: relative; transition: 0.3s; }
+        .batch-card:hover { border-color: var(--purple); transform: translateY(-5px); }
+        
+        /* UPDATED CARD HEADER */
+        .card-header { height: 80px; background: linear-gradient(to right, #000, #1a1a1a); padding: 15px; position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
+        .antana-logo { width: 30px; height: 30px; background: var(--purple); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; box-shadow: 0 0 10px rgba(123, 47, 247, 0.5); }
+        
+        .card-body { padding: 20px; }
+        
+        /* NEW PHASE BADGE */
+        .phase-badge { position: absolute; top: 15px; left: 15px; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .badge-1st { background: #7b2ff7; color: white; }
+        .badge-review { background: #ff9800; color: black; }
+        
+        .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; position: absolute; top: 15px; right: 15px; }
+        .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+        /* Workspace */
+        #workspacePage { display: none; position: fixed; top: 0; bottom: 0; left: 0; right: 0; background: #050505; z-index: 200; }
+        #workzone { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        canvas { cursor: crosshair; image-rendering: pixelated; }
+
+        /* Bottom Taskbar */
+        .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: #7b2ff7; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; box-sizing: border-box; }
+        
+        /* Floating Controls */
+        .workspace-controls { position: absolute; bottom: 60px; left: 20px; display: flex; gap: 10px; }
+        .control-btn { padding: 10px 15px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .comp-btn { background: #00c853; }
+        .box-btn { background: var(--purple); }
+        .del-btn { background: #ff4444; }
+        .undo-btn { background: #555; }
     </style>
 </head>
 <body>
 
 <div id="loginPage">
-    <h2>Antony Mbali Login</h2>
+    <h2>Antony Mbali - Worker Login</h2>
     <input id="userName" placeholder="Full Name">
-    <input id="userEmail" placeholder="Email">
-    <button onclick="handleLogin()">Login</button>
+    <input id="userEmail" placeholder="Email Address">
+    <button class="main-btn" onclick="handleLogin()">Login</button>
 </div>
 
 <div id="waitlistPage" style="display:none;">
-    <h2 style="color:var(--purple);">Waiting For Admin Approval...</h2>
-    <p>Your account will open automatically once approved.</p>
-    <button onclick="location.reload()" style="background:#444">Cancel</button>
+    <h2 style="color:var(--purple);">Awaiting Approval</h2>
+    <p>Please wait... Admin is reviewing your profile.</p>
 </div>
 
 <div id="topNav">
-    <div>a⌵ LABELER</div>
-    <button onclick="location.reload()" style="background:none;color:red;">Logout</button>
+    <div style="font-weight: bold;">a⌵ LABELER</div>
+    <div class="profile-area" id="profileArea">
+        <div class="spreadsheet-btn" onclick="toggleEarnings()">Earnings: $<span id="balance">0.00</span></div>
+        <div id="workerProfile" style="font-size: 14px; opacity: 0.8;"></div>
+        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer;">Logout</button>
+    </div>
 </div>
 
 <div id="dashboard">
-    <h2 id="greetingText"></h2>
-    <div id="assignedTasksList"></div>
+    <h2 id="greet"></h2>
+    <p style="opacity: 0.6;">Available Work Batches</p>
+    <div id="tasks" class="task-grid"></div>
 </div>
 
 <div id="workspacePage">
     <div id="workzone"><canvas id="canvas"></canvas></div>
-    <div id="rightPanel">
-        <button style="background:#00c853; width:100%;" onclick="completeTask()">SUBMIT TASK</button>
-        <h3>Tools</h3>
-        <button onclick="enableDraw()" style="width:100%;">Draw Box</button>
+    
+    <div class="workspace-controls">
+        <button class="control-btn comp-btn" onclick="completeTask()">COMPLETE</button>
+        <button class="control-btn box-btn" onclick="toggleDrawMode()">ADD BOX</button>
+        <button class="control-btn undo-btn" onclick="undo()">UNDO</button>
+        <button class="control-btn del-btn" onclick="deleteBox()">DELETE</button>
     </div>
 </div>
 
+<div class="bottom-bar" id="footerBar" style="display:none;">
+    <div id="footerWorker">COWORKER: </div>
+    <div>ANTONY MBALI MANAGEMENT</div>
+</div>
+
 <script>
-const _supabase = window.supabase.createClient(
-    "https://qhftvfatzsogxbbqzxry.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w"
-);
+const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
-let currentUser = null;
+let user = null;
+let earnings = 0;
+let isDrawMode = false;
+let scale = 1, offsetX = 0, offsetY = 0;
+let isDragging = false, lastX, lastY;
+let canvas, ctx, img = new Image();
+let boxes = [];
+let activeId, selectedBoxIdx = -1;
 
-async function handleLogin(){
-    const name = document.getElementById("userName").value;
-    const email = document.getElementById("userEmail").value;
-
-    if(!name || !email) return alert("Fill all fields");
-
-    const {data:user, error} = await _supabase.from("ant_users").select("*").eq("email", email);
-    
-    if(user.length === 0){
-        await _supabase.from("ant_users").insert([{ name, email, status: "pending", role: "worker" }]);
-        startWaitlistCheck(email);
-    } else {
-        if(user[0].status !== "approved") startWaitlistCheck(email);
-        else { currentUser = user[0]; initDashboard(); }
+// Persist login
+window.onload = () => {
+    const savedEmail = localStorage.getItem('workerEmail');
+    if(savedEmail) {
+        document.getElementById("userEmail").value = savedEmail;
+        handleLogin();
     }
 }
 
-function startWaitlistCheck(email) {
+function getSeasonalGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 5) return "You should be resting now! 🌙";
+    if (hour < 12) return "Good Morning! ☀️";
+    if (hour < 18) return "Good Afternoon! ⛅";
+    return "Good Evening! 🌙";
+}
+
+async function handleLogin() {
+    const email = document.getElementById("userEmail").value;
+    const name = document.getElementById("userName").value;
+    if(!email) return;
+
+    const { data } = await _supabase.from("ant_users").select("*").eq("email", email);
+    
+    if (data.length === 0 && name) {
+        await _supabase.from("ant_users").insert([{ name, email, role: "worker", status: "pending", balance: 0 }]);
+        checkApproval(email);
+    } else if (data.length > 0 && data[0].status === "approved") {
+        user = data[0];
+        localStorage.setItem('workerEmail', email);
+        showDashboard();
+    } else {
+        checkApproval(email);
+    }
+}
+
+function checkApproval(email) {
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("waitlistPage").style.display = "flex";
-    
-    const interval = setInterval(async () => {
-        const {data} = await _supabase.from("ant_users").select("*").eq("email", email).single();
-        if(data && data.status === "approved") {
-            clearInterval(interval);
-            currentUser = data;
-            initDashboard();
-        }
-    }, 4000);
+    setInterval(async () => {
+        const { data } = await _supabase.from("ant_users").select("*").eq("email", email).single();
+        if (data.status === "approved") location.reload();
+    }, 5000);
 }
 
-function initDashboard(){
+async function showDashboard() {
     document.getElementById("loginPage").style.display = "none";
-    document.getElementById("waitlistPage").style.display = "none";
     document.getElementById("topNav").style.display = "flex";
+    document.getElementById("footerBar").style.display = "flex";
     document.getElementById("dashboard").style.display = "block";
-    document.getElementById("greetingText").innerText = "Welcome " + currentUser.name;
-    loadAssignedTasks();
-}
+    document.getElementById("greet").innerText = getSeasonalGreeting();
+    document.getElementById("workerProfile").innerText = user.name;
+    document.getElementById("footerWorker").innerText = "COWORKER: " + user.name.toUpperCase();
+    document.getElementById("balance").innerText = (user.balance || 0).toFixed(3);
 
-async function loadAssignedTasks(){
-    const {data:tasks} = await _supabase.from("ant_tasks").select("*").eq("assignedto", currentUser.email).eq("completed",false);
-    const container = document.getElementById("assignedTasksList");
-    container.innerHTML = tasks.length ? tasks.map(t=>`
-        <div class="taskCard">
-            <span>TASK #${t.id}</span>
-            <button onclick="startWork('${t.id}')">Open</button>
+    const { data: tasks } = await _supabase.from("ant_tasks").select("*").eq("assignedto", user.email).eq("completed", false);
+    
+    document.getElementById("tasks").innerHTML = tasks.map(t => {
+        const phase = t.phase || '1st Pass';
+        const badgeClass = phase === 'Review' ? 'badge-review' : 'badge-1st';
+        
+        return `
+        <div class="batch-card">
+            <div class="card-header">
+                <div class="phase-badge ${badgeClass}">${phase}</div>
+                <div class="antana-logo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 19h20L12 2zm0 3l7.5 13h-15L12 5z"/></svg>
+                </div>
+                <span class="status-badge">Available</span>
+            </div>
+            <div class="card-body">
+                <h3>Batch ${t.id.toString().slice(-4)}</h3>
+                <p style="font-size:12px; opacity:0.6;">Click to start working on this batch.</p>
+                <button class="start-work-btn" onclick="openWork('${t.id}')">Start Working →</button>
+            </div>
         </div>
-    `).join("") : "<h3>No pending tasks</h3>";
+        `;
+    }).join("");
 }
 
-let canvas, ctx, img = new Image(), boxes = [], activeTaskId = null;
-
-async function startWork(id){
-    activeTaskId = id;
+async function openWork(id) {
+    activeId = id;
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("workspacePage").style.display = "block";
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
 
-    const {data} = await _supabase.from("ant_tasks").select("*").eq("id", id).single();
+    const { data } = await _supabase.from("ant_tasks").select("*").eq("id", id).single();
     boxes = data.annotations || [];
     img.src = data.imgdata;
-    img.onload = () => { canvas.width = img.width; canvas.height = img.height; draw(); };
-}
+    img.onload = () => { resetView(); draw(); };
 
-function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.drawImage(img,0,0);
-    ctx.strokeStyle="lime";
-    ctx.lineWidth = 2;
-    boxes.forEach(b => ctx.strokeRect(b.x, b.y, b.w, b.h));
-}
+    // Zoom and Drag Events
+    canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        const zoom = e.deltaY > 0 ? 0.9 : 1.1;
+        scale *= zoom;
+        draw();
+    });
 
-function enableDraw(){
     canvas.onmousedown = e => {
-        const rect = canvas.getBoundingClientRect();
-        const startX = e.clientX - rect.left;
-        const startY = e.clientY - rect.top;
-        canvas.onmouseup = e2 => {
-            const endX = e2.clientX - rect.left;
-            const endY = e2.clientY - rect.top;
-            boxes.push({ x: startX, y: startY, w: endX - startX, h: endY - startY });
+        if (!isDrawMode) {
+            isDragging = true;
+            lastX = e.clientX; lastY = e.clientY;
+        } else {
+            startDrawing(e);
+        }
+    };
+
+    window.onmousemove = e => {
+        if (isDragging) {
+            offsetX += e.clientX - lastX;
+            offsetY += e.clientY - lastY;
+            lastX = e.clientX; lastY = e.clientY;
             draw();
-            saveProgress();
-        };
+        }
+    };
+
+    window.onmouseup = () => isDragging = false;
+}
+
+function resetView() {
+    scale = 0.8;
+    offsetX = (window.innerWidth / 2) - (img.width * scale / 2);
+    offsetY = (window.innerHeight / 2) - (img.height * scale / 2);
+}
+
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+    
+    boxes.forEach((b, i) => {
+        ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
+        ctx.lineWidth = 2 / scale;
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+        // Corner handles
+        if(i === selectedBoxIdx) {
+            ctx.fillStyle = "white";
+            ctx.fillRect(b.x + b.w - 5/scale, b.y + b.h - 5/scale, 10/scale, 10/scale);
+        }
+    });
+    ctx.restore();
+}
+
+function toggleDrawMode() {
+    isDrawMode = !isDrawMode;
+    document.querySelector('.box-btn').style.border = isDrawMode ? "2px solid white" : "none";
+}
+
+function startDrawing(e) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = (e.clientX - offsetX) / scale;
+    const sy = (e.clientY - offsetY) / scale;
+    
+    canvas.onmouseup = e2 => {
+        const ex = (e2.clientX - offsetX) / scale;
+        const ey = (e2.clientY - offsetY) / scale;
+        const newBox = { x: sx, y: sy, w: ex-sx, h: ey-sy };
+        boxes.push(newBox);
+        updateEarnings(0.019);
+        draw();
+        saveProgress();
+        canvas.onmouseup = null;
     };
 }
 
-async function saveProgress(){
-    await _supabase.from("ant_tasks").update({annotations: boxes}).eq("id", activeTaskId);
+async function updateEarnings(amt) {
+    user.balance += amt;
+    document.getElementById("balance").innerText = user.balance.toFixed(3);
+    await _supabase.from("ant_users").update({ balance: user.balance }).eq("email", user.email);
 }
 
-async function completeTask(){
-    await _supabase.from("ant_tasks").update({ completed: true, completedby: currentUser.email }).eq("id", activeTaskId);
-    alert("Task submitted!");
-    location.reload();
+function undo() { if(boxes.length) { boxes.pop(); updateEarnings(-0.019); draw(); saveProgress(); } }
+
+function deleteBox() {
+    if (selectedBoxIdx > -1) {
+        boxes.splice(selectedBoxIdx, 1);
+        selectedBoxIdx = -1;
+        updateEarnings(-0.019);
+        draw();
+        saveProgress();
+    } else {
+        alert("Click a box to select it first");
+    }
 }
+
+// Simple box selection
+canvas.onclick = e => {
+    if(isDrawMode) return;
+    const mouseX = (e.clientX - offsetX) / scale;
+    const mouseY = (e.clientY - offsetY) / scale;
+    selectedBoxIdx = boxes.findIndex(b => mouseX > b.x && mouseX < b.x + b.w && mouseY > b.y && mouseY < b.y + b.h);
+    draw();
+}
+
+async function saveProgress() { await _supabase.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
+
+async function completeTask() {
+    await _supabase.from("ant_tasks").update({ completed: true, completedby: user.email }).eq("id", activeId);
+    alert("Task Completed!");
+    location.href = location.href; // Refresh to dashboard
+}
+
+function logout() { localStorage.clear(); location.reload(); }
 </script>
 </body>
 </html>
