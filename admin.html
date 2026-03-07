@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Antony Mbali Management</title>
+    <title>Admin - Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; display:flex; height:100vh; }
@@ -10,12 +10,12 @@
         .tab-btn { width:100%; padding:14px; margin-bottom:10px; background:none; border:none; color:#999; text-align:left; cursor:pointer; }
         .tab-btn.active { background:#7b2ff7; color:white; }
         .main { flex:1; padding:40px; overflow:auto; }
-        table { width:100%; border-collapse:collapse; margin-top:20px; }
-        td, th { padding:12px; border-bottom:1px solid #222; text-align:left; font-size:13px; }
-        .btn { padding:6px 12px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; }
+        table { width:100%; border-collapse:collapse; }
+        td, th { padding:12px; border-bottom:1px solid #222; text-align:left; }
+        .btn { padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; }
         .green { background:#00c853; color:white; }
-        .orange { background:#ff9800; color:white; }
         .red { background:#ff4444; color:white; }
+        .orange { background:#ff9800; color:white; }
         .panel { background:#161616; padding:25px; border-radius:12px; }
     </style>
 </head>
@@ -30,7 +30,7 @@
 
 <div class="main">
     <div id="approvals" class="panel tab">
-        <h2>Coworker Management</h2>
+        <h2>Coworker Approvals</h2>
         <table>
             <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="userTable"></tbody>
@@ -38,14 +38,14 @@
     </div>
 
     <div id="tasks" class="panel tab" style="display:none">
-        <h2>Assign New Task</h2>
-        <input type="file" id="taskFile" style="margin-bottom:15px; display:block;"><br>
-        <select id="workerList" style="padding:10px; background:#222; color:white; border:1px solid #444; width:300px; margin-bottom:15px;"></select><br>
-        <button class="btn green" style="width:200px; padding:12px;" onclick="sendTask()">Upload & Assign</button>
+        <h2>Assign Task</h2>
+        <input type="file" id="taskFile" style="margin-bottom:10px;"><br>
+        <select id="workerList" style="padding:10px; width:250px; margin-bottom:10px;"></select><br>
+        <button class="btn green" onclick="sendTask()">Upload & Assign</button>
     </div>
 
     <div id="supervision" class="panel tab" style="display:none">
-        <h2>Task Supervision</h2>
+        <h2>Supervision</h2>
         <table>
             <thead><tr><th>Task ID</th><th>Worker</th><th>Boxes</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="supervisionTable"></tbody>
@@ -54,56 +54,50 @@
 </div>
 
 <script>
-const supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
+const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
 async function loadData() {
-    const { data: users } = await supabase.from("ant_users").select("*");
-    const { data: tasks } = await supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
+    const { data: users } = await sb.from("ant_users").select("*");
+    const { data: tasks } = await sb.from("ant_tasks").select("*");
 
-    // Update Approvals Table
     document.getElementById("userTable").innerHTML = (users || []).map(u => `
         <tr>
             <td>${u.name}</td>
             <td>${u.email}</td>
-            <td style="color:${u.status==='approved'?'lime':'orange'}">${u.status.toUpperCase()}</td>
+            <td style="color:${u.status==='approved'?'lime':'orange'}">${u.status}</td>
             <td>
-                ${u.status==='pending' ? `<button class="btn green" onclick="updUsr('${u.email}','approved')">Approve</button>` : `<button class="btn orange" onclick="updUsr('${u.email}','pending')">Return to Waitlist</button>`}
+                ${u.status==='pending' ? `<button class="btn green" onclick="updUsr('${u.email}','approved')">Approve</button>` : `<button class="btn orange" onclick="updUsr('${u.email}','pending')">Reject</button>`}
             </td>
         </tr>
     `).join("");
 
-    // Update Worker Dropdown
-    document.getElementById("workerList").innerHTML = (users || []).filter(u=>u.status==='approved').map(u=>`<option value="${u.email}">${u.name} (${u.email})</option>`).join("");
+    document.getElementById("workerList").innerHTML = (users || []).filter(u=>u.status==='approved').map(u=>`<option value="${u.email}">${u.name}</option>`).join("");
 
-    // Update Supervision Table
     document.getElementById("supervisionTable").innerHTML = (tasks || []).map(t => `
         <tr>
-            <td>${t.id.toString().slice(-6)}</td>
+            <td>${t.id}</td>
             <td>${t.assignedto}</td>
             <td>${t.annotations?.length || 0}</td>
-            <td style="color:${t.review_status==='review_pending'?'cyan':'white'}">${t.review_status || 'In Progress'}</td>
+            <td>${t.review_status || 'Working'}</td>
             <td>
-                <button class="btn orange" onclick="returnTask('${t.id}')">Return</button>
+                <button class="btn orange" onclick="returnWork('${t.id}')">Return</button>
                 <button class="btn red" onclick="delTask('${t.id}')">Delete</button>
             </td>
         </tr>
     `).join("");
 }
 
-async function updUsr(email, status) { await supabase.from("ant_users").update({ status }).eq("email", email); loadData(); }
-async function delTask(id) { if(confirm("Delete Task?")) { await supabase.from("ant_tasks").delete().eq("id", id); loadData(); } }
-async function returnTask(id) { await supabase.from("ant_tasks").update({ review_status: 'returned' }).eq("id", id); loadData(); }
+async function updUsr(email, status) { await sb.from("ant_users").update({ status }).eq("email", email); loadData(); }
+async function delTask(id) { await sb.from("ant_tasks").delete().eq("id", id); loadData(); }
+async function returnWork(id) { await sb.from("ant_tasks").update({ review_status: 'returned' }).eq("id", id); loadData(); }
 
 async function sendTask() {
     const file = document.getElementById("taskFile").files[0];
     const worker = document.getElementById("workerList").value;
-    if(!file || !worker) return alert("Select file and worker!");
-
     const reader = new FileReader();
     reader.onload = async (e) => {
-        await supabase.from("ant_tasks").insert([{ id: Date.now(), imgdata: e.target.result, assignedto: worker, annotations: [], created_at: new Date() }]);
-        alert("Task successfully assigned to coworker!");
-        loadData();
+        await sb.from("ant_tasks").insert([{ id: Date.now(), imgdata: e.target.result, assignedto: worker, annotations: [] }]);
+        alert("Assigned!"); loadData();
     };
     reader.readAsDataURL(file);
 }
@@ -116,7 +110,7 @@ function showTab(id, btn) {
 }
 
 loadData();
-setInterval(loadData, 5000); // Auto-refresh every 5 seconds
+setInterval(loadData, 5000);
 </script>
 </body>
 </html>
