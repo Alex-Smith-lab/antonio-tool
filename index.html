@@ -7,142 +7,276 @@
     <style>
         :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; }
         body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
+        
+        #topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
+        .profile-area { display: flex; align-items: center; gap: 15px; }
+        .spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; border: none; font-weight: bold; }
+        
         #dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
         .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
-        .batch-card { background: var(--purple); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-        .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .start-work-btn { width: 100%; background: white; color: var(--purple); padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        
+        .batch-card { background: var(--purple); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; position: relative; }
+        .card-header { height: 60px; background: rgba(0,0,0,0.2); padding: 15px; display: flex; justify-content: space-between; }
+        .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: capitalize; }
+        .start-work-btn { width: 100%; background: white; color: var(--purple); padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
+
         #workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; }
         #workzone { position: absolute; left: 0; top: 0; right: 350px; bottom: 0; cursor: crosshair; overflow: hidden; }
-        #sidePanel { position: absolute; right: 0; top: 0; width: 350px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; }
+        #sidePanel { position: absolute; right: 0; top: 0; width: 350px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
         
-        .anno-item { background: #1a1a1a; padding: 10px; margin-bottom: 8px; border-radius: 6px; border-left: 4px solid var(--purple); font-size: 12px; }
-        .anno-tools { display: flex; gap: 5px; margin-top: 8px; }
-        .tool-btn { background: #333; border: none; color: white; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 10px; }
-        .tool-btn:hover { background: #444; }
+        .anno-item { background: #1a1a1a; padding: 12px; margin-bottom: 8px; border-radius: 6px; font-size: 12px; border-left: 4px solid var(--purple); transition: 0.2s; cursor: pointer; }
+        .anno-item.selected { border-left-color: cyan; background: #222; }
+        .anno-controls { display: flex; gap: 8px; margin-top: 8px; }
+        .anno-btn { flex: 1; padding: 4px; background: #333; border: 1px solid #444; color: #ccc; border-radius: 3px; cursor: pointer; font-size: 10px; }
+        .anno-btn:hover { background: #444; color: white; }
         
-        .classification-header { background: #222; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #333; }
-        .occ-btn { padding: 5px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 10px; flex: 1; }
+        /* Classification Tooling */
+        .class-grid { display: flex; gap: 5px; margin-top: 8px; }
+        .occ-pill { padding: 3px 8px; border-radius: 10px; font-size: 9px; cursor: pointer; font-weight: bold; opacity: 0.4; }
+        .occ-pill.active { opacity: 1; }
+        .occ-20 { background: #2ecc71; color: black; }
+        .occ-60 { background: #f1c40f; color: black; }
+        .occ-100 { background: #e74c3c; color: white; }
+
+        #labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 5px; min-width: 140px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; text-align: left; font-size: 12px; }
+        .label-btn:hover { background: var(--purple); }
+        
+        .workspace-controls { position: absolute; bottom: 60px; left: 20px; display: flex; gap: 10px; }
+        .control-btn { padding: 10px 18px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        
+        .auth-page { text-align: center; padding-top: 100px; }
+        .auth-page input { padding: 12px; margin: 10px; width: 250px; background: #222; color: white; border: 1px solid #444; border-radius: 5px; }
+        .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: var(--purple); color: white; display: none; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; }
+        
+        #annoList { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; padding-right: 5px; }
+        .delete-main-btn { width: 100%; background: #442222; color: #ff6666; border: 1px solid #663333; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-<div id="loginPage" style="text-align: center; padding-top: 100px;">
+<div id="loginPage" class="auth-page">
     <h2>Antony Mbali - Worker Login</h2>
-    <input id="userName" placeholder="Full Name" style="padding:10px; margin:5px;">
-    <input id="userEmail" placeholder="Email Address" style="padding:10px; margin:5px;">
-    <button onclick="handleLogin()" style="padding: 10px 20px; background: var(--blue); color: white; border: none; border-radius: 5px;">Login</button>
+    <input id="userName" placeholder="Full Name">
+    <input id="userEmail" placeholder="Email Address">
+    <br>
+    <button style="padding: 12px 40px; background: var(--blue); color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="handleLogin()">Login / Register</button>
+    <div id="waitMessage" style="color:#ff9800; margin-top:20px; display:none; font-weight:bold;">Account pending admin approval...</div>
+</div>
+
+<div id="topNav">
+    <div style="font-weight: bold;">a⌵ LABELER</div>
+    <div class="profile-area">
+        <button class="spreadsheet-btn">Earnings: $<span id="balance">0.00</span></button>
+        <div id="workerProfile" style="font-size: 13px; border-left: 1px solid #333; padding-left: 15px;"></div>
+        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; font-size: 12px;">Logout</button>
+    </div>
 </div>
 
 <div id="dashboard">
     <h2 id="greet"></h2>
+    <p style="opacity: 0.6;" id="seasonalMsg"></p>
     <div id="tasks" class="task-grid"></div>
 </div>
 
 <div id="workspacePage">
     <div id="workzone"><canvas id="canvas"></canvas></div>
     <div id="sidePanel">
-        <div class="classification-header">
-            <div style="font-size: 11px; margin-bottom: 8px; color: #888;">MASS CLASSIFICATION (OCCLUSION)</div>
-            <div style="display: flex; gap: 5px;">
-                <button class="occ-btn" style="background: #28a745; color: white;" onclick="applyMassOcclusion(20)">20%</button>
-                <button class="occ-btn" style="background: #ffc107; color: black;" onclick="applyMassOcclusion(60)">60%</button>
-                <button class="occ-btn" style="background: #dc3545; color: white;" onclick="applyMassOcclusion(100)">100%</button>
-            </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items: center;">
+            <span style="font-weight: bold; font-size: 12px;">ANNOTATION FEED</span>
+            <button onclick="closeWorkspace()" style="background:#333; border:none; color:white; padding: 5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">HOME</button>
         </div>
         
-        <div id="annoList" style="flex-grow: 1; overflow-y: auto;"></div>
+        <button id="classModeBtn" onclick="toggleClassificationMode()" style="width:100%; background:#222; border:1px solid #444; color:white; padding:8px; border-radius:4px; margin-bottom:15px; font-size:11px; cursor:pointer;">ACTIVATE CLASSIFICATION TOOL</button>
+
+        <div id="annoList"></div>
         
-        <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:10px;">SUBMIT WORK</button>
-        <button onclick="closeWorkspace()" style="width:100%; background:#222; color:white; border:none; padding:10px; border-radius:6px; margin-top:5px; cursor:pointer;">EXIT</button>
+        <button class="delete-main-btn" onclick="deleteBox()">DELETE SELECTED BOX</button>
+        <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT FOR REVIEW</button>
+    </div>
+
+    <div id="labelPopup">
+        <div style="color:var(--purple); font-weight:bold; font-size:11px; margin-bottom:8px;">SELECT CATEGORY</div>
+        <button class="label-btn" onclick="assignLabel('Car')">Car</button>
+        <button class="label-btn" onclick="assignLabel('Bus')">Bus</button>
+        <button class="label-btn" onclick="assignLabel('Truck')">Truck</button>
+        <button class="label-btn" onclick="assignLabel('Pedestrian')">Pedestrian</button>
+        <button class="label-btn" onclick="assignLabel('Animal')">Animal</button>
+        <button class="label-btn" onclick="assignLabel('Motorcycle')">Motorcycle</button>
+        <button class="label-btn" onclick="assignLabel('Trash')">Trash</button>
+        <button class="label-btn" onclick="assignLabel('Towed')">Towed</button>
+    </div>
+
+    <div class="workspace-controls">
+        <button class="control-btn" style="background:var(--purple);" onclick="toggleDrawMode()" id="addBtn">ADD BOX</button>
+        <button class="control-btn" style="background:#444;" onclick="undo()">UNDO</button>
     </div>
 </div>
 
+<div class="bottom-bar" id="footerBar">
+    <div id="footerWorker">COWORKER: LOADING...</div>
+    <div>ANTONY MBALI MANAGEMENT</div>
+</div>
+
 <script>
-// Logic for task cards showing correct assignment badges
+const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
+
+let user = null, activeId = null, boxes = [], selectedBoxIdx = -1, isDrawMode = false, classMode = false;
+let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, resizeType = null;
+let canvas, ctx, img = new Image();
+
+window.onload = async () => {
+    const savedEmail = localStorage.getItem('workerEmail');
+    if(savedEmail) {
+        const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
+        if(data) { user = data; showDashboard(); }
+    }
+};
+
+async function handleLogin() {
+    const email = document.getElementById("userEmail").value.trim();
+    const name = document.getElementById("userName").value.trim();
+    const { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
+    if (!existing) {
+        await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'pending', balance: 0 }]);
+        document.getElementById("waitMessage").style.display = "block";
+    } else if (existing.status === 'approved') {
+        user = existing;
+        localStorage.setItem('workerEmail', email);
+        showDashboard();
+    } else { document.getElementById("waitMessage").style.display = "block"; }
+}
+
 async function showDashboard() {
-    // ... Supabase fetch logic ...
-    const { data: tasks } = await sb.from("ant_tasks").select("*").eq("assignedto", user.email);
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("topNav").style.display = "flex";
+    document.getElementById("footerBar").style.display = "flex";
+    document.getElementById("dashboard").style.display = "block";
+    document.getElementById("workspacePage").style.display = "none";
+    
+    document.getElementById("greet").innerText = `${user.name}, Welcome back`;
+    document.getElementById("seasonalMsg").innerText = "Take some rest, coworker.";
+    document.getElementById("workerProfile").innerHTML = `<b>${user.name}</b>`;
+    
+    const { data: tasks } = await sb.from("ant_tasks").select("*").eq("assignedto", user.email).or('review_status.is.null,review_status.eq.returned');
     document.getElementById("tasks").innerHTML = (tasks || []).map(t => {
-        // Ensure "Review" status from admin is preserved and not overwritten by "1st Pass"
-        const displayStatus = t.review_status === 'review' ? 'Review' : '1st Pass';
+        // Condition: Show Admin Assigned status (1st Pass or Review)
+        const displayStatus = t.review_status === 'returned' ? 'Review' : '1st Pass';
         return `
-        <div class="batch-card">
-            <div style="padding:15px;"><span class="status-badge">${displayStatus}</span></div>
-            <div style="padding:15px;"><button class="start-work-btn" onclick="openWork('${t.id}')">Resume Work →</button></div>
-        </div>`;
+            <div class="batch-card">
+                <div class="card-header"><span class="status-badge">${displayStatus}</span> <span style="font-size:10px;">ID: ${t.id}</span></div>
+                <div style="padding:15px;"><button class="start-work-btn" onclick="openWork('${t.id}')">Resume Work →</button></div>
+            </div>`;
     }).join("");
 }
 
-// Global state
-let boxes = []; 
-let selectedIdx = -1;
-let isolatedIdx = -1;
+async function openWork(id) {
+    activeId = id;
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("workspacePage").style.display = "block";
+    canvas = document.getElementById("canvas"); ctx = canvas.getContext("2d");
 
-// Mass Classification Tool
-function applyMassOcclusion(val) {
-    boxes.forEach(b => b.occlusion = val);
-    draw();
-    updateSidePanel();
-    saveProgress();
+    const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
+    boxes = data.annotations || [];
+    img.src = data.imgdata;
+    img.onload = () => { scale=0.8; draw(); updateSidePanel(); };
+
+    canvas.ondblclick = (e) => {
+        const mx = (e.clientX - offsetX) / scale;
+        const my = (e.clientY - offsetY) / scale;
+        selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
+        if(selectedBoxIdx > -1) showLabelPopup(e.clientX, e.clientY);
+        draw(); updateSidePanel();
+    };
+
+    canvas.onmousedown = (e) => {
+        const mx = (e.clientX - offsetX) / scale;
+        const my = (e.clientY - offsetY) / scale;
+        if (isDrawMode) {
+            const sx = mx, sy = my;
+            canvas.onmouseup = (e2) => {
+                const ex = (e2.clientX - offsetX) / scale;
+                const ey = (e2.clientY - offsetY) / scale;
+                boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Unlabeled', hidden: false, occ: 0 });
+                selectedBoxIdx = boxes.length - 1;
+                showLabelPopup(e2.clientX, e2.clientY);
+                toggleDrawMode(); draw(); updateSidePanel();
+            };
+        } else {
+            isDragging = true; lastX = e.clientX; lastY = e.clientY;
+            document.getElementById("labelPopup").style.display = "none";
+        }
+    };
 }
-
-// Side Panel UI with Hide/Isolate
-function updateSidePanel() {
-    const list = document.getElementById("annoList");
-    list.innerHTML = boxes.map((b, i) => `
-        <div class="anno-item" style="opacity: ${b.hidden ? 0.5 : 1}; border-color: ${getBoxColor(b.occlusion)}">
-            <div style="display:flex; justify-content:space-between;">
-                <b>${b.label}</b>
-                <span>${b.occlusion || 20}%</span>
-            </div>
-            <div class="anno-tools">
-                <button class="tool-btn" onclick="toggleHide(${i})">${b.hidden ? 'SHOW' : 'HIDE'}</button>
-                <button class="tool-btn" onclick="toggleIsolate(${i})">${isolatedIdx === i ? 'UNISOLATE' : 'ISOLATE'}</button>
-                <button class="tool-btn" style="color:red;" onclick="deleteBox(${i})">DEL</button>
-            </div>
-        </div>
-    `).join("");
-}
-
-function getBoxColor(occ) {
-    if (occ == 100) return "#dc3545"; // Red
-    if (occ == 60) return "#ffc107";  // Yellow
-    return "#28a745";                 // Green (20)
-}
-
-function toggleHide(i) { boxes[i].hidden = !boxes[i].hidden; draw(); updateSidePanel(); }
-function toggleIsolate(i) { isolatedIdx = (isolatedIdx === i) ? -1 : i; draw(); updateSidePanel(); }
-
-// Canvas Interaction: Double Click to Select Line
-canvas.ondblclick = (e) => {
-    const mx = (e.clientX - offsetX) / scale;
-    const my = (e.clientY - offsetY) / scale;
-    const threshold = 10 / scale;
-
-    selectedIdx = boxes.findIndex(b => {
-        const onVertical = (Math.abs(mx - b.x) < threshold || Math.abs(mx - (b.x + b.w)) < threshold) && (my >= b.y && my <= b.y + b.h);
-        const onHorizontal = (Math.abs(my - b.y) < threshold || Math.abs(my - (b.y + b.h)) < threshold) && (mx >= b.x && mx <= b.x + b.w);
-        return onVertical || onHorizontal;
-    });
-    draw();
-};
 
 function draw() {
-    // ... canvas clear/setup ...
+    canvas.width = window.innerWidth - 350; canvas.height = window.innerHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
     boxes.forEach((b, i) => {
-        if (b.hidden) return;
-        if (isolatedIdx !== -1 && isolatedIdx !== i) return;
-
-        ctx.strokeStyle = (i === selectedIdx) ? "cyan" : getBoxColor(b.occlusion);
+        if(b.hidden) return;
+        ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
         ctx.lineWidth = 2 / scale;
         ctx.strokeRect(b.x, b.y, b.w, b.h);
-        
-        // Render label and occlusion percentage
-        ctx.fillStyle = ctx.strokeStyle;
-        ctx.fillText(`${b.label} (${b.occlusion || 20}%)`, b.x, b.y - 5/scale);
+        ctx.fillStyle = "lime"; ctx.fillText(b.label, b.x, b.y-5/scale);
     });
+    ctx.restore();
+}
+
+function updateSidePanel() {
+    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
+        <div class="anno-item ${i === selectedBoxIdx ? 'selected' : ''}" onclick="selectedBoxIdx=${i};draw();updateSidePanel();">
+            <div style="display:flex; justify-content:space-between">
+                <b>${b.label} #${i+1}</b>
+                <span style="color:#666">${b.occ || 0}% Occ</span>
+            </div>
+            <div class="anno-controls">
+                <button class="anno-btn" onclick="event.stopPropagation(); boxes[${i}].hidden=!boxes[${i}].hidden; draw();">Hide</button>
+                <button class="anno-btn" onclick="event.stopPropagation(); isolateAnno(${i})">Isolate</button>
+            </div>
+            ${classMode ? `
+            <div class="class-grid">
+                <div class="occ-pill occ-20 ${b.occ==20?'active':''}" onclick="event.stopPropagation(); setOcc(${i}, 20)">20%</div>
+                <div class="occ-pill occ-60 ${b.occ==60?'active':''}" onclick="event.stopPropagation(); setOcc(${i}, 60)">60%</div>
+                <div class="occ-pill occ-100 ${b.occ==100?'active':''}" onclick="event.stopPropagation(); setOcc(${i}, 100)">100%</div>
+            </div>` : ''}
+        </div>`).join("");
+}
+
+function setOcc(idx, val) { boxes[idx].occ = val; updateSidePanel(); saveProgress(); }
+
+function isolateAnno(idx) {
+    boxes.forEach((b, i) => b.hidden = (i !== idx));
+    draw();
+}
+
+function toggleClassificationMode() {
+    classMode = !classMode;
+    document.getElementById("classModeBtn").style.borderColor = classMode ? "var(--purple)" : "#444";
+    updateSidePanel();
+}
+
+function showLabelPopup(x, y) {
+    const pop = document.getElementById("labelPopup");
+    pop.style.display = "flex"; pop.style.left = x + "px"; pop.style.top = y + "px";
+}
+
+function assignLabel(l) {
+    if(selectedBoxIdx > -1) { boxes[selectedBoxIdx].label = l; document.getElementById("labelPopup").style.display = "none"; draw(); updateSidePanel(); saveProgress(); }
+}
+
+async function saveProgress() { if(activeId) await sb.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
+
+function toggleDrawMode() { isDrawMode = !isDrawMode; document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)"; }
+
+function deleteBox() { if(selectedBoxIdx > -1) { boxes.splice(selectedBoxIdx, 1); selectedBoxIdx = -1; draw(); updateSidePanel(); saveProgress(); } }
+
+function closeWorkspace() { document.getElementById("workspacePage").style.display="none"; showDashboard(); }
+
+async function submitForReview() {
+    await sb.from("ant_tasks").update({ review_status: "review_pending", annotations: boxes }).eq("id", activeId);
+    alert("Submitted successfully.");
+    closeWorkspace();
 }
 </script>
 </body>
