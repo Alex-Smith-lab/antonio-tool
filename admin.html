@@ -1,135 +1,149 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Antony Mbali Management</title>
+    <title>Labeling Workspace - Antony Mbali</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; display:flex; height:100vh; }
-        .sidebar { width:230px; background:black; padding:20px; border-right:1px solid #222; }
-        .tab-btn { width:100%; padding:14px; margin-bottom:10px; background:none; border:none; color:#999; text-align:left; cursor:pointer; }
-        .tab-btn.active { background:#7b2ff7; color:white; }
-        .main { flex:1; padding:40px; overflow:auto; }
-        table { width:100%; border-collapse:collapse; }
-        td,th { padding:10px; border-bottom:1px solid #222; }
-        .btn { padding:8px 12px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; }
-        .green {background:#00c853;color:white}
-        .red {background:#ff4444;color:white}
-        .panel { background:#161616; padding:20px; border-radius:10px; }
-        input, select { padding: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #333; background: #222; color: white; width: 100%; max-width: 300px; }
+        body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; }
+        #loginPage, #waitlistPage { display:flex; height:100vh; align-items:center; justify-content:center; flex-direction:column; background:black; }
+        input { width:280px; padding:12px; margin:8px; border-radius:4px; border:none; background:#222; color:white; }
+        button { padding:12px 24px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; background:#7b2ff7; color:white; }
+        #topNav { position:fixed; top:0; width:100%; height:50px; background:black; border-bottom:1px solid #222; display:none; align-items:center; justify-content:space-between; padding:0 20px; }
+        #dashboard { padding:80px 40px; display:none; }
+        .taskCard { background:#161616; padding:20px; margin-bottom:10px; border-radius:8px; border:1px solid #333; display:flex; justify-content:space-between; align-items:center; }
+        #workspacePage { display:none; position:fixed; top:50px; bottom:0; left:0; right:0; background:black; }
+        #workzone { position:absolute; top:0; left:0; bottom:0; right:250px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+        #rightPanel { position:absolute; right:0; top:0; bottom:0; width:250px; background:#111; padding:20px; border-left:1px solid #222; }
+        canvas { border:1px solid #444; max-width:100%; cursor:crosshair; }
+        .phase-tag { font-size:10px; background:#444; padding:3px 6px; border-radius:3px; margin-left:10px; }
     </style>
 </head>
 <body>
-<div class="sidebar">
-    <h2>a⌵ ADMIN</h2>
-    <button class="tab-btn active" onclick="showTab('approvals',this)">Approvals</button>
-    <button class="tab-btn" onclick="showTab('tasks',this)">Assign Task</button>
-    <button class="tab-btn" onclick="showTab('tracking',this)">Tracking</button>
+
+<div id="loginPage">
+    <h2>Antony Mbali - Worker Login</h2>
+    <input id="userName" placeholder="Full Name">
+    <input id="userEmail" placeholder="Email Address">
+    <button onclick="handleLogin()">Login</button>
 </div>
 
-<div class="main">
-    <div id="approvals" class="panel tab">
-        <h2>Coworker Approvals</h2>
-        <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Role</th><th>Action</th></tr></thead>
-            <tbody id="userTable"></tbody>
-        </table>
-    </div>
+<div id="waitlistPage" style="display:none;">
+    <h2 style="color:#7b2ff7;">Awaiting Approval</h2>
+    <p>The admin has put you on the waitlist. Dashboard will open when approved.</p>
+</div>
 
-    <div id="tasks" class="panel tab" style="display:none">
-        <h2>Assign Task</h2>
-        <input type="file" id="taskFile"><br>
-        <select id="workerList"><option>Loading...</option></select><br>
-        <button class="btn green" onclick="sendTask()">Send Task</button>
-    </div>
+<div id="topNav">
+    <div>a⌵ LABELER</div>
+    <button onclick="location.reload()" style="background:none;color:red;">Logout</button>
+</div>
 
-    <div id="tracking" class="panel tab" style="display:none">
-        <h2>Worker Tracking</h2>
-        <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Status</th></tr></thead>
-            <tbody id="trackingTable"></tbody>
-        </table>
+<div id="dashboard">
+    <h2 id="greet"></h2>
+    <div id="tasks"></div>
+</div>
+
+<div id="workspacePage">
+    <div id="workzone"><canvas id="canvas"></canvas></div>
+    <div id="rightPanel">
+        <button onclick="completeTask()" style="background:#00c853; width:100%;">COMPLETE & SUBMIT</button>
+        <hr style="border-color:#222; margin:20px 0;">
+        <button onclick="enableDraw()" style="width:100%;">Draw Box</button>
     </div>
 </div>
 
 <script>
-// Use a different name to avoid SyntaxError
-const _supabase = window.supabase.createClient(
-    "https://qhftvfatzsogxbbqzxry.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w"
-);
+const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
-function showTab(id,btn){
-    document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
-    document.getElementById(id).style.display="block";
-    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    loadData();
-}
+let user = null;
 
-async function loadData(){
-    const {data:users, error} = await _supabase.from("ant_users").select("*");
-    if(error) return console.log(error);
+async function handleLogin() {
+    const email = document.getElementById("userEmail").value;
+    const name = document.getElementById("userName").value;
+    if(!email) return alert("Email required");
 
-    // Update Approvals
-    document.getElementById("userTable").innerHTML = users.map(u=>`
-        <tr>
-            <td>${u.name}</td>
-            <td>${u.email}</td>
-            <td style="color:${u.status==='pending'?'orange':'lime'}">${u.status}</td>
-            <td>${u.role}</td>
-            <td>
-                ${u.status==="pending" ? `<button class="btn green" onclick="approve('${u.email}')">Approve</button>` : ""}
-                <button class="btn red" onclick="removeUser('${u.email}')">Delete</button>
-            </td>
-        </tr>
-    `).join("");
-
-    // Update Task Worker List (Only approved workers)
-    const approved = users.filter(u=>u.status==="approved" && u.role==="worker");
-    document.getElementById("workerList").innerHTML = approved.length 
-        ? approved.map(u=>`<option value="${u.email}">${u.name}</option>`).join("")
-        : "<option disabled>No approved workers</option>";
-
-    // Update Tracking
-    document.getElementById("trackingTable").innerHTML = users.map(u=>`
-        <tr><td>${u.name}</td><td>${u.email}</td><td>${u.status}</td></tr>
-    `).join("");
-}
-
-async function approve(email){
-    await _supabase.from("ant_users").update({status:"approved"}).eq("email",email);
-    loadData();
-}
-
-async function removeUser(email){
-    if(confirm("Delete this user?")) {
-        await _supabase.from("ant_users").delete().eq("email",email);
-        loadData();
+    const { data } = await _supabase.from("ant_users").select("*").eq("email", email);
+    
+    if (data.length === 0) {
+        await _supabase.from("ant_users").insert([{ name, email, role: "worker", status: "pending" }]);
+        checkApproval(email);
+    } else if (data[0].status === "approved") {
+        user = data[0];
+        showDashboard();
+    } else {
+        checkApproval(email);
     }
 }
 
-function sendTask(){
-    const file = document.getElementById("taskFile").files[0];
-    const worker = document.getElementById("workerList").value;
-    if(!file || !worker) return alert("Select image and worker");
-
-    const reader = new FileReader();
-    reader.onload = async e => {
-        const {error} = await _supabase.from("ant_tasks").insert([{
-            id: Date.now(),
-            imgdata: e.target.result,
-            assignedto: worker,
-            completed: false
-        }]);
-        if(error) alert("Failed");
-        else alert("Task assigned!");
-    };
-    reader.readAsDataURL(file);
+function checkApproval(email) {
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("waitlistPage").style.display = "flex";
+    setInterval(async () => {
+        const { data } = await _supabase.from("ant_users").select("*").eq("email", email).single();
+        if (data.status === "approved") location.reload();
+    }, 5000);
 }
 
-setInterval(loadData, 5000); // Auto-sync every 5s
-loadData();
+async function showDashboard() {
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("topNav").style.display = "flex";
+    document.getElementById("dashboard").style.display = "block";
+    document.getElementById("greet").innerText = "Welcome, " + user.name;
+    
+    // FETCH TASKS ASSIGNED TO THIS EMAIL
+    const { data: tasks } = await _supabase.from("ant_tasks").select("*").eq("assignedto", user.email).eq("completed", false);
+    
+    document.getElementById("tasks").innerHTML = tasks.length > 0 
+        ? tasks.map(t => `<div class="taskCard">
+            <div><b>Task ID:</b> ${t.id} <span class="phase-tag">${t.phase || '1st Pass'}</span></div>
+            <button onclick="openWork('${t.id}')">Start Work</button>
+          </div>`).join("")
+        : "<h3>No tasks assigned to you right now.</h3>";
+}
+
+let canvas, ctx, img = new Image(), boxes = [], activeId;
+
+async function openWork(id) {
+    activeId = id;
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("workspacePage").style.display = "block";
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
+
+    const { data } = await _supabase.from("ant_tasks").select("*").eq("id", id).single();
+    boxes = data.annotations || [];
+    img.src = data.imgdata;
+    img.onload = () => { canvas.width = img.width; canvas.height = img.height; draw(); };
+}
+
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
+    ctx.strokeStyle="lime";
+    ctx.lineWidth = 2;
+    boxes.forEach(b => ctx.strokeRect(b.x, b.y, b.w, b.h));
+}
+
+function enableDraw() {
+    canvas.onmousedown = e => {
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left; const sy = e.clientY - rect.top;
+        canvas.onmouseup = e2 => {
+            const ex = e2.clientX - rect.left; const ey = e2.clientY - rect.top;
+            boxes.push({x:sx, y:sy, w:ex-sx, h:ey-sy});
+            draw();
+            saveProgress();
+        };
+    };
+}
+
+async function saveProgress() { await _supabase.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
+
+async function completeTask() {
+    await _supabase.from("ant_tasks").update({ completed: true, completedby: user.email }).eq("id", activeId);
+    alert("Task submitted to Admin!");
+    location.reload();
+}
 </script>
 </body>
 </html>
