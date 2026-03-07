@@ -8,36 +8,36 @@
         :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; }
         body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
         
-        /* Top Navigation & Profile */
         #topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
         .profile-area { display: flex; align-items: center; gap: 15px; }
         .spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; border: none; font-weight: bold; }
         
-        /* Dashboard & Task Cards */
         #dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
         .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
         .batch-card { background: var(--purple); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; }
         .card-header { height: 60px; background: rgba(0,0,0,0.2); padding: 15px; display: flex; justify-content: space-between; }
-        .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: capitalize; }
         .start-work-btn { width: 100%; background: white; color: var(--purple); padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
 
-        /* Workspace */
         #workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; }
         #workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; cursor: crosshair; overflow: hidden; }
-        #sidePanel { position: absolute; right: 0; top: 0; width: 300px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; }
+        #sidePanel { position: absolute; right: 0; top: 0; width: 300px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
         .anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; border-left: 3px solid var(--purple); }
         
-        /* Labels & Controls */
         #labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 5px; min-width: 120px; }
         .label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; text-align: left; font-size: 12px; }
         .label-btn:hover { background: var(--purple); }
         .workspace-controls { position: absolute; bottom: 60px; left: 20px; display: flex; gap: 10px; }
         .control-btn { padding: 10px 18px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         
-        /* Auth & Footer */
         .auth-page { text-align: center; padding-top: 100px; }
         .auth-page input { padding: 12px; margin: 10px; width: 250px; background: #222; color: white; border: 1px solid #444; border-radius: 5px; }
         .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: var(--purple); color: white; display: none; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; }
+        
+        #annoList { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; padding-right: 5px; }
+        .delete-box-area { padding-top: 10px; border-top: 1px solid #333; margin-bottom: 10px; }
+        .delete-main-btn { width: 100%; background: #442222; color: #ff6666; border: 1px solid #663333; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .delete-main-btn:hover { background: #662222; color: white; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -73,8 +73,11 @@
             <span style="font-weight: bold; font-size: 12px;">ANNOTATION FEED</span>
             <button onclick="closeWorkspace()" style="background:#333; border:none; color:white; padding: 5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">HOME PAGE</button>
         </div>
-        <div id="annoList" style="height:calc(100% - 150px); overflow-y:auto;"></div>
-        <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:10px;">SUBMIT FOR REVIEW</button>
+        <div id="annoList"></div>
+        <div class="delete-box-area">
+            <button class="delete-main-btn" onclick="deleteBox()">DELETE SELECTED BOX</button>
+        </div>
+        <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT FOR REVIEW</button>
     </div>
 
     <div id="labelPopup">
@@ -86,8 +89,6 @@
         <button class="label-btn" onclick="assignLabel('Motorcycle')">Motorcycle</button>
         <button class="label-btn" onclick="assignLabel('Trash')">Trash</button>
         <button class="label-btn" onclick="assignLabel('Towed')">Towed</button>
-        <hr style="border:0; border-top:1px solid #333; margin:5px 0;">
-        <button onclick="deleteBox()" style="color:#ff4444; background:none; border:none; cursor:pointer; font-size:12px; font-weight:bold;">DELETE BOX</button>
     </div>
 
     <div class="workspace-controls">
@@ -97,7 +98,7 @@
 </div>
 
 <div class="bottom-bar" id="footerBar">
-    <div id="footerWorker">COWORKER: </div>
+    <div id="footerWorker">COWORKER: LOADING...</div>
     <div>ANTONY MBALI MANAGEMENT</div>
 </div>
 
@@ -105,10 +106,9 @@
 const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
 let user = null, activeId = null, boxes = [], selectedBoxIdx = -1, isDrawMode = false;
-let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, isResizing = false;
+let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, resizeType = null;
 let canvas, ctx, img = new Image();
 
-// PERSISTENCE CHECK ON LOAD
 window.onload = async () => {
     const savedEmail = localStorage.getItem('workerEmail');
     const savedTaskId = localStorage.getItem('activeTaskId');
@@ -121,15 +121,19 @@ window.onload = async () => {
     }
 };
 
-function getSeasonalGreeting() {
+function getGreetingPrefix() {
+    const hour = new Date().getHours();
+    if(hour < 12) return "Good Morning";
+    if(hour < 17) return "Good Afternoon";
+    return "Good Evening";
+}
+
+function getSeasonalMessage() {
     const hour = new Date().getHours();
     const min = new Date().getMinutes();
     const timeVal = hour + min/60;
-    
     if(timeVal >= 23.5 || timeVal < 5) return "Take some rest, coworker.";
-    if(hour < 12) return "Good Morning, coworker.";
-    if(hour < 17) return "Good Afternoon, coworker.";
-    return "Good Evening, coworker.";
+    return "Happy labeling!";
 }
 
 async function handleLogin() {
@@ -158,25 +162,29 @@ async function showDashboard() {
     document.getElementById("dashboard").style.display = "block";
     document.getElementById("workspacePage").style.display = "none";
     
-    document.getElementById("greet").innerText = "Welcome, " + user.name;
-    document.getElementById("seasonalMsg").innerText = getSeasonalGreeting();
+    document.getElementById("greet").innerText = `${user.name}, ${getGreetingPrefix()}`;
+    document.getElementById("seasonalMsg").innerText = getSeasonalMessage();
     document.getElementById("workerProfile").innerHTML = `<b>${user.name}</b><br><span style="font-size:10px; opacity:0.6">${user.email}</span>`;
+    document.getElementById("footerWorker").innerText = `COWORKER: ${user.name.toUpperCase()}`;
     
     updateBalanceDisplay();
 
     const { data: tasks } = await sb.from("ant_tasks").select("*").eq("assignedto", user.email).or('review_status.is.null,review_status.eq.returned');
-    document.getElementById("tasks").innerHTML = (tasks || []).map(t => `
-        <div class="batch-card">
-            <div class="card-header"><span class="status-badge">${t.review_status || 'New Task'}</span> <span style="font-size:10px;">ID: ${t.id.toString().slice(-4)}</span></div>
-            <div style="padding:15px;">
-                <button class="start-work-btn" onclick="openWork('${t.id}')">Resume Work →</button>
+    document.getElementById("tasks").innerHTML = (tasks || []).map(t => {
+        const statusText = t.review_status === 'returned' ? 'Review' : '1st Pass';
+        const buttonLabel = t.review_status ? 'Available Work →' : 'Resume Work →';
+        return `
+            <div class="batch-card">
+                <div class="card-header"><span class="status-badge">${statusText}</span> <span style="font-size:10px;">ID: ${t.id.toString().slice(-4)}</span></div>
+                <div style="padding:15px;">
+                    <button class="start-work-btn" onclick="openWork('${t.id}')">${buttonLabel}</button>
+                </div>
             </div>
-        </div>
-    `).join("");
+        `;
+    }).join("");
 }
 
 function updateBalanceDisplay() {
-    // Earnings logic: $0.019 per box labeled
     const earnings = (boxes.length * 0.019).toFixed(3);
     document.getElementById("balance").innerText = earnings;
 }
@@ -195,7 +203,6 @@ async function openWork(id) {
     img.src = data.imgdata;
     img.onload = () => { resetView(); draw(); updateSidePanel(); updateBalanceDisplay(); };
 
-    // ZOOM HANDLER (Wheel)
     canvas.onwheel = (e) => {
         e.preventDefault();
         const zoomSpeed = 0.1;
@@ -207,12 +214,11 @@ async function openWork(id) {
         const mx = (e.clientX - offsetX) / scale;
         const my = (e.clientY - offsetY) / scale;
 
-        // Refinement Handle Check (Bottom-Right ONLY)
         if (selectedBoxIdx > -1) {
             const b = boxes[selectedBoxIdx];
-            if (Math.abs(mx - (b.x + b.w)) < 15/scale && Math.abs(my - (b.y + b.h)) < 15/scale) {
-                isResizing = true; return;
-            }
+            const handleSize = 15 / scale;
+            if (Math.abs(mx - b.x) < handleSize && Math.abs(my - b.y) < handleSize) { resizeType = 'tl'; return; }
+            if (Math.abs(mx - (b.x + b.w)) < handleSize && Math.abs(my - (b.y + b.h)) < handleSize) { resizeType = 'br'; return; }
         }
 
         if (isDrawMode) {
@@ -225,7 +231,7 @@ async function openWork(id) {
                 showLabelPopup(e2.clientX, e2.clientY);
                 toggleDrawMode();
                 draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
-                canvas.onmouseup = () => { isDragging = isResizing = false; };
+                canvas.onmouseup = () => { isDragging = resizeType = null; };
             };
         } else {
             selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
@@ -233,22 +239,29 @@ async function openWork(id) {
                 isDragging = true; lastX = e.clientX; lastY = e.clientY; 
                 document.getElementById("labelPopup").style.display = "none";
             } else { showLabelPopup(e.clientX, e.clientY); }
-            draw();
+            draw(); updateSidePanel();
         }
     };
 
     window.onmousemove = (e) => {
+        const mx = (e.clientX - offsetX) / scale;
+        const my = (e.clientY - offsetY) / scale;
+
         if (isDragging) {
             offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
             lastX = e.clientX; lastY = e.clientY;
-        } else if (isResizing && selectedBoxIdx > -1) {
+        } else if (resizeType && selectedBoxIdx > -1) {
             const b = boxes[selectedBoxIdx];
-            b.w = ((e.clientX - offsetX) / scale) - b.x;
-            b.h = ((e.clientY - offsetY) / scale) - b.y;
+            if (resizeType === 'br') {
+                b.w = mx - b.x; b.h = my - b.y;
+            } else if (resizeType === 'tl') {
+                const right = b.x + b.w; const bottom = b.y + b.h;
+                b.x = mx; b.y = my; b.w = right - mx; b.h = bottom - my;
+            }
         }
         draw();
     };
-    window.onmouseup = () => { isDragging = isResizing = false; saveProgress(); };
+    window.onmouseup = () => { isDragging = resizeType = null; saveProgress(); };
 }
 
 function draw() {
@@ -262,8 +275,9 @@ function draw() {
         ctx.lineWidth = 2 / scale;
         ctx.strokeRect(b.x, b.y, b.w, b.h);
         if(i === selectedBoxIdx) {
-            ctx.fillStyle = "white"; // Refinement handle
-            ctx.fillRect(b.x + b.w - 4/scale, b.y + b.h - 4/scale, 8/scale, 8/scale);
+            ctx.fillStyle = "white";
+            ctx.fillRect(b.x - 4/scale, b.y - 4/scale, 8/scale, 8/scale); // Top Left
+            ctx.fillRect(b.x + b.w - 4/scale, b.y + b.h - 4/scale, 8/scale, 8/scale); // Bottom Right
         }
         ctx.fillStyle = "lime"; ctx.font = `${12/scale}px bold sans-serif`;
         ctx.fillText(b.label.toUpperCase(), b.x, b.y - 5/scale);
@@ -292,15 +306,23 @@ function deleteBox() {
         selectedBoxIdx = -1;
         document.getElementById("labelPopup").style.display = "none";
         draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
+    } else {
+        alert("Select a box first by clicking on it.");
     }
 }
 
 function updateSidePanel() {
     document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
-        <div class="anno-item">
+        <div class="anno-item" style="${i === selectedBoxIdx ? 'background:#333; border-color:cyan;' : ''}" onclick="selectBoxFromList(${i})">
             <span>#${i+1} <b>${b.label}</b></span>
             <span style="font-size:9px; color:var(--purple)">$0.019</span>
         </div>`).join("");
+}
+
+function selectBoxFromList(i) {
+    selectedBoxIdx = i;
+    draw();
+    updateSidePanel();
 }
 
 async function saveProgress() { 
