@@ -6,60 +6,41 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; }
-        
-        /* Anti-Copy & Anti-Screenshot Protections */
-        body { 
-            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden;
-            user-select: none; -webkit-user-select: none; -ms-user-select: none;
-        }
-        @media print { body { display:none; } }
-
-        /* Navigation & Profile */
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
         #topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
-        .profile-area { display: flex; align-items: center; gap: 15px; position: absolute; right: 40px; }
-        .spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
-
-        /* Dashboard Cards */
+        .profile-area { display: flex; align-items: center; gap: 15px; }
+        .spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; }
         #dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
         .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
-        .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; }
-        .card-header { height: 80px; background: var(--blue); padding: 15px; display: flex; align-items: flex-start; }
+        .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+        .card-header { height: 80px; background: var(--blue); padding: 15px; }
         .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .card-body { padding: 20px; }
         .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
-
-        /* Workspace & Side Panel */
-        #workspacePage { display: none; position: fixed; top: 0; bottom: 0; left: 0; right: 0; background: #050505; z-index: 200; }
-        #workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        #workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; }
+        #workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; display: flex; align-items: center; justify-content: center; }
         #sidePanel { position: absolute; right: 0; top: 0; width: 300px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; }
-        .side-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
-        .anno-list { height: calc(100% - 140px); overflow-y: auto; }
         .anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; }
-
-        /* Label Pop-up */
-        #labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 8px; min-width: 150px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; text-align: left; }
+        #labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 8px; }
+        .label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; }
         .label-btn:hover { background: var(--purple); }
-
-        /* Bottom Bar */
-        .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: var(--purple); color: white; display: none; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; box-sizing: border-box; }
-        
+        .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: var(--purple); color: white; display: none; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; }
         .workspace-controls { position: absolute; bottom: 60px; left: 20px; display: flex; gap: 10px; }
         .control-btn { padding: 10px 15px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
-
-        /* Login Page Styling */
         .auth-page { text-align: center; padding-top: 100px; }
         .auth-page input { padding: 12px; margin: 10px; width: 250px; background: #222; color: white; border: 1px solid #444; border-radius: 5px; }
         .main-btn { padding: 12px 40px; background: var(--blue); color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #waitMessage { color: #ff9800; margin-top: 20px; display: none; font-weight: bold; }
     </style>
 </head>
-<body oncontextmenu="return false;" onkeydown="return disableShortcuts(event)">
+<body oncontextmenu="return false;">
 
 <div id="loginPage" class="auth-page">
     <h2>Antony Mbali - Worker Login</h2>
     <input id="userName" placeholder="Full Name">
     <input id="userEmail" placeholder="Email Address">
-    <button class="main-btn" onclick="handleLogin()">Login</button>
+    <br>
+    <button class="main-btn" onclick="handleLogin()">Login / Register</button>
+    <div id="waitMessage">Account pending admin approval. Please wait...</div>
 </div>
 
 <div id="topNav">
@@ -79,30 +60,24 @@
 
 <div id="workspacePage">
     <div id="workzone"><canvas id="canvas"></canvas></div>
-    
     <div id="sidePanel">
-        <div class="side-header">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
             <span>ANNOTATIONS</span>
-            <button onclick="closeWorkspace()" style="background:none; border:none; color:#777; cursor:pointer; font-size:20px;">×</button>
+            <button onclick="closeWorkspace()" style="background:none; border:none; color:#777; cursor:pointer;">×</button>
         </div>
-        <div id="annoList" class="anno-list"></div>
+        <div id="annoList" style="height:calc(100% - 150px); overflow-y:auto;"></div>
         <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:10px;">SUBMIT FOR REVIEW</button>
     </div>
 
     <div id="labelPopup">
-        <div style="font-size: 10px; opacity: 0.5; margin-bottom: 5px;">SELECT CLASS</div>
         <button class="label-btn" onclick="assignLabel('Car')">Car</button>
         <button class="label-btn" onclick="assignLabel('Bus')">Bus</button>
-        <button class="label-btn" onclick="assignLabel('Train')">Train</button>
         <button class="label-btn" onclick="assignLabel('Truck')">Truck</button>
-        <button class="label-btn" onclick="assignLabel('Motorcycle')">Motorcycle</button>
         <button class="label-btn" onclick="assignLabel('Pedestrian')">Pedestrian</button>
-        <button class="label-btn" onclick="assignLabel('Animal')">Animal</button>
-        <button onclick="deleteBox()" style="background:none; border:none; color:#ff4444; font-size:11px; margin-top:5px; cursor:pointer;">Delete Box</button>
+        <button onclick="deleteBox()" style="color:#ff4444; background:none; border:none; cursor:pointer; margin-top:5px;">Delete Box</button>
     </div>
 
     <div class="workspace-controls">
-        <button class="control-btn" style="background:#00c853;" onclick="completeTask()">COMPLETE</button>
         <button class="control-btn box-btn" style="background:var(--purple);" onclick="toggleDrawMode()">ADD BOX</button>
         <button class="control-btn" style="background:#555;" onclick="undo()">UNDO</button>
     </div>
@@ -114,70 +89,50 @@
 </div>
 
 <script>
-const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
+const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
 let user = null, activeId = null, boxes = [], selectedBoxIdx = -1, isDrawMode = false;
 let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, isResizing = false;
 let canvas, ctx, img = new Image();
 
-function disableShortcuts(e) {
-    if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67))) return false;
-}
+async function handleLogin() {
+    const email = document.getElementById("userEmail").value.trim();
+    const name = document.getElementById("userName").value.trim();
+    if(!email || !name) return alert("Enter details");
 
-window.onload = () => {
-    const savedEmail = localStorage.getItem('workerEmail');
-    const savedTaskId = localStorage.getItem('activeTask');
-    if(savedEmail) {
-        document.getElementById("userEmail").value = savedEmail;
-        handleLogin(savedTaskId);
-    }
-}
-
-function getSeasonalGreeting(name) {
-    const hour = new Date().getHours();
-    let msg = "";
-    if (hour < 5) msg = "take some rest";
-    else if (hour < 12) msg = "Good Morning";
-    else if (hour < 18) msg = "Good Afternoon";
-    else msg = "Good Evening";
-    return `${name}, ${msg} ${hour < 5 ? '.' : '!'}`;
-}
-
-async function handleLogin(resumeTaskId = null) {
-    const email = document.getElementById("userEmail").value;
-    const { data } = await _supabase.from("ant_users").select("*").eq("email", email).single();
-    if (data && data.status === "approved") {
-        user = data;
+    const { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
+    
+    if (!existing) {
+        await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'pending', balance: 0 }]);
+        document.getElementById("waitMessage").style.display = "block";
+    } else if (existing.status === 'pending') {
+        document.getElementById("waitMessage").style.display = "block";
+    } else {
+        user = existing;
         localStorage.setItem('workerEmail', email);
-        if(resumeTaskId && resumeTaskId !== "null") openWork(resumeTaskId);
-        else showDashboard();
+        showDashboard();
     }
 }
 
 async function showDashboard() {
     document.getElementById("loginPage").style.display = "none";
-    document.getElementById("workspacePage").style.display = "none";
     document.getElementById("topNav").style.display = "flex";
     document.getElementById("footerBar").style.display = "flex";
     document.getElementById("dashboard").style.display = "block";
-    document.getElementById("greet").innerText = getSeasonalGreeting(user.name);
     document.getElementById("workerProfile").innerText = user.name;
     document.getElementById("footerWorker").innerText = "COWORKER: " + user.name.toUpperCase();
     document.getElementById("balance").innerText = (user.balance || 0).toFixed(3);
 
-    // FIXED QUERY: Shows tasks assigned to user that are NOT completed and NOT awaiting review
-    const { data: tasks } = await _supabase.from("ant_tasks")
+    const { data: tasks } = await sb.from("ant_tasks")
         .select("*")
         .eq("assignedto", user.email)
-        .eq("completed", false)
         .or('review_status.is.null,review_status.eq.returned');
     
     document.getElementById("tasks").innerHTML = (tasks || []).map(t => `
         <div class="batch-card">
-            <div class="card-header"><span class="status-badge">${t.review_status === 'returned' ? 'Returned' : 'Available'}</span></div>
-            <div class="card-body">
-                <h3>Work Available</h3>
-                <p style="font-size:12px; opacity:0.6;">ID: ${t.id}</p>
+            <div class="card-header"><span class="status-badge">${t.review_status || 'Available'}</span></div>
+            <div class="card-body" style="padding:15px;">
+                <h3>Task #${t.id.toString().slice(-5)}</h3>
                 <button class="start-work-btn" onclick="openWork('${t.id}')">Start Working →</button>
             </div>
         </div>
@@ -186,73 +141,87 @@ async function showDashboard() {
 
 async function openWork(id) {
     activeId = id;
-    localStorage.setItem('activeTask', id);
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("workspacePage").style.display = "block";
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
 
-    const { data } = await _supabase.from("ant_tasks").select("*").eq("id", id).single();
+    const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
     boxes = data.annotations || [];
     img.src = data.imgdata;
     img.onload = () => { resetView(); draw(); updateSidePanel(); };
 
-    canvas.onmousedown = handleMouseDown;
-    window.onmousemove = handleMouseMove;
-    window.onmouseup = () => { isDragging = false; isResizing = false; saveProgress(); };
-    canvas.addEventListener('wheel', e => { e.preventDefault(); scale *= e.deltaY > 0 ? 0.9 : 1.1; draw(); });
-}
+    canvas.onmousedown = (e) => {
+        const mx = (e.clientX - offsetX) / scale;
+        const my = (e.clientY - offsetY) / scale;
 
-function handleMouseDown(e) {
-    const mx = (e.clientX - offsetX) / scale;
-    const my = (e.clientY - offsetY) / scale;
-    if (selectedBoxIdx > -1) {
-        const b = boxes[selectedBoxIdx];
-        if (Math.abs(mx - (b.x + b.w)) < 10/scale && Math.abs(my - (b.y + b.h)) < 10/scale) {
-            isResizing = true; return;
+        // Check for resize handle (Bottom-Right corner)
+        if (selectedBoxIdx > -1) {
+            const b = boxes[selectedBoxIdx];
+            if (Math.abs(mx - (b.x + b.w)) < 15/scale && Math.abs(my - (b.y + b.h)) < 15/scale) {
+                isResizing = true; return;
+            }
         }
-    }
-    if (isDrawMode) { startDrawing(e); } 
-    else {
-        selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
-        if (selectedBoxIdx === -1) { isDragging = true; lastX = e.clientX; lastY = e.clientY; document.getElementById("labelPopup").style.display = "none"; }
-        else { showLabelPopup(e.clientX, e.clientY); }
-        draw();
-    }
-}
 
-function handleMouseMove(e) {
-    if (isDragging) {
-        offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
-        lastX = e.clientX; lastY = e.clientY;
-    } else if (isResizing) {
-        const b = boxes[selectedBoxIdx];
-        b.w = ((e.clientX - offsetX) / scale) - b.x;
-        b.h = ((e.clientY - offsetY) / scale) - b.y;
-    }
-    draw();
-}
-
-function startDrawing(e) {
-    const sx = (e.clientX - offsetX) / scale;
-    const sy = (e.clientY - offsetY) / scale;
-    canvas.onmouseup = e2 => {
-        const ex = (e2.clientX - offsetX) / scale;
-        const ey = (e2.clientY - offsetY) / scale;
-        boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Unlabeled' });
-        selectedBoxIdx = boxes.length - 1;
-        updateEarnings(0.019);
-        showLabelPopup(e2.clientX, e2.clientY);
-        toggleDrawMode();
-        draw(); updateSidePanel();
-        canvas.onmouseup = () => { isDragging = false; isResizing = false; saveProgress(); };
+        if (isDrawMode) {
+            const sx = mx, sy = my;
+            canvas.onmouseup = (e2) => {
+                const ex = (e2.clientX - offsetX) / scale;
+                const ey = (e2.clientY - offsetY) / scale;
+                boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Unlabeled' });
+                selectedBoxIdx = boxes.length - 1;
+                showLabelPopup(e2.clientX, e2.clientY);
+                toggleDrawMode();
+                draw(); updateSidePanel(); saveProgress();
+                canvas.onmouseup = () => { isDragging = isResizing = false; };
+            };
+        } else {
+            selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
+            if (selectedBoxIdx === -1) { 
+                isDragging = true; lastX = e.clientX; lastY = e.clientY; 
+                document.getElementById("labelPopup").style.display = "none";
+            } else { showLabelPopup(e.clientX, e.clientY); }
+            draw();
+        }
     };
+
+    window.onmousemove = (e) => {
+        if (isDragging) {
+            offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
+            lastX = e.clientX; lastY = e.clientY;
+        } else if (isResizing && selectedBoxIdx > -1) {
+            const b = boxes[selectedBoxIdx];
+            b.w = ((e.clientX - offsetX) / scale) - b.x;
+            b.h = ((e.clientY - offsetY) / scale) - b.y;
+        }
+        draw();
+    };
+    window.onmouseup = () => { isDragging = isResizing = false; saveProgress(); };
+}
+
+function draw() {
+    canvas.width = window.innerWidth - 300; canvas.height = window.innerHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.save();
+    ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+    boxes.forEach((b, i) => {
+        ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
+        ctx.lineWidth = 2 / scale;
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+        if(i === selectedBoxIdx) {
+            ctx.fillStyle = "white"; // Resize handle visible
+            ctx.fillRect(b.x + b.w - 5/scale, b.y + b.h - 5/scale, 10/scale, 10/scale);
+        }
+        ctx.fillStyle = "lime"; ctx.font = `${14/scale}px sans-serif`;
+        ctx.fillText(b.label, b.x, b.y - 5/scale);
+    });
+    ctx.restore();
 }
 
 function showLabelPopup(x, y) {
     const pop = document.getElementById("labelPopup");
-    pop.style.display = "flex";
-    pop.style.left = x + "px"; pop.style.top = y + "px";
+    pop.style.display = "flex"; pop.style.left = x + "px"; pop.style.top = y + "px";
 }
 
 function assignLabel(l) {
@@ -264,75 +233,19 @@ function assignLabel(l) {
 }
 
 function updateSidePanel() {
-    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
-        <div class="anno-item">
-            <span>#${i+1} <b>${b.label}</b></span>
-            <span style="font-size:10px; opacity:0.5;">[${Math.round(b.w)}x${Math.round(b.h)}]</span>
-        </div>
-    `).join("");
+    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `<div class="anno-item">#${i+1} <b>${b.label}</b></div>`).join("");
 }
 
-function resetView() {
-    scale = 0.8;
-    offsetX = (window.innerWidth - 300) / 2 - (img.width * scale / 2);
-    offsetY = window.innerHeight / 2 - (img.height * scale / 2);
-}
-
-function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    canvas.width = window.innerWidth - 300; canvas.height = window.innerHeight;
-    ctx.save();
-    ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
-    ctx.drawImage(img, 0, 0);
-    boxes.forEach((b, i) => {
-        ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
-        ctx.lineWidth = 2 / scale;
-        ctx.strokeRect(b.x, b.y, b.w, b.h);
-        if(i === selectedBoxIdx) {
-            ctx.fillStyle = "white";
-            ctx.fillRect(b.x + b.w - 4/scale, b.y + b.h - 4/scale, 8/scale, 8/scale);
-        }
-        ctx.fillStyle = "lime"; ctx.font = `${12/scale}px Arial`;
-        ctx.fillText(b.label, b.x, b.y - 5/scale);
-    });
-    ctx.restore();
-}
-
-async function updateEarnings(amt) {
-    user.balance += amt;
-    document.getElementById("balance").innerText = user.balance.toFixed(3);
-    await _supabase.from("ant_users").update({ balance: user.balance }).eq("email", user.email);
-}
-
-function deleteBox() {
-    if(selectedBoxIdx > -1) {
-        boxes.splice(selectedBoxIdx, 1);
-        selectedBoxIdx = -1;
-        updateEarnings(-0.019);
-        document.getElementById("labelPopup").style.display = "none";
-        draw(); updateSidePanel(); saveProgress();
-    }
-}
-
-function undo() { if(boxes.length) { boxes.pop(); updateEarnings(-0.019); draw(); updateSidePanel(); saveProgress(); } }
-function toggleDrawMode() { isDrawMode = !isDrawMode; document.querySelector('.box-btn').style.opacity = isDrawMode ? "0.5" : "1"; }
-async function saveProgress() { if(activeId) await _supabase.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
-function closeWorkspace() { localStorage.removeItem('activeTask'); showDashboard(); }
-
+async function saveProgress() { if(activeId) await sb.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
+function toggleDrawMode() { isDrawMode = !isDrawMode; }
+function undo() { boxes.pop(); draw(); updateSidePanel(); saveProgress(); }
+function resetView() { scale = 0.8; offsetX = 50; offsetY = 50; }
 async function submitForReview() {
-    if(!confirm("Submit this batch for admin review?")) return;
-    await _supabase.from("ant_tasks").update({ review_status: "review_pending" }).eq("id", activeId);
-    alert("Batch submitted for review!");
-    localStorage.removeItem('activeTask');
-    location.reload();
-}
-
-async function completeTask() {
-    await _supabase.from("ant_tasks").update({ completed: true, completedby: user.email }).eq("id", activeId);
-    localStorage.removeItem('activeTask');
-    location.reload();
+    await sb.from("ant_tasks").update({ review_status: "review_pending" }).eq("id", activeId);
+    alert("Submitted!"); location.reload();
 }
 function logout() { localStorage.clear(); location.reload(); }
+function closeWorkspace() { document.getElementById("workspacePage").style.display = "none"; showDashboard(); }
 </script>
 </body>
 </html>
