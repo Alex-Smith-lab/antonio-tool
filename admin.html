@@ -88,8 +88,8 @@ async function loadData() {
     const { data: users } = await _supabase.from("ant_users").select("*");
     const { data: tasks } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
 
-    // User Management Table
-    document.getElementById("userTable").innerHTML = users.map(u => `
+    // User Table
+    document.getElementById("userTable").innerHTML = (users || []).map(u => `
         <tr>
             <td>${u.name}</td>
             <td>${u.email}</td>
@@ -101,11 +101,11 @@ async function loadData() {
         </tr>
     `).join("");
 
-    const approved = users.filter(u => u.status === "approved" && u.role === "worker");
+    const approved = (users || []).filter(u => u.status === "approved" && u.role === "worker");
     document.getElementById("workerList").innerHTML = approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
 
     // Supervision Table
-    document.getElementById("supervisionTable").innerHTML = tasks.map(t => {
+    document.getElementById("supervisionTable").innerHTML = (tasks || []).map(t => {
         const boxCount = t.annotations ? t.annotations.length : 0;
         const statusColor = t.review_status === 'review_pending' ? 'cyan' : (t.completed ? 'lime' : 'orange');
         const statusText = t.review_status === 'review_pending' ? 'Needs Review' : (t.completed ? 'Completed' : 'Working');
@@ -131,19 +131,14 @@ async function updateStatus(email, status) {
 }
 
 async function returnToWorker(taskId) {
-    if(confirm("Return this work to coworker for corrections?")) {
-        // Reset completion and review status so it reappears on worker's dashboard
-        await _supabase.from("ant_tasks").update({ 
-            completed: false, 
-            review_status: null 
-        }).eq("id", taskId);
-        alert("Work returned to coworker.");
+    if(confirm("Return work to coworker for corrections?")) {
+        await _supabase.from("ant_tasks").update({ completed: false, review_status: null }).eq("id", taskId);
         loadData();
     }
 }
 
 async function deleteTask(taskId) {
-    if(confirm("Permanently delete this task and all its annotations?")) {
+    if(confirm("Delete this task?")) {
         await _supabase.from("ant_tasks").delete().eq("id", taskId);
         loadData();
     }
@@ -163,20 +158,16 @@ async function sendTask() {
             assignedto: worker,
             phase: phase,
             completed: false,
-            annotations: [] // Initialize empty boxes
+            review_status: null, // Explicitly set to null for coworker filter
+            annotations: []
         }]);
-        if (error) alert("Error sending task");
-        else { alert("Task assigned successfully!"); loadData(); }
+        if (error) alert("Error: " + error.message);
+        else { alert("Task assigned!"); loadData(); }
     };
     reader.readAsDataURL(file);
 }
 
-function viewWork(id) { 
-    // In a real setup, this would link to your visual viewer. 
-    // For now, it shows details.
-    alert("Opening Viewer for Task ID: " + id + "\nThis will display the coworker's boxes for validation."); 
-}
-
+function viewWork(id) { alert("Viewing Task: " + id); }
 async function removeUser(email) { if(confirm("Delete user?")) { await _supabase.from("ant_users").delete().eq("email", email); loadData(); } }
 
 setInterval(loadData, 10000);
