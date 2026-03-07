@@ -11,13 +11,15 @@
         .tab-btn.active { background:#7b2ff7; color:white; }
         .main { flex:1; padding:40px; overflow:auto; }
         table { width:100%; border-collapse:collapse; margin-top:15px; }
-        td, th { padding:10px; border-bottom:1px solid #222; text-align:left; }
-        .btn { padding:6px 10px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px; }
+        td, th { padding:10px; border-bottom:1px solid #222; text-align:left; font-size: 13px; }
+        .btn { padding:6px 10px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px; margin-right:5px; }
         .green { background:#00c853; color:white; }
         .red { background:#ff4444; color:white; }
         .orange { background:#ff9800; color:white; }
+        .blue { background:#007bff; color:white; }
         .panel { background:#161616; padding:20px; border-radius:10px; margin-bottom:20px; }
         select, input[type="file"] { padding:8px; background:#222; color:white; border:1px solid #444; margin:5px 0; width:100%; max-width:300px; }
+        .anno-count { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -55,9 +57,17 @@
     </div>
 
     <div id="supervision" class="panel tab" style="display:none">
-        <h2>Admin Final Check</h2>
+        <h2>Admin Final Check & Supervision</h2>
         <table>
-            <thead><tr><th>Task ID</th><th>Worker</th><th>Phase</th><th>Status</th><th>Action</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Task ID</th>
+                    <th>Worker</th>
+                    <th>Boxes</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
             <tbody id="supervisionTable"></tbody>
         </table>
     </div>
@@ -91,25 +101,52 @@ async function loadData() {
         </tr>
     `).join("");
 
-    // Worker Selection Dropdown
     const approved = users.filter(u => u.status === "approved" && u.role === "worker");
     document.getElementById("workerList").innerHTML = approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
 
     // Supervision Table
-    document.getElementById("supervisionTable").innerHTML = tasks.map(t => `
+    document.getElementById("supervisionTable").innerHTML = tasks.map(t => {
+        const boxCount = t.annotations ? t.annotations.length : 0;
+        const statusColor = t.review_status === 'review_pending' ? 'cyan' : (t.completed ? 'lime' : 'orange');
+        const statusText = t.review_status === 'review_pending' ? 'Needs Review' : (t.completed ? 'Completed' : 'Working');
+
+        return `
         <tr>
-            <td>${t.id}</td>
+            <td><small>${t.id}</small></td>
             <td>${t.assignedto}</td>
-            <td><b>${t.phase || '1st Pass'}</b></td>
-            <td>${t.completed ? '<span style="color:lime">Done</span>' : 'Pending'}</td>
-            <td><button class="btn green" onclick="viewWork('${t.id}')">View Work</button></td>
+            <td><span class="anno-count">${boxCount} Boxes</span></td>
+            <td><span style="color:${statusColor}">${statusText}</span></td>
+            <td>
+                <button class="btn blue" onclick="viewWork('${t.id}')">View Work</button>
+                <button class="btn orange" onclick="returnToWorker('${t.id}')">Return</button>
+                <button class="btn red" onclick="deleteTask('${t.id}')">Delete Task</button>
+            </td>
         </tr>
-    `).join("");
+    `}).join("");
 }
 
 async function updateStatus(email, status) {
     await _supabase.from("ant_users").update({ status }).eq("email", email);
     loadData();
+}
+
+async function returnToWorker(taskId) {
+    if(confirm("Return this work to coworker for corrections?")) {
+        // Reset completion and review status so it reappears on worker's dashboard
+        await _supabase.from("ant_tasks").update({ 
+            completed: false, 
+            review_status: null 
+        }).eq("id", taskId);
+        alert("Work returned to coworker.");
+        loadData();
+    }
+}
+
+async function deleteTask(taskId) {
+    if(confirm("Permanently delete this task and all its annotations?")) {
+        await _supabase.from("ant_tasks").delete().eq("id", taskId);
+        loadData();
+    }
 }
 
 async function sendTask() {
@@ -125,7 +162,8 @@ async function sendTask() {
             imgdata: e.target.result,
             assignedto: worker,
             phase: phase,
-            completed: false
+            completed: false,
+            annotations: [] // Initialize empty boxes
         }]);
         if (error) alert("Error sending task");
         else { alert("Task assigned successfully!"); loadData(); }
@@ -133,10 +171,15 @@ async function sendTask() {
     reader.readAsDataURL(file);
 }
 
-function viewWork(id) { alert("Task ID: " + id + "\nThis would open the visual check tool."); }
+function viewWork(id) { 
+    // In a real setup, this would link to your visual viewer. 
+    // For now, it shows details.
+    alert("Opening Viewer for Task ID: " + id + "\nThis will display the coworker's boxes for validation."); 
+}
+
 async function removeUser(email) { if(confirm("Delete user?")) { await _supabase.from("ant_users").delete().eq("email", email); loadData(); } }
 
-setInterval(loadData, 5000);
+setInterval(loadData, 10000);
 loadData();
 </script>
 </body>
