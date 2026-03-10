@@ -5,7 +5,7 @@
     <title>Labeler - Workspace</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; --orange: #ff9800; }
+        :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; --orange: #ff9800; --green: #00c853; }
         body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
         
         #topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
@@ -14,8 +14,9 @@
         
         #dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
         .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
-        .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; }
-        .batch-card.mass { border-color: var(--orange); }
+        .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; position: relative; }
+        .batch-card.review-mode { border-color: var(--orange); }
+        .phase-badge { position: absolute; top: 10px; right: 10px; font-size: 9px; padding: 3px 8px; border-radius: 4px; font-weight: bold; background: #333; }
         .card-header { height: 60px; background: rgba(0,0,0,0.2); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: capitalize; }
         .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
@@ -40,6 +41,7 @@
         .delete-box-area { padding-top: 10px; border-top: 1px solid #333; margin-bottom: 10px; }
         .delete-main-btn { width: 100%; background: #442222; color: #ff6666; border: 1px solid #663333; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .delete-main-btn:hover { background: #662222; color: white; }
+        .review-banner { background: var(--orange); color: black; padding: 5px; text-align: center; font-weight: bold; font-size: 12px; display: none; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -69,17 +71,18 @@
 </div>
 
 <div id="workspacePage">
+    <div id="revBanner" class="review-banner">🚩 PHASE: REVIEW MODE (CHECK PREVIOUS WORK)</div>
     <div id="workzone"><canvas id="canvas"></canvas></div>
     <div id="sidePanel">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items: center;">
-            <span style="font-weight: bold; font-size: 12px;">ANNOTATION FEED</span>
+            <span id="panelTitle" style="font-weight: bold; font-size: 12px;">ANNOTATION FEED</span>
             <button onclick="closeWorkspace()" style="background:#333; border:none; color:white; padding: 5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">HOME PAGE</button>
         </div>
         <div id="annoList"></div>
         <div class="delete-box-area">
             <button class="delete-main-btn" onclick="deleteBox()">DELETE SELECTED BOX</button>
         </div>
-        <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT FOR REVIEW</button>
+        <button id="submitBtn" onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT FOR REVIEW</button>
     </div>
 
     <div id="labelPopup">
@@ -107,29 +110,21 @@
 <script>
 const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
-let user = null, activeId = null, boxes = [], selectedBoxIdx = -1, isDrawMode = false;
+let user = null, activeId = null, activePhase = '1st Pass', boxes = [], selectedBoxIdx = -1, isDrawMode = false;
 let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, resizeType = null;
 let canvas, ctx, img = new Image();
 
 window.onload = async () => {
-    // Check for Task ID in URL (Dynamic Link Support)
     const urlParams = new URLSearchParams(window.location.search);
     const taskIdFromUrl = urlParams.get('tid');
-
     const savedEmail = localStorage.getItem('workerEmail');
+
     if(savedEmail) {
         const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
         if(data && data.status === 'approved') {
             user = data;
-            if(taskIdFromUrl) {
-                openWork(taskIdFromUrl);
-            } else {
-                showDashboard();
-            }
+            if(taskIdFromUrl) openWork(taskIdFromUrl); else showDashboard();
         }
-    } else if (taskIdFromUrl) {
-        // If someone with the link isn't logged in, redirect them to login first
-        alert("Please login to view this task link.");
     }
 };
 
@@ -147,8 +142,6 @@ async function handleLogin() {
     } else {
         user = existing;
         localStorage.setItem('workerEmail', email);
-        
-        // After login, check if we need to go back to a specific task
         const urlParams = new URLSearchParams(window.location.search);
         const tid = urlParams.get('tid');
         if(tid) openWork(tid); else showDashboard();
@@ -156,10 +149,8 @@ async function handleLogin() {
 }
 
 async function showDashboard() {
-    // Clean URL when returning to dashboard
     window.history.replaceState({}, document.title, window.location.pathname);
-    
-    localStorage.removeItem('activeTaskId');
+    activeId = null;
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("topNav").style.display = "flex";
     document.getElementById("footerBar").style.display = "flex";
@@ -173,74 +164,60 @@ async function showDashboard() {
     
     updateBalanceDisplay();
 
+    // Rhyming with Admin: Fetching phase-specific tasks
     const { data: tasks } = await sb.from("ant_tasks")
         .select("*")
-        .or(`assignedto.eq.${user.email},assignedto.eq.MASS_ASSIGN`)
-        .is('review_status', null);
+        .eq("assignedto", user.email)
+        .eq("completed", false);
 
     document.getElementById("tasks").innerHTML = (tasks || []).map(t => {
-        const isMass = t.assignedto === 'MASS_ASSIGN';
-        const cardClass = isMass ? 'batch-card mass' : 'batch-card';
-        const button = isMass 
-            ? `<button class="claim-btn" onclick="claimTask('${t.id}')">CLAIM TASK</button>`
-            : `<button class="start-work-btn" onclick="openWork('${t.id}')">START WORK →</button>`;
-        
+        const isReview = t.phase === 'Review';
         return `
-            <div class="${cardClass}">
+            <div class="batch-card ${isReview ? 'review-mode' : ''}">
+                <div class="phase-badge" style="color:${isReview ? 'var(--orange)' : 'var(--purple)'}">${t.phase || '1st Pass'}</div>
                 <div class="card-header">
-                    <span class="status-badge" style="${isMass ? 'background:var(--orange); color:white;' : ''}">
-                        ${isMass ? 'Pool Task' : 'Assigned'}
-                    </span> 
+                    <span class="status-badge">${t.completed ? 'Finished' : 'Pending'}</span> 
                     <span style="font-size:10px;">ID: ${t.id.toString().slice(-4)}</span>
                 </div>
                 <div style="padding:15px;">
-                    <div style="font-size:11px; margin-bottom:10px; opacity:0.6">Task Link: <span style="color:var(--blue); cursor:pointer;" onclick="copyLink('${t.id}')">Copy Link 🔗</span></div>
-                    ${button}
+                    <div style="font-size:11px; margin-bottom:10px; opacity:0.6">Ready for: <b>${t.phase}</b></div>
+                    <button class="start-work-btn" style="background:${isReview ? 'var(--orange)' : 'var(--purple)'}" onclick="openWork('${t.id}')">
+                        ${isReview ? 'START REVIEW →' : 'START 1st PASS →'}
+                    </button>
                 </div>
             </div>
         `;
     }).join("");
 }
 
-function copyLink(id) {
-    const link = `${window.location.origin}${window.location.pathname}?tid=${id}`;
-    navigator.clipboard.writeText(link);
-    alert("Task link copied to clipboard!");
-}
-
-async function claimTask(taskId) {
-    const { data: task } = await sb.from("ant_tasks").select("assignedto").eq("id", taskId).single();
-    if (task.assignedto !== 'MASS_ASSIGN') {
-        alert("Task already claimed.");
-        showDashboard();
-        return;
-    }
-    const { error } = await sb.from("ant_tasks").update({ assignedto: user.email }).eq("id", taskId);
-    if (!error) openWork(taskId);
-}
-
 async function openWork(id) {
     activeId = id;
-    localStorage.setItem('activeTaskId', id);
-    
-    // Set URL parameter without refreshing page
     const newUrl = `${window.location.origin}${window.location.pathname}?tid=${id}`;
     window.history.pushState({ path: newUrl }, '', newUrl);
 
-    document.getElementById("loginPage").style.display = "none";
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("workspacePage").style.display = "block";
-    document.getElementById("topNav").style.display = "flex";
-    document.getElementById("footerBar").style.display = "flex";
-    
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
 
     const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
     if(!data) return alert("Task not found.");
     
+    activePhase = data.phase || '1st Pass';
     boxes = data.annotations || [];
     img.src = data.imgdata;
+
+    // Apply Rhyming UI Logic
+    if(activePhase === 'Review') {
+        document.getElementById("revBanner").style.display = "block";
+        document.getElementById("submitBtn").innerText = "COMPLETE REVIEW & LOCK";
+        document.getElementById("submitBtn").style.background = "var(--green)";
+    } else {
+        document.getElementById("revBanner").style.display = "none";
+        document.getElementById("submitBtn").innerText = "SUBMIT FOR REVIEW";
+        document.getElementById("submitBtn").style.background = "var(--blue)";
+    }
+
     img.onload = () => { resetView(); draw(); updateSidePanel(); updateBalanceDisplay(); };
 
     canvas.onwheel = (e) => {
@@ -286,15 +263,13 @@ async function openWork(id) {
     window.onmousemove = (e) => {
         const mx = (e.clientX - offsetX) / scale;
         const my = (e.clientY - offsetY) / scale;
-
         if (isDragging) {
             offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
             lastX = e.clientX; lastY = e.clientY;
         } else if (resizeType && selectedBoxIdx > -1) {
             const b = boxes[selectedBoxIdx];
-            if (resizeType === 'br') {
-                b.w = mx - b.x; b.h = my - b.y;
-            } else if (resizeType === 'tl') {
+            if (resizeType === 'br') { b.w = mx - b.x; b.h = my - b.y; } 
+            else if (resizeType === 'tl') {
                 const right = b.x + b.w; const bottom = b.y + b.h;
                 b.x = mx; b.y = my; b.w = right - mx; b.h = bottom - my;
             }
@@ -311,7 +286,7 @@ function draw() {
     ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
     ctx.drawImage(img, 0, 0);
     boxes.forEach((b, i) => {
-        ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
+        ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : (activePhase === 'Review' ? "var(--orange)" : "lime");
         ctx.lineWidth = 2 / scale;
         ctx.strokeRect(b.x, b.y, b.w, b.h);
         if(i === selectedBoxIdx) {
@@ -319,7 +294,8 @@ function draw() {
             ctx.fillRect(b.x - 4/scale, b.y - 4/scale, 8/scale, 8/scale);
             ctx.fillRect(b.x + b.w - 4/scale, b.y + b.h - 4/scale, 8/scale, 8/scale);
         }
-        ctx.fillStyle = "lime"; ctx.font = `${12/scale}px bold sans-serif`;
+        ctx.fillStyle = (activePhase === 'Review' ? "var(--orange)" : "lime"); 
+        ctx.font = `${12/scale}px bold sans-serif`;
         ctx.fillText(b.label.toUpperCase(), b.x, b.y - 5/scale);
     });
     ctx.restore();
@@ -364,7 +340,7 @@ async function saveProgress() {
         const link = `${window.location.origin}${window.location.pathname}?tid=${activeId}`;
         await sb.from("ant_tasks").update({ 
             annotations: boxes,
-            review_link: link // SAVING LINK TO SUPABASE
+            review_link: link 
         }).eq("id", activeId); 
     }
 }
@@ -382,13 +358,16 @@ function getGreetingPrefix() { const h = new Date().getHours(); return h < 12 ? 
 function getSeasonalMessage() { const h = new Date().getHours(); return (h >= 23.5 || h < 5) ? "Take some rest, coworker." : "Happy labeling!"; }
 
 async function submitForReview() {
+    const isReviewPhase = (activePhase === 'Review');
     const link = `${window.location.origin}${window.location.pathname}?tid=${activeId}`;
+    
     await sb.from("ant_tasks").update({ 
-        review_status: "review_pending", 
+        completed: true, // Mark as done for the current phase
         annotations: boxes,
         review_link: link 
     }).eq("id", activeId);
-    alert("Task submitted. Review link saved.");
+
+    alert(isReviewPhase ? "Review Completed! Admin will now see this as ready for Export." : "1st Pass Submitted to Review Queue.");
     closeWorkspace();
 }
 
