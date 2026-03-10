@@ -1,93 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Admin - Management</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; display:flex; height:100vh; }
-.sidebar { width:230px; background:black; padding:20px; border-right:1px solid #222; }
-.tab-btn { width:100%; padding:14px; margin-bottom:10px; background:none; border:none; color:#999; text-align:left; cursor:pointer; border-radius: 6px; }
-.tab-btn.active { background:#7b2ff7; color:white; }
-.main { flex:1; padding:40px; overflow:auto; }
-table { width:100%; border-collapse:collapse; margin-top:15px; }
-td, th { padding:12px; border-bottom:1px solid #222; text-align:left; font-size: 13px; }
-th { background: #111; color: #7b2ff7; }
-.btn { padding:6px 12px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px; margin-right:5px; transition: 0.2s; }
-.green { background:#00c853; color:white; }
-.red { background:#ff4444; color:white; }
-.orange { background:#ff9800; color:white; }
-.blue { background:#007bff; color:white; }
-.panel { background:#161616; padding:20px; border-radius:10px; margin-bottom:20px; }
-select, input[type="file"] { padding:10px; background:#222; color:white; border:1px solid #444; margin:5px 0; width:100%; max-width:300px; border-radius: 5px; }
-.anno-count { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
-.copy-link-text { font-family: monospace; color: #7b2ff7; cursor: pointer; text-decoration: underline; }
-.refresh-btn { float: right; background: #333; color: #7b2ff7; border: 1px solid #7b2ff7; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 10px; }
-</style>
+    <meta charset="UTF-8">
+    <title>Admin - Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; display:flex; height:100vh; }
+        .sidebar { width:230px; background:black; padding:20px; border-right:1px solid #222; }
+        .tab-btn { width:100%; padding:14px; margin-bottom:10px; background:none; border:none; color:#999; text-align:left; cursor:pointer; border-radius: 6px; }
+        .tab-btn.active { background:#7b2ff7; color:white; }
+        .main { flex:1; padding:40px; overflow:auto; }
+        table { width:100%; border-collapse:collapse; margin-top:15px; }
+        td, th { padding:12px; border-bottom:1px solid #222; text-align:left; font-size: 13px; }
+        th { background: #111; color: #7b2ff7; }
+        .btn { padding:6px 12px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px; margin-right:5px; transition: 0.2s; }
+        .green { background:#00c853; color:white; }
+        .red { background:#ff4444; color:white; }
+        .orange { background:#ff9800; color:white; }
+        .blue { background:#007bff; color:white; }
+        .panel { background:#161616; padding:20px; border-radius:10px; margin-bottom:20px; }
+        select, input[type="file"] { padding:10px; background:#222; color:white; border:1px solid #444; margin:5px 0; width:100%; max-width:300px; border-radius: 5px; }
+        .anno-count { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+        .copy-link-text { font-family: monospace; color: #7b2ff7; cursor: pointer; text-decoration: underline; }
+        .refresh-btn { float: right; background: #333; color: #7b2ff7; border: 1px solid #7b2ff7; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+    </style>
 </head>
 <body>
 
 <div class="sidebar">
-<h2 style="color:#7b2ff7;">a⌵ ADMIN</h2>
-<button class="tab-btn active" onclick="showTab('approvals',this)">Approvals & Staff</button>
-<button class="tab-btn" onclick="showTab('tasks',this)">Assign Task</button>
-<button class="tab-btn" onclick="showTab('supervision',this)">Supervision</button>
-<button class="tab-btn" onclick="showTab('export',this)" style="border: 1px dashed #7b2ff7; margin-top: 20px;">Export & Client Links</button>
+    <h2 style="color:#7b2ff7;">a⌵ ADMIN</h2>
+    <button class="tab-btn active" onclick="showTab('approvals',this)">Approvals & Staff</button>
+    <button class="tab-btn" onclick="showTab('tasks',this)">Assign Task</button>
+    <button class="tab-btn" onclick="showTab('supervision',this)">Supervision</button>
+    <button class="tab-btn" onclick="showTab('export',this)" style="border: 1px dashed #7b2ff7; margin-top: 20px;">Export & Client Links</button>
 </div>
 
 <div class="main">
-<button class="refresh-btn" onclick="loadData()">SYNC DATABASE ↻</button>
+    <button class="refresh-btn" onclick="loadData()">SYNC DATABASE ↻</button>
 
-<div id="approvals" class="panel tab">
-<h2>Coworker Management</h2>
-<table>
-<thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
-<tbody id="userTable"></tbody>
-</table>
-</div>
+    <div id="approvals" class="panel tab">
+        <h2>Coworker Management</h2>
+        <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="userTable"></tbody>
+        </table>
+    </div>
 
-<div id="tasks" class="panel tab" style="display:none">
-<h2>Assign New Task</h2>
-<div style="display:grid; gap:10px;">
-<label>1. Upload Image:</label>
-<input type="file" id="taskFile">
-<label>2. Assign To:</label>
-<select id="workerList"></select>
-<label>3. Assignment Phase:</label>
-<select id="taskPhase">
-<option value="1st Pass">1st Pass (Initial Labeling)</option>
-<option value="Review">Review (Quality Check)</option>
-</select>
-<button class="btn green" onclick="sendTask()" style="width:200px; padding:12px; margin-top:10px;">Send Task</button>
-</div>
-</div>
+    <div id="tasks" class="panel tab" style="display:none">
+        <h2>Assign New Task</h2>
+        <div style="display:grid; gap:10px;">
+            <label>1. Upload Image:</label>
+            <input type="file" id="taskFile">
+            <label>2. Assign To:</label>
+            <select id="workerList"></select>
+            <label>3. Assignment Phase:</label>
+            <select id="taskPhase">
+                <option value="1st Pass">1st Pass (Initial Labeling)</option>
+                <option value="Review">Review (Quality Check)</option>
+            </select>
+            <button class="btn green" onclick="sendTask()" style="width:200px; padding:12px; margin-top:10px;">Send Task</button>
+        </div>
+    </div>
 
-<div id="supervision" class="panel tab" style="display:none">
-<h2>Admin Final Check & Supervision</h2>
-<table>
-<thead><tr><th>Task ID</th><th>Worker</th><th>Boxes</th><th>Status</th><th>Actions</th></tr></thead>
-<tbody id="supervisionTable"></tbody>
-</table>
-</div>
+    <div id="supervision" class="panel tab" style="display:none">
+        <h2>Admin Final Check & Supervision</h2>
+        <table>
+            <thead><tr><th>Task ID</th><th>Worker</th><th>Boxes</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="supervisionTable"></tbody>
+        </table>
+    </div>
 
-<div id="export" class="panel tab" style="display:none">
-<div style="display:flex; justify-content:space-between; align-items:center;">
-<h2>Export & Client Links</h2>
-<button class="btn green" onclick="exportToCSV()" style="padding:10px 20px;">Download CSV Report</button>
-</div>
-<table>
-<thead>
-<tr>
-<th>Task ID</th>
-<th>Worker</th>
-<th>Status</th>
-<th>Boxes</th>
-<th>Customer Review Link</th>
-</tr>
-</thead>
-<tbody id="exportTable"></tbody>
-</table>
-</div>
+    <div id="export" class="panel tab" style="display:none">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Export & Client Links</h2>
+            <button class="btn green" onclick="exportToCSV()" style="padding:10px 20px;">Download CSV Report</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Task ID</th>
+                    <th>Worker</th>
+                    <th>Status</th>
+                    <th>Boxes</th>
+                    <th>Customer Review Link</th>
+                </tr>
+            </thead>
+            <tbody id="exportTable"></tbody>
+        </table>
+    </div>
 </div>
 
 <script>
@@ -96,172 +96,172 @@ const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.sup
 let allTasks = [];
 
 function showTab(id, btn) {
-document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
-document.getElementById(id).style.display = "block";
-document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-btn.classList.add("active");
-loadData();
+    document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
+    document.getElementById(id).style.display = "block";
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    loadData();
 }
 
 _supabase
-.channel('admin-changes')
-.on('postgres_changes', { event: '*', schema: 'public', table: 'ant_tasks' }, () => loadData())
-.on('postgres_changes', { event: '*', schema: 'public', table: 'ant_users' }, () => loadData())
-.subscribe();
+  .channel('admin-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'ant_tasks' }, () => loadData())
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'ant_users' }, () => loadData())
+  .subscribe();
 
 async function loadData() {
-const { data: users, error: uErr } = await _supabase.from("ant_users").select("*");
-const { data: tasks, error: tErr } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
+    const { data: users, error: uErr } = await _supabase.from("ant_users").select("*");
+    const { data: tasks, error: tErr } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
+    
+    if (uErr || tErr) console.error("Sync Error:", uErr || tErr);
+    allTasks = tasks || [];
 
-if (uErr || tErr) console.error("Sync Error:", uErr || tErr);
-allTasks = tasks || [];
+    // 1. Approvals Table
+    document.getElementById("userTable").innerHTML = (users || []).map(u => `
+        <tr>
+            <td>${u.name}</td>
+            <td>${u.email}</td>
+            <td><span style="color:${u.status === 'pending' ? 'orange' : 'lime'}">${u.status.toUpperCase()}</span></td>
+            <td>
+                ${u.status === 'pending' ? `<button class="btn green" onclick="updateStatus('${u.email}', 'approved')">Approve Now</button>` : `<button class="btn orange" onclick="updateStatus('${u.email}', 'pending')">Revoke</button>`}
+                <button class="btn red" onclick="removeUser('${u.email}')">Delete</button>
+            </td>
+        </tr>
+    `).join("");
 
-// 1. Approvals Table
-document.getElementById("userTable").innerHTML = (users || []).map(u => `
-<tr>
-<td>${u.name}</td>
-<td>${u.email}</td>
-<td><span style="color:${u.status === 'pending' ? 'orange' : 'lime'}">${u.status.toUpperCase()}</span></td>
-<td>
-${u.status === 'pending' ? `<button class="btn green" onclick="updateStatus('${u.email}', 'approved')">Approve Now</button>` : `<button class="btn orange" onclick="updateStatus('${u.email}', 'pending')">Revoke</button>`}
-<button class="btn red" onclick="removeUser('${u.email}')">Delete</button>
-</td>
-</tr>
-`).join("");
+    // 2. Assign List
+    const approved = (users || []).filter(u => u.status === "approved");
+    document.getElementById("workerList").innerHTML = '<option value="MASS_ASSIGN">-- MASS ASSIGN --</option>' + 
+        approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
 
-// 2. Assign List
-const approved = (users || []).filter(u => u.status === "approved");
-document.getElementById("workerList").innerHTML = '<option value="MASS_ASSIGN">-- MASS ASSIGN --</option>' +
-approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
+    // 3. Supervision Table (Shows everything including current work)
+    document.getElementById("supervisionTable").innerHTML = allTasks.map(t => {
+        const boxCount = t.annotations ? t.annotations.length : 0;
+        let statusColor = 'cyan';
+        let statusText = 'In Progress';
+        
+        if(t.review_status === 'review_pending') { statusText = 'NEEDS REVIEW'; statusColor = 'orange'; }
+        if(t.completed) { statusText = 'COMPLETED'; statusColor = 'lime'; }
+        if(t.review_status === 'returned') { statusText = 'RETURNED'; statusColor = '#ff4444'; }
 
-// 3. Supervision Table (Shows everything including current work)
-document.getElementById("supervisionTable").innerHTML = allTasks.map(t => {
-const boxCount = t.annotations ? t.annotations.length : 0;
-let statusColor = 'cyan';
-let statusText = 'In Progress';
+        return `
+            <tr>
+                <td><small>${t.id.toString().slice(-6)}</small></td>
+                <td>${t.assignedto}</td>
+                <td><span class="anno-count">${boxCount} Boxes</span></td>
+                <td><b style="color:${statusColor}">${statusText}</b></td>
+                <td>
+                    <button class="btn blue" onclick="viewWork('${t.id}')">View</button>
+                    ${t.review_status === 'review_pending' ? `<button class="btn green" onclick="approveTask('${t.id}')">Approve</button>` : ''}
+                    <button class="btn orange" onclick="returnToWorker('${t.id}')">Return</button>
+                    <button class="btn red" onclick="deleteTask('${t.id}')">Delete</button>
+                </td>
+            </tr>
+        `;
+    }).join("");
 
-if(t.review_status === 'review_pending') { statusText = 'NEEDS REVIEW'; statusColor = 'orange'; }
-if(t.completed) { statusText = 'COMPLETED'; statusColor = 'lime'; }
-if(t.review_status === 'returned') { statusText = 'RETURNED'; statusColor = '#ff4444'; }
-
-return `
-<tr>
-<td><small>${t.id.toString().slice(-6)}</small></td>
-<td>${t.assignedto}</td>
-<td><span class="anno-count">${boxCount} Boxes</span></td>
-<td><b style="color:${statusColor}">${statusText}</b></td>
-<td>
-<button class="btn blue" onclick="viewWork('${t.id}')">View</button>
-${t.review_status === 'review_pending' ? `<button class="btn green" onclick="approveTask('${t.id}')">Approve</button>` : ''}
-<button class="btn orange" onclick="returnToWorker('${t.id}')">Return</button>
-<button class="btn red" onclick="deleteTask('${t.id}')">Delete</button>
-</td>
-</tr>
-`;
-}).join("");
-
-// 4. Export Table (Focus on links)
-document.getElementById("exportTable").innerHTML = allTasks.map(t => {
-const link = t.review_link || "Link Not Created";
-return `
-<tr>
-<td><small>${t.id}</small></td>
-<td>${t.assignedto}</td>
-<td>${t.completed ? '✅ Finished' : '⏳ Pending'} ${t.review_status === 'review_pending' ? '🔔' : ''}</td>
-<td>${t.annotations ? t.annotations.length : 0}</td>
-<td><span class="copy-link-text" onclick="copyText('${link}')">${link === "Link Not Created" ? link : 'Copy Review Link 🔗'}</span></td>
-</tr>
-`;
-}).join("");
+    // 4. Export Table (Focus on links)
+    document.getElementById("exportTable").innerHTML = allTasks.map(t => {
+        const link = t.review_link || "Link Not Created";
+        return `
+            <tr>
+                <td><small>${t.id}</small></td>
+                <td>${t.assignedto}</td>
+                <td>${t.completed ? '✅ Finished' : '⏳ Pending'} ${t.review_status === 'review_pending' ? '🔔' : ''}</td>
+                <td>${t.annotations ? t.annotations.length : 0}</td>
+                <td><span class="copy-link-text" onclick="copyText('${link}')">${link === "Link Not Created" ? link : 'Copy Review Link 🔗'}</span></td>
+            </tr>
+        `;
+    }).join("");
 }
 
-function copyText(txt) {
-if(txt === "Link Not Created") return;
-navigator.clipboard.writeText(txt);
-alert("Review link copied to clipboard!");
+function copyText(txt) { 
+    if(txt === "Link Not Created") return;
+    navigator.clipboard.writeText(txt); 
+    alert("Review link copied to clipboard!"); 
 }
 
-async function updateStatus(email, status) {
-await _supabase.from("ant_users").update({ status }).eq("email", email);
-loadData();
+async function updateStatus(email, status) { 
+    await _supabase.from("ant_users").update({ status }).eq("email", email); 
+    loadData(); 
 }
 
-async function removeUser(email) {
-if(confirm("Permanently delete this user?")) {
-await _supabase.from("ant_users").delete().eq("email", email);
-loadData();
-}
+async function removeUser(email) { 
+    if(confirm("Permanently delete this user?")) {
+        await _supabase.from("ant_users").delete().eq("email", email);
+        loadData();
+    }
 }
 
 async function approveTask(taskId) {
-await _supabase.from("ant_tasks").update({ completed: true, review_status: 'approved' }).eq("id", taskId);
-alert("Task marked as COMPLETED.");
-loadData();
+    await _supabase.from("ant_tasks").update({ completed: true, review_status: 'approved' }).eq("id", taskId);
+    alert("Task marked as COMPLETED.");
+    loadData();
 }
 
 async function returnToWorker(taskId) {
-if(confirm("Send this back to the worker for corrections?")) {
-await _supabase.from("ant_tasks").update({ completed: false, review_status: 'returned' }).eq("id", taskId);
-loadData();
-}
+    if(confirm("Send this back to the worker for corrections?")) {
+        await _supabase.from("ant_tasks").update({ completed: false, review_status: 'returned' }).eq("id", taskId);
+        loadData();
+    }
 }
 
 async function sendTask() {
-const file = document.getElementById("taskFile").files[0];
-const worker = document.getElementById("workerList").value;
-const phase = document.getElementById("taskPhase").value;
-if (!file) return alert("Please select an image first.");
-
-const reader = new FileReader();
-reader.onload = async e => {
-const { error } = await _supabase.from("ant_tasks").insert([{
-id: Date.now(),
-imgdata: e.target.result,
-assignedto: worker,
-phase: phase,
-completed: false,
-annotations: []
-}]);
-if(!error) {
-alert("Task Assigned Successfully!");
-loadData();
-} else {
-alert("Error assigning task.");
-}
-};
-reader.readAsDataURL(file);
-}
-
-async function deleteTask(taskId) {
-if(confirm("Delete this task permanently?")) {
-await _supabase.from("ant_tasks").delete().eq("id", taskId);
-loadData();
-}
+    const file = document.getElementById("taskFile").files[0];
+    const worker = document.getElementById("workerList").value;
+    const phase = document.getElementById("taskPhase").value;
+    if (!file) return alert("Please select an image first.");
+    
+    const reader = new FileReader();
+    reader.onload = async e => {
+        const { error } = await _supabase.from("ant_tasks").insert([{
+            id: Date.now(),
+            imgdata: e.target.result,
+            assignedto: worker,
+            phase: phase,
+            completed: false,
+            annotations: []
+        }]);
+        if(!error) {
+            alert("Task Assigned Successfully!");
+            loadData();
+        } else {
+            alert("Error assigning task.");
+        }
+    };
+    reader.readAsDataURL(file);
 }
 
-function viewWork(id) {
-const task = allTasks.find(t => t.id == id);
-if(task && task.review_link) {
-window.open(task.review_link, '_blank');
-} else {
-alert("The worker hasn't started or saved this task yet, so no link is available.");
+async function deleteTask(taskId) { 
+    if(confirm("Delete this task permanently?")) {
+        await _supabase.from("ant_tasks").delete().eq("id", taskId);
+        loadData();
+    }
 }
+
+function viewWork(id) { 
+    const task = allTasks.find(t => t.id == id);
+    if(task && task.review_link) {
+        window.open(task.review_link, '_blank');
+    } else {
+        alert("The worker hasn't started or saved this task yet, so no link is available.");
+    }
 }
 
 function exportToCSV() {
-let csv = "TaskID,Worker,Status,Boxes,Link\n";
-allTasks.forEach(t => {
-csv += `${t.id},${t.assignedto},${t.completed ? 'Completed' : 'Pending'},${t.annotations ? t.annotations.length : 0},${t.review_link || ''}\n`;
-});
-const blob = new Blob([csv], { type: 'text/csv' });
-const url = window.URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.setAttribute('hidden', '');
-a.setAttribute('href', url);
-a.setAttribute('download', 'annotation_report.csv');
-document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
+    let csv = "TaskID,Worker,Status,Boxes,Link\n";
+    allTasks.forEach(t => {
+        csv += `${t.id},${t.assignedto},${t.completed ? 'Completed' : 'Pending'},${t.annotations ? t.annotations.length : 0},${t.review_link || ''}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'annotation_report.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 loadData();
