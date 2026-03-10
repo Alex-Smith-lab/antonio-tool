@@ -20,7 +20,6 @@
         .card-header { height: 60px; background: rgba(0,0,0,0.2); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: capitalize; }
         .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
-        .claim-btn { width: 100%; background: var(--orange); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
 
         #workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; }
         #workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; cursor: crosshair; overflow: hidden; }
@@ -40,7 +39,6 @@
         #annoList { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; padding-right: 5px; }
         .delete-box-area { padding-top: 10px; border-top: 1px solid #333; margin-bottom: 10px; }
         .delete-main-btn { width: 100%; background: #442222; color: #ff6666; border: 1px solid #663333; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .delete-main-btn:hover { background: #662222; color: white; }
         .review-banner { background: var(--orange); color: black; padding: 5px; text-align: center; font-weight: bold; font-size: 12px; display: none; }
     </style>
 </head>
@@ -58,7 +56,7 @@
 <div id="topNav">
     <div style="font-weight: bold;">a⌵ LABELER</div>
     <div class="profile-area">
-        <button class="spreadsheet-btn" onclick="alert('Worksheet: ' + boxes.length + ' active labels recorded.')">Earnings: $<span id="balance">0.00</span></button>
+        <button class="spreadsheet-btn" id="balanceBtn">Earnings: $<span id="balance">0.00</span></button>
         <div id="workerProfile" style="font-size: 13px; border-left: 1px solid #333; padding-left: 15px;"></div>
         <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; font-size: 12px;">Logout</button>
     </div>
@@ -115,14 +113,13 @@ let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, resiz
 let canvas, ctx, img = new Image();
 
 window.onload = async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const taskIdFromUrl = urlParams.get('tid');
     const savedEmail = localStorage.getItem('workerEmail');
-
     if(savedEmail) {
         const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
         if(data && data.status === 'approved') {
             user = data;
+            const urlParams = new URLSearchParams(window.location.search);
+            const taskIdFromUrl = urlParams.get('tid');
             if(taskIdFromUrl) openWork(taskIdFromUrl); else showDashboard();
         }
     }
@@ -132,7 +129,6 @@ async function handleLogin() {
     const email = document.getElementById("userEmail").value.trim();
     const name = document.getElementById("userName").value.trim();
     if(!email || !name) return alert("Enter details");
-
     const { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
     if (!existing) {
         await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'pending', balance: 0 }]);
@@ -142,14 +138,11 @@ async function handleLogin() {
     } else {
         user = existing;
         localStorage.setItem('workerEmail', email);
-        const urlParams = new URLSearchParams(window.location.search);
-        const tid = urlParams.get('tid');
-        if(tid) openWork(tid); else showDashboard();
+        showDashboard();
     }
 }
 
 async function showDashboard() {
-    window.history.replaceState({}, document.title, window.location.pathname);
     activeId = null;
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("topNav").style.display = "flex";
@@ -162,82 +155,46 @@ async function showDashboard() {
     document.getElementById("workerProfile").innerHTML = `<b>${user.name}</b><br><span style="font-size:10px; opacity:0.6">${user.email}</span>`;
     document.getElementById("footerWorker").innerText = `COWORKER: ${user.name.toUpperCase()}`;
     
-    updateBalanceDisplay();
-
-    // Rhyming with Admin: Fetching phase-specific tasks
-    const { data: tasks } = await sb.from("ant_tasks")
-        .select("*")
-        .eq("assignedto", user.email)
-        .eq("completed", false);
-
+    const { data: tasks } = await sb.from("ant_tasks").select("*").eq("assignedto", user.email).eq("completed", false);
     document.getElementById("tasks").innerHTML = (tasks || []).map(t => {
         const isReview = t.phase === 'Review';
         return `
             <div class="batch-card ${isReview ? 'review-mode' : ''}">
                 <div class="phase-badge" style="color:${isReview ? 'var(--orange)' : 'var(--purple)'}">${t.phase || '1st Pass'}</div>
-                <div class="card-header">
-                    <span class="status-badge">${t.completed ? 'Finished' : 'Pending'}</span> 
-                    <span style="font-size:10px;">ID: ${t.id.toString().slice(-4)}</span>
-                </div>
+                <div class="card-header"><span class="status-badge">Pending</span><span style="font-size:10px;">ID: ${t.id.toString().slice(-4)}</span></div>
                 <div style="padding:15px;">
-                    <div style="font-size:11px; margin-bottom:10px; opacity:0.6">Ready for: <b>${t.phase}</b></div>
                     <button class="start-work-btn" style="background:${isReview ? 'var(--orange)' : 'var(--purple)'}" onclick="openWork('${t.id}')">
                         ${isReview ? 'START REVIEW →' : 'START 1st PASS →'}
                     </button>
                 </div>
-            </div>
-        `;
+            </div>`;
     }).join("");
 }
 
 async function openWork(id) {
     activeId = id;
-    const newUrl = `${window.location.origin}${window.location.pathname}?tid=${id}`;
-    window.history.pushState({ path: newUrl }, '', newUrl);
-
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("workspacePage").style.display = "block";
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
-
     const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
-    if(!data) return alert("Task not found.");
-    
     activePhase = data.phase || '1st Pass';
     boxes = data.annotations || [];
     img.src = data.imgdata;
-
-    // Apply Rhyming UI Logic
     if(activePhase === 'Review') {
         document.getElementById("revBanner").style.display = "block";
         document.getElementById("submitBtn").innerText = "COMPLETE REVIEW & LOCK";
         document.getElementById("submitBtn").style.background = "var(--green)";
-    } else {
-        document.getElementById("revBanner").style.display = "none";
-        document.getElementById("submitBtn").innerText = "SUBMIT FOR REVIEW";
-        document.getElementById("submitBtn").style.background = "var(--blue)";
     }
-
     img.onload = () => { resetView(); draw(); updateSidePanel(); updateBalanceDisplay(); };
+    setupCanvasEvents();
+}
 
-    canvas.onwheel = (e) => {
-        e.preventDefault();
-        const zoomSpeed = 0.1;
-        if (e.deltaY < 0) scale *= (1 + zoomSpeed); else scale /= (1 + zoomSpeed);
-        draw();
-    };
-
+function setupCanvasEvents() {
+    canvas.onwheel = (e) => { e.preventDefault(); scale *= (e.deltaY < 0 ? 1.1 : 0.9); draw(); };
     canvas.onmousedown = (e) => {
         const mx = (e.clientX - offsetX) / scale;
         const my = (e.clientY - offsetY) / scale;
-
-        if (selectedBoxIdx > -1) {
-            const b = boxes[selectedBoxIdx];
-            const handleSize = 15 / scale;
-            if (Math.abs(mx - b.x) < handleSize && Math.abs(my - b.y) < handleSize) { resizeType = 'tl'; return; }
-            if (Math.abs(mx - (b.x + b.w)) < handleSize && Math.abs(my - (b.y + b.h)) < handleSize) { resizeType = 'br'; return; }
-        }
-
         if (isDrawMode) {
             const sx = mx, sy = my;
             canvas.onmouseup = (e2) => {
@@ -246,37 +203,19 @@ async function openWork(id) {
                 boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Unlabeled' });
                 selectedBoxIdx = boxes.length - 1;
                 showLabelPopup(e2.clientX, e2.clientY);
-                toggleDrawMode();
-                draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
-                canvas.onmouseup = () => { isDragging = resizeType = null; };
+                toggleDrawMode(); draw(); updateSidePanel(); saveProgress();
             };
         } else {
             selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
-            if (selectedBoxIdx === -1) { 
-                isDragging = true; lastX = e.clientX; lastY = e.clientY; 
-                document.getElementById("labelPopup").style.display = "none";
-            } else { showLabelPopup(e.clientX, e.clientY); }
+            if (selectedBoxIdx === -1) { isDragging = true; lastX = e.clientX; lastY = e.clientY; document.getElementById("labelPopup").style.display = "none"; }
+            else { showLabelPopup(e.clientX, e.clientY); }
             draw(); updateSidePanel();
         }
     };
-
     window.onmousemove = (e) => {
-        const mx = (e.clientX - offsetX) / scale;
-        const my = (e.clientY - offsetY) / scale;
-        if (isDragging) {
-            offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
-            lastX = e.clientX; lastY = e.clientY;
-        } else if (resizeType && selectedBoxIdx > -1) {
-            const b = boxes[selectedBoxIdx];
-            if (resizeType === 'br') { b.w = mx - b.x; b.h = my - b.y; } 
-            else if (resizeType === 'tl') {
-                const right = b.x + b.w; const bottom = b.y + b.h;
-                b.x = mx; b.y = my; b.w = right - mx; b.h = bottom - my;
-            }
-        }
-        draw();
+        if (isDragging) { offsetX += e.clientX - lastX; offsetY += e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; draw(); }
     };
-    window.onmouseup = () => { isDragging = resizeType = null; saveProgress(); };
+    window.onmouseup = () => { isDragging = false; saveProgress(); };
 }
 
 function draw() {
@@ -289,91 +228,50 @@ function draw() {
         ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : (activePhase === 'Review' ? "var(--orange)" : "lime");
         ctx.lineWidth = 2 / scale;
         ctx.strokeRect(b.x, b.y, b.w, b.h);
-        if(i === selectedBoxIdx) {
-            ctx.fillStyle = "white";
-            ctx.fillRect(b.x - 4/scale, b.y - 4/scale, 8/scale, 8/scale);
-            ctx.fillRect(b.x + b.w - 4/scale, b.y + b.h - 4/scale, 8/scale, 8/scale);
-        }
         ctx.fillStyle = (activePhase === 'Review' ? "var(--orange)" : "lime"); 
-        ctx.font = `${12/scale}px bold sans-serif`;
-        ctx.fillText(b.label.toUpperCase(), b.x, b.y - 5/scale);
+        ctx.font = `${12/scale}px sans-serif`;
+        ctx.fillText(b.label, b.x, b.y - 5/scale);
     });
     ctx.restore();
 }
 
 function showLabelPopup(x, y) {
     const pop = document.getElementById("labelPopup");
-    pop.style.display = "flex"; 
-    pop.style.left = Math.min(x, window.innerWidth - 150) + "px"; 
-    pop.style.top = Math.min(y, window.innerHeight - 300) + "px";
+    pop.style.display = "flex"; pop.style.left = x + "px"; pop.style.top = y + "px";
 }
 
 function assignLabel(l) {
-    if(selectedBoxIdx > -1) {
-        boxes[selectedBoxIdx].label = l;
-        document.getElementById("labelPopup").style.display = "none";
-        draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
-    }
+    if(selectedBoxIdx > -1) { boxes[selectedBoxIdx].label = l; document.getElementById("labelPopup").style.display = "none"; draw(); updateSidePanel(); saveProgress(); }
 }
 
 function deleteBox() {
-    if(selectedBoxIdx > -1) {
-        boxes.splice(selectedBoxIdx, 1);
-        selectedBoxIdx = -1;
-        document.getElementById("labelPopup").style.display = "none";
-        draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
-    }
+    if(selectedBoxIdx > -1) { boxes.splice(selectedBoxIdx, 1); selectedBoxIdx = -1; draw(); updateSidePanel(); saveProgress(); }
 }
 
 function updateSidePanel() {
-    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
-        <div class="anno-item" style="${i === selectedBoxIdx ? 'background:#333; border-color:cyan;' : ''}" onclick="selectBoxFromList(${i})">
-            <span>#${i+1} <b>${b.label}</b></span>
-            <span style="font-size:9px; color:var(--purple)">$0.019</span>
-        </div>`).join("");
+    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `<div class="anno-item" onclick="selectedBoxIdx=${i};draw()">#${i+1} <b>${b.label}</b></div>`).join("");
 }
 
-function selectBoxFromList(i) { selectedBoxIdx = i; draw(); updateSidePanel(); }
-
-async function saveProgress() { 
-    if(activeId) {
-        const link = `${window.location.origin}${window.location.pathname}?tid=${activeId}`;
-        await sb.from("ant_tasks").update({ 
-            annotations: boxes,
-            review_link: link 
-        }).eq("id", activeId); 
-    }
+async function saveProgress() {
+    if(activeId) await sb.from("ant_tasks").update({ annotations: boxes, review_link: window.location.href }).eq("id", activeId);
 }
 
-function toggleDrawMode() { 
-    isDrawMode = !isDrawMode; 
-    document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)";
-    document.getElementById("addBtn").style.color = isDrawMode ? "black" : "white";
-}
-
-function undo() { boxes.pop(); draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress(); }
+function toggleDrawMode() { isDrawMode = !isDrawMode; document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)"; }
+function undo() { boxes.pop(); draw(); updateSidePanel(); saveProgress(); }
 function resetView() { scale = 0.7; offsetX = 50; offsetY = 50; }
 function updateBalanceDisplay() { document.getElementById("balance").innerText = (boxes.length * 0.019).toFixed(3); }
-function getGreetingPrefix() { const h = new Date().getHours(); return h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : "Good Evening"; }
-function getSeasonalMessage() { const h = new Date().getHours(); return (h >= 23.5 || h < 5) ? "Take some rest, coworker." : "Happy labeling!"; }
+function getGreetingPrefix() { return new Date().getHours() < 12 ? "Good Morning" : "Good Day"; }
+function getSeasonalMessage() { return "Maintain quality for bonus!"; }
 
 async function submitForReview() {
-    const isReviewPhase = (activePhase === 'Review');
-    const link = `${window.location.origin}${window.location.pathname}?tid=${activeId}`;
-    
-    await sb.from("ant_tasks").update({ 
-        completed: true, // Mark as done for the current phase
-        annotations: boxes,
-        review_link: link 
-    }).eq("id", activeId);
-
-    alert(isReviewPhase ? "Review Completed! Admin will now see this as ready for Export." : "1st Pass Submitted to Review Queue.");
+    await sb.from("ant_tasks").update({ completed: true, annotations: boxes }).eq("id", activeId);
+    alert("Submitted successfully!");
     closeWorkspace();
 }
 
-function logout() { localStorage.clear(); location.reload(); }
 function closeWorkspace() { showDashboard(); }
-setInterval(() => { if(!activeId && user) showDashboard(); }, 20000);
+function logout() { localStorage.clear(); location.reload(); }
+setInterval(() => { if(!activeId && user) showDashboard(); }, 5000); // Faster refresh for real-time
 </script>
 </body>
 </html>
