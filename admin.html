@@ -57,7 +57,6 @@
 
     <div id="reviewQueue" class="panel tab" style="display:none">
         <h2>1st Pass Completed - Assign Reviewers</h2>
-        <p style="color:#999; font-size:12px;">Tasks here have finished 1st Pass and need a QC reviewer assigned.</p>
         <table>
             <thead>
                 <tr>
@@ -108,7 +107,6 @@
 </div>
 
 <script>
-// INITIALIZE SUPABASE
 const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
 let allTasks = [];
@@ -125,10 +123,8 @@ function showTab(id, btn) {
 async function loadData() {
     const { data: users } = await _supabase.from("ant_users").select("*");
     const { data: tasks } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
-    
     allTasks = tasks || [];
     allUsers = users || [];
-
     renderUsers();
     renderReviewQueue();
     renderSupervision();
@@ -149,27 +145,22 @@ function renderUsers() {
     `).join("");
 
     const approved = allUsers.filter(u => u.status === "approved");
-    const options = approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
-    document.getElementById("workerList").innerHTML = options;
+    document.getElementById("workerList").innerHTML = approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
 }
 
 function renderReviewQueue() {
-    // Tasks that are 1st Pass and COMPLETED, but not yet in Review phase
     const readyForReview = allTasks.filter(t => t.phase === '1st Pass' && t.completed === true);
-    
     document.getElementById("reviewQueueTable").innerHTML = readyForReview.map(t => `
         <tr>
             <td>${t.id}</td>
             <td>${t.assignedto}</td>
             <td><span class="anno-count">${t.annotations?.length || 0} Boxes</span></td>
             <td>
-                <select id="revSel_${t.id}" style="width:150px; font-size:11px;">
+                <select id="revSel_${t.id}" style="width:150px;">
                     ${allUsers.filter(u => u.status === 'approved').map(u => `<option value="${u.email}">${u.name}</option>`)}
                 </select>
             </td>
-            <td>
-                <button class="btn purple" onclick="assignToReview('${t.id}')">Assign to Reviewer</button>
-            </td>
+            <td><button class="btn purple" onclick="assignToReview('${t.id}')">Assign Reviewer</button></td>
         </tr>
     `).join("");
 }
@@ -179,11 +170,11 @@ function renderSupervision() {
         <tr>
             <td><small>${t.id}</small></td>
             <td><b>${t.assignedto}</b></td>
-            <td><span class="badge" style="background:#444">${t.phase || '1st Pass'}</span></td>
+            <td><span class="badge" style="background:#444">${t.phase}</span></td>
             <td><span style="color:${t.completed ? 'lime' : 'cyan'}">${t.completed ? 'Finished' : 'Working'}</span></td>
             <td>
-                <select onchange="reassignTask('${t.id}', this.value)" style="width:120px; font-size:10px; padding:4px;">
-                    <option>Change Worker...</option>
+                <select onchange="reassignTask('${t.id}', this.value)" style="width:120px;">
+                    <option>Change...</option>
                     ${allUsers.filter(u => u.status === 'approved').map(u => `<option value="${u.email}">${u.name}</option>`)}
                 </select>
             </td>
@@ -202,25 +193,21 @@ function renderExport() {
             <tr>
                 <td>${t.id}</td>
                 <td>
-                    <select id="linkMode_${t.id}" onchange="updateLinkMode('${t.id}', this.value)" style="width:180px;">
-                        <option value="full" ${t.client_view === 'full' ? 'selected' : ''}>Annotation Tool (Full)</option>
-                        <option value="box" ${t.client_view === 'box' ? 'selected' : ''}>Box Drawing Only (View)</option>
+                    <select id="linkMode_${t.id}" onchange="updateLinkMode('${t.id}', this.value)">
+                        <option value="full" ${t.client_view === 'full' ? 'selected' : ''}>Tools + Boxes (Full)</option>
+                        <option value="box" ${t.client_view === 'box' ? 'selected' : ''}>Boxes Only (View)</option>
                     </select>
                 </td>
-                <td>
-                    <span class="copy-link-text" onclick="copyText('${link}', '${t.id}')">Copy Link 🔗</span>
-                </td>
+                <td><span class="copy-link-text" onclick="copyText('${link}', '${t.id}')">Copy Link 🔗</span></td>
             </tr>
         `;
     }).join("");
 }
 
-// ACTION LOGIC
 async function sendTask() {
     const file = document.getElementById("taskFile").files[0];
     const worker = document.getElementById("workerList").value;
-    if (!file) return alert("Select image first");
-
+    if (!file) return alert("Select image");
     const reader = new FileReader();
     reader.onload = async e => {
         await _supabase.from("ant_tasks").insert([{
@@ -232,7 +219,6 @@ async function sendTask() {
             annotations: [],
             client_view: 'full'
         }]);
-        alert("Task Sent to 1st Pass!");
         loadData();
     };
     reader.readAsDataURL(file);
@@ -240,45 +226,31 @@ async function sendTask() {
 
 async function assignToReview(taskId) {
     const reviewer = document.getElementById(`revSel_${taskId}`).value;
-    await _supabase.from("ant_tasks").update({ 
-        assignedto: reviewer, 
-        phase: 'Review', 
-        completed: false // Reset for reviewer to work
-    }).eq("id", taskId);
-    alert("Task moved to Review Dashboard");
-    loadData();
-}
-
-async function reassignTask(taskId, newWorker) {
-    if(!newWorker) return;
-    await _supabase.from("ant_tasks").update({ assignedto: newWorker }).eq("id", taskId);
-    alert(`Reassigned to ${newWorker}`);
+    await _supabase.from("ant_tasks").update({ assignedto: reviewer, phase: 'Review', completed: false }).eq("id", taskId);
     loadData();
 }
 
 async function updateLinkMode(taskId, mode) {
     await _supabase.from("ant_tasks").update({ client_view: mode }).eq("id", taskId);
+    loadData();
 }
 
 function copyText(link, id) {
     const mode = document.getElementById(`linkMode_${id}`).value;
-    const finalLink = `${link}&view=${mode}`; // Appending view mode to URL
+    const finalLink = `${link}&view=${mode}`;
     navigator.clipboard.writeText(finalLink);
-    alert("Link copied with " + mode + " settings!");
+    alert("Copied: " + mode + " mode");
 }
 
 async function updateStatus(email, status) { await _supabase.from("ant_users").update({ status }).eq("email", email); loadData(); }
-async function removeUser(email) { if(confirm("Delete user?")) { await _supabase.from("ant_users").delete().eq("email", email); loadData(); } }
 async function deleteTask(taskId) { if(confirm("Delete?")) { await _supabase.from("ant_tasks").delete().eq("id", taskId); loadData(); } }
-
 function viewWork(id) { 
-    const task = allTasks.find(t => t.id == id);
-    if(task?.review_link) window.open(task.review_link, '_blank'); else alert("Worker hasn't opened this yet.");
+    const t = allTasks.find(x => x.id == id);
+    if(t?.review_link) window.open(t.review_link + "&view=full", '_blank'); else alert("Not started yet.");
 }
 
-setInterval(loadData, 20000);
+setInterval(loadData, 10000);
 loadData();
 </script>
-
 </body>
 </html>
