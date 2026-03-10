@@ -22,6 +22,7 @@
         select, input[type="file"] { padding:10px; background:#222; color:white; border:1px solid #444; margin:5px 0; width:100%; max-width:300px; border-radius: 5px; }
         .anno-count { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
         .copy-link-text { font-family: monospace; color: #7b2ff7; cursor: pointer; text-decoration: underline; }
+        .refresh-btn { float: right; background: #333; color: #7b2ff7; border: 1px solid #7b2ff7; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -35,6 +36,8 @@
 </div>
 
 <div class="main">
+    <button class="refresh-btn" onclick="loadData()">SYNC DATABASE ↻</button>
+
     <div id="approvals" class="panel tab">
         <h2>Coworker Management</h2>
         <table>
@@ -100,7 +103,6 @@ function showTab(id, btn) {
     loadData();
 }
 
-// REALTIME LISTENER: This makes it rhyme with the coworker's actions
 _supabase
   .channel('admin-changes')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'ant_tasks' }, () => loadData())
@@ -108,42 +110,48 @@ _supabase
   .subscribe();
 
 async function loadData() {
-    const { data: users } = await _supabase.from("ant_users").select("*");
-    const { data: tasks } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
+    const { data: users, error: uErr } = await _supabase.from("ant_users").select("*");
+    const { data: tasks, error: tErr } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
+    
+    if (uErr || tErr) console.error("Sync Error:", uErr || tErr);
     allTasks = tasks || [];
 
+    // 1. Approvals Table
     document.getElementById("userTable").innerHTML = (users || []).map(u => `
         <tr>
             <td>${u.name}</td>
             <td>${u.email}</td>
-            <td><span style="color:${u.status === 'pending' ? 'orange' : 'lime'}">${u.status}</span></td>
+            <td><span style="color:${u.status === 'pending' ? 'orange' : 'lime'}">${u.status.toUpperCase()}</span></td>
             <td>
-                ${u.status === 'pending' ? `<button class="btn green" onclick="updateStatus('${u.email}', 'approved')">Approve</button>` : `<button class="btn orange" onclick="updateStatus('${u.email}', 'pending')">Return</button>`}
+                ${u.status === 'pending' ? `<button class="btn green" onclick="updateStatus('${u.email}', 'approved')">Approve Now</button>` : `<button class="btn orange" onclick="updateStatus('${u.email}', 'pending')">Revoke</button>`}
                 <button class="btn red" onclick="removeUser('${u.email}')">Delete</button>
             </td>
         </tr>
     `).join("");
 
+    // 2. Assign List
     const approved = (users || []).filter(u => u.status === "approved");
     document.getElementById("workerList").innerHTML = '<option value="MASS_ASSIGN">-- MASS ASSIGN --</option>' + 
         approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
 
+    // 3. Supervision Table (Shows everything including current work)
     document.getElementById("supervisionTable").innerHTML = allTasks.map(t => {
         const boxCount = t.annotations ? t.annotations.length : 0;
         let statusColor = 'cyan';
-        let statusText = 'Working';
+        let statusText = 'In Progress';
         
         if(t.review_status === 'review_pending') { statusText = 'NEEDS REVIEW'; statusColor = 'orange'; }
         if(t.completed) { statusText = 'COMPLETED'; statusColor = 'lime'; }
+        if(t.review_status === 'returned') { statusText = 'RETURNED'; statusColor = '#ff4444'; }
 
         return `
             <tr>
                 <td><small>${t.id.toString().slice(-6)}</small></td>
                 <td>${t.assignedto}</td>
                 <td><span class="anno-count">${boxCount} Boxes</span></td>
-                <td><span style="color:${statusColor}">${statusText}</span></td>
+                <td><b style="color:${statusColor}">${statusText}</b></td>
                 <td>
-                    <button class="btn blue" onclick="viewWork('${t.id}')">Open</button>
+                    <button class="btn blue" onclick="viewWork('${t.id}')">View</button>
                     ${t.review_status === 'review_pending' ? `<button class="btn green" onclick="approveTask('${t.id}')">Approve</button>` : ''}
                     <button class="btn orange" onclick="returnToWorker('${t.id}')">Return</button>
                     <button class="btn red" onclick="deleteTask('${t.id}')">Delete</button>
@@ -152,33 +160,49 @@ async function loadData() {
         `;
     }).join("");
 
+    // 4. Export Table (Focus on links)
     document.getElementById("exportTable").innerHTML = allTasks.map(t => {
-        const link = t.review_link || "Not Generated";
+        const link = t.review_link || "Link Not Created";
         return `
             <tr>
                 <td><small>${t.id}</small></td>
                 <td>${t.assignedto}</td>
-                <td>${t.completed ? '✅' : '⏳'}</td>
+                <td>${t.completed ? '✅ Finished' : '⏳ Pending'} ${t.review_status === 'review_pending' ? '🔔' : ''}</td>
                 <td>${t.annotations ? t.annotations.length : 0}</td>
-                <td><span class="copy-link-text" onclick="copyText('${link}')">Copy Link</span></td>
+                <td><span class="copy-link-text" onclick="copyText('${link}')">${link === "Link Not Created" ? link : 'Copy Review Link 🔗'}</span></td>
             </tr>
         `;
     }).join("");
 }
 
-function copyText(txt) { navigator.clipboard.writeText(txt); alert("Copied!"); }
+function copyText(txt) { 
+    if(txt === "Link Not Created") return;
+    navigator.clipboard.writeText(txt); 
+    alert("Review link copied to clipboard!"); 
+}
 
-async function updateStatus(email, status) { await _supabase.from("ant_users").update({ status }).eq("email", email); }
-async function removeUser(email) { if(confirm("Delete?")) await _supabase.from("ant_users").delete().eq("email", email); }
+async function updateStatus(email, status) { 
+    await _supabase.from("ant_users").update({ status }).eq("email", email); 
+    loadData(); 
+}
+
+async function removeUser(email) { 
+    if(confirm("Permanently delete this user?")) {
+        await _supabase.from("ant_users").delete().eq("email", email);
+        loadData();
+    }
+}
 
 async function approveTask(taskId) {
     await _supabase.from("ant_tasks").update({ completed: true, review_status: 'approved' }).eq("id", taskId);
-    alert("Task Approved!");
+    alert("Task marked as COMPLETED.");
+    loadData();
 }
 
 async function returnToWorker(taskId) {
-    if(confirm("Return to coworker?")) {
+    if(confirm("Send this back to the worker for corrections?")) {
         await _supabase.from("ant_tasks").update({ completed: false, review_status: 'returned' }).eq("id", taskId);
+        loadData();
     }
 }
 
@@ -186,10 +210,11 @@ async function sendTask() {
     const file = document.getElementById("taskFile").files[0];
     const worker = document.getElementById("workerList").value;
     const phase = document.getElementById("taskPhase").value;
-    if (!file) return alert("Select file");
+    if (!file) return alert("Please select an image first.");
+    
     const reader = new FileReader();
     reader.onload = async e => {
-        await _supabase.from("ant_tasks").insert([{
+        const { error } = await _supabase.from("ant_tasks").insert([{
             id: Date.now(),
             imgdata: e.target.result,
             assignedto: worker,
@@ -197,15 +222,46 @@ async function sendTask() {
             completed: false,
             annotations: []
         }]);
-        alert("Sent!");
+        if(!error) {
+            alert("Task Assigned Successfully!");
+            loadData();
+        } else {
+            alert("Error assigning task.");
+        }
     };
     reader.readAsDataURL(file);
 }
 
-async function deleteTask(taskId) { if(confirm("Delete?")) await _supabase.from("ant_tasks").delete().eq("id", taskId); }
+async function deleteTask(taskId) { 
+    if(confirm("Delete this task permanently?")) {
+        await _supabase.from("ant_tasks").delete().eq("id", taskId);
+        loadData();
+    }
+}
+
 function viewWork(id) { 
-    const link = allTasks.find(t => t.id == id)?.review_link;
-    if(link) window.open(link, '_blank'); else alert("No link yet.");
+    const task = allTasks.find(t => t.id == id);
+    if(task && task.review_link) {
+        window.open(task.review_link, '_blank');
+    } else {
+        alert("The worker hasn't started or saved this task yet, so no link is available.");
+    }
+}
+
+function exportToCSV() {
+    let csv = "TaskID,Worker,Status,Boxes,Link\n";
+    allTasks.forEach(t => {
+        csv += `${t.id},${t.assignedto},${t.completed ? 'Completed' : 'Pending'},${t.annotations ? t.annotations.length : 0},${t.review_link || ''}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'annotation_report.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 loadData();
