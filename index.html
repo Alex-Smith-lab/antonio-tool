@@ -112,6 +112,7 @@ let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, resiz
 let canvas, ctx, img = new Image();
 
 window.onload = async () => {
+    // Check for Task ID in URL (Dynamic Link Support)
     const urlParams = new URLSearchParams(window.location.search);
     const taskIdFromUrl = urlParams.get('tid');
 
@@ -127,6 +128,7 @@ window.onload = async () => {
             }
         }
     } else if (taskIdFromUrl) {
+        // If someone with the link isn't logged in, redirect them to login first
         alert("Please login to view this task link.");
     }
 };
@@ -145,6 +147,8 @@ async function handleLogin() {
     } else {
         user = existing;
         localStorage.setItem('workerEmail', email);
+        
+        // After login, check if we need to go back to a specific task
         const urlParams = new URLSearchParams(window.location.search);
         const tid = urlParams.get('tid');
         if(tid) openWork(tid); else showDashboard();
@@ -152,7 +156,9 @@ async function handleLogin() {
 }
 
 async function showDashboard() {
+    // Clean URL when returning to dashboard
     window.history.replaceState({}, document.title, window.location.pathname);
+    
     localStorage.removeItem('activeTaskId');
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("topNav").style.display = "flex";
@@ -216,6 +222,8 @@ async function claimTask(taskId) {
 async function openWork(id) {
     activeId = id;
     localStorage.setItem('activeTaskId', id);
+    
+    // Set URL parameter without refreshing page
     const newUrl = `${window.location.origin}${window.location.pathname}?tid=${id}`;
     window.history.pushState({ path: newUrl }, '', newUrl);
 
@@ -278,6 +286,7 @@ async function openWork(id) {
     window.onmousemove = (e) => {
         const mx = (e.clientX - offsetX) / scale;
         const my = (e.clientY - offsetY) / scale;
+
         if (isDragging) {
             offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
             lastX = e.clientX; lastY = e.clientY;
@@ -355,7 +364,7 @@ async function saveProgress() {
         const link = `${window.location.origin}${window.location.pathname}?tid=${activeId}`;
         await sb.from("ant_tasks").update({ 
             annotations: boxes,
-            review_link: link 
+            review_link: link // SAVING LINK TO SUPABASE
         }).eq("id", activeId); 
     }
 }
