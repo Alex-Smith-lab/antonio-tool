@@ -5,7 +5,7 @@
     <title>Admin - Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; display:flex; height:100vh; }
+        body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; display:flex; height:100vh; overflow: hidden; }
         .sidebar { width:230px; background:black; padding:20px; border-right:1px solid #222; }
         .tab-btn { width:100%; padding:14px; margin-bottom:10px; background:none; border:none; color:#999; text-align:left; cursor:pointer; border-radius: 6px; }
         .tab-btn.active { background:#7b2ff7; color:white; }
@@ -23,13 +23,21 @@
         select, input[type="file"] { padding:10px; background:#222; color:white; border:1px solid #444; margin:5px 0; width:100%; max-width:300px; border-radius: 5px; }
         .anno-count { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
         .copy-link-text { font-family: monospace; color: #7b2ff7; cursor: pointer; text-decoration: underline; }
+        #auth-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#0b0b0b; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column; }
     </style>
 </head>
 <body>
 
+<div id="auth-overlay">
+    <h2 style="color:#7b2ff7;">Admin Verification</h2>
+    <p>Please enter your authorized email to proceed.</p>
+    <input type="email" id="adminEmailInput" placeholder="Enter Admin Email" style="padding:12px; width:300px; border-radius:5px; border:1px solid #7b2ff7; background:#111; color:white;">
+    <button class="btn purple" onclick="verifyAccess()" style="margin-top:15px; padding:12px 30px;">Access Dashboard</button>
+</div>
+
 <div class="sidebar">
     <h2 style="color:#7b2ff7;">a⌵ ADMIN</h2>
-    <button class="tab-btn active" onclick="showTab('approvals',this)">Approvals & Staff</button>
+    <button class="tab-btn active" onclick="showTab('approvals',this)">Staff & Roles</button>
     <button class="tab-btn" onclick="showTab('tasks',this)">Assign Task</button>
     <button class="tab-btn" onclick="showTab('supervision',this)">Supervision</button>
     <button class="tab-btn" onclick="showTab('export',this)" style="border: 1px dashed #7b2ff7; margin-top: 20px;">Export & Client Links</button>
@@ -37,9 +45,9 @@
 
 <div class="main">
     <div id="approvals" class="panel tab">
-        <h2>Coworker Management</h2>
+        <h2>Staff Management</h2>
         <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="userTable"></tbody>
         </table>
     </div>
@@ -61,7 +69,7 @@
     </div>
 
     <div id="supervision" class="panel tab" style="display:none">
-        <h2>Admin Final Check & Supervision</h2>
+        <h2>Final Check & Supervision</h2>
         <table>
             <thead><tr><th>Task ID</th><th>Worker</th><th>Boxes</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="supervisionTable"></tbody>
@@ -73,12 +81,12 @@
             <h2>Export & Client Links</h2>
             <button class="btn green" onclick="exportToCSV()" style="padding:10px 20px;">Download CSV Report</button>
         </div>
-        <p style="font-size:12px; color:#999;">Provide these links to your customers to review completed annotations.</p>
+        <p style="font-size:12px; color:#999;">Provide these links to customers for final review.</p>
         <table>
             <thead>
                 <tr>
                     <th>Task ID</th>
-                    <th>Worker Email</th>
+                    <th>Staff Email</th>
                     <th>Status</th>
                     <th>Boxes</th>
                     <th>Customer Review Link</th>
@@ -92,7 +100,20 @@
 <script>
 const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
+const PRIMARY_ADMIN = "antonymbali96@gmail.com";
+let currentAdmin = "";
 let allTasks = [];
+
+function verifyAccess() {
+    const email = document.getElementById('adminEmailInput').value.toLowerCase().trim();
+    if (email === PRIMARY_ADMIN) {
+        currentAdmin = email;
+        document.getElementById('auth-overlay').style.display = 'none';
+        loadData();
+    } else {
+        alert("Access Denied. This email is not authorized to manage this system.");
+    }
+}
 
 function showTab(id, btn) {
     document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
@@ -108,21 +129,28 @@ async function loadData() {
     allTasks = tasks || [];
 
     // User Table
-    document.getElementById("userTable").innerHTML = (users || []).map(u => `
+    document.getElementById("userTable").innerHTML = (users || []).map(u => {
+        const isSelf = u.email === PRIMARY_ADMIN;
+        const currentRole = u.role || 'staff';
+        return `
         <tr>
             <td>${u.name}</td>
             <td>${u.email}</td>
+            <td><b style="color:${currentRole === 'admin' ? '#7b2ff7' : '#999'}">${currentRole.toUpperCase()}</b></td>
             <td><span style="color:${u.status === 'pending' ? 'orange' : 'lime'}">${u.status}</span></td>
             <td>
-                ${u.status === 'pending' ? `<button class="btn green" onclick="updateStatus('${u.email}', 'approved')">Approve</button>` : `<button class="btn orange" onclick="updateStatus('${u.email}', 'pending')">Return to Waitlist</button>`}
-                <button class="btn red" onclick="removeUser('${u.email}')">Delete</button>
+                ${!isSelf ? `
+                    ${u.status === 'pending' ? `<button class="btn green" onclick="updateStatus('${u.email}', 'approved')">Approve</button>` : `<button class="btn orange" onclick="updateStatus('${u.email}', 'pending')">Suspend</button>`}
+                    ${currentRole === 'staff' ? `<button class="btn blue" onclick="updateRole('${u.email}', 'admin')">Make Admin</button>` : `<button class="btn purple" onclick="updateRole('${u.email}', 'staff')">Remove Admin</button>`}
+                    <button class="btn red" onclick="removeUser('${u.email}')">Delete</button>
+                ` : '<small>System Owner</small>'}
             </td>
         </tr>
-    `).join("");
+    `}).join("");
 
     // Worker Selection
     const approved = (users || []).filter(u => u.status === "approved");
-    document.getElementById("workerList").innerHTML = '<option value="MASS_ASSIGN">-- MASS ASSIGN (All Accounts) --</option>' + 
+    document.getElementById("workerList").innerHTML = '<option value="MASS_ASSIGN">-- MASS ASSIGN (All Staff) --</option>' + 
         approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
 
     // Supervision Table
@@ -163,7 +191,7 @@ async function loadData() {
 }
 
 function copyText(txt) {
-    if(txt === "Not Generated Yet") return alert("No link available. Task must be opened or submitted by worker first.");
+    if(txt === "Not Generated Yet") return alert("No link available yet.");
     navigator.clipboard.writeText(txt);
     alert("Link copied for customer!");
 }
@@ -182,7 +210,8 @@ function exportToCSV() {
 }
 
 async function updateStatus(email, status) { await _supabase.from("ant_users").update({ status }).eq("email", email); loadData(); }
-async function removeUser(email) { if(confirm("Delete user?")) { await _supabase.from("ant_users").delete().eq("email", email); loadData(); } }
+async function updateRole(email, role) { await _supabase.from("ant_users").update({ role: role }).eq("email", email); loadData(); }
+async function removeUser(email) { if(confirm("Permanently delete this staff member?")) { await _supabase.from("ant_users").delete().eq("email", email); loadData(); } }
 
 async function approveTask(taskId) {
     await _supabase.from("ant_tasks").update({ completed: true, review_status: 'approved' }).eq("id", taskId);
@@ -191,7 +220,7 @@ async function approveTask(taskId) {
 }
 
 async function returnToWorker(taskId) {
-    if(confirm("Return work to coworker for corrections?")) {
+    if(confirm("Return work for corrections?")) {
         await _supabase.from("ant_tasks").update({ completed: false, review_status: 'returned' }).eq("id", taskId);
         loadData();
     }
@@ -215,20 +244,19 @@ async function sendTask() {
             review_status: null,
             annotations: []
         }]);
-        alert("Task Sent!");
+        alert("Task Assigned Successfully!");
         loadData();
     };
     reader.readAsDataURL(file);
 }
 
-async function deleteTask(taskId) { if(confirm("Delete?")) { await _supabase.from("ant_tasks").delete().eq("id", taskId); loadData(); } }
+async function deleteTask(taskId) { if(confirm("Delete task?")) { await _supabase.from("ant_tasks").delete().eq("id", taskId); loadData(); } }
 function viewWork(id) { 
     const link = allTasks.find(t => t.id == id)?.review_link;
-    if(link) window.open(link, '_blank'); else alert("No link generated yet. Ensure worker has opened the task.");
+    if(link) window.open(link, '_blank'); else alert("No link generated yet.");
 }
 
-setInterval(loadData, 15000);
-loadData();
+setInterval(loadData, 30000); // Refreshes every 30 seconds
 </script>
 </body>
 </html>
