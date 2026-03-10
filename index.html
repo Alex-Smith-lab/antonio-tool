@@ -5,7 +5,7 @@
     <title>Labeler - Workspace</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; }
+        :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; --orange: #ff9800; }
         body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
         
         #topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
@@ -14,15 +14,17 @@
         
         #dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
         .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
-        .batch-card { background: var(--purple); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; }
-        .card-header { height: 60px; background: rgba(0,0,0,0.2); padding: 15px; display: flex; justify-content: space-between; }
+        .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; }
+        .batch-card.mass { border-color: var(--orange); }
+        .card-header { height: 60px; background: rgba(0,0,0,0.2); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: capitalize; }
-        .start-work-btn { width: 100%; background: white; color: var(--purple); padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
+        .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
+        .claim-btn { width: 100%; background: var(--orange); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
 
         #workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; }
         #workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; cursor: crosshair; overflow: hidden; }
         #sidePanel { position: absolute; right: 0; top: 0; width: 300px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
-        .anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; border-left: 3px solid var(--purple); }
+        .anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; border-left: 3px solid var(--purple); cursor: pointer; }
         
         #labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 5px; min-width: 120px; }
         .label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; text-align: left; font-size: 12px; }
@@ -111,30 +113,16 @@ let canvas, ctx, img = new Image();
 
 window.onload = async () => {
     const savedEmail = localStorage.getItem('workerEmail');
-    const savedTaskId = localStorage.getItem('activeTaskId');
     if(savedEmail) {
         const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
-        if(data) {
+        if(data && data.status === 'approved') {
             user = data;
-            if(savedTaskId) openWork(savedTaskId); else showDashboard();
+            showDashboard();
+        } else {
+            localStorage.clear();
         }
     }
 };
-
-function getGreetingPrefix() {
-    const hour = new Date().getHours();
-    if(hour < 12) return "Good Morning";
-    if(hour < 17) return "Good Afternoon";
-    return "Good Evening";
-}
-
-function getSeasonalMessage() {
-    const hour = new Date().getHours();
-    const min = new Date().getMinutes();
-    const timeVal = hour + min/60;
-    if(timeVal >= 23.5 || timeVal < 5) return "Take some rest, coworker.";
-    return "Happy labeling!";
-}
 
 async function handleLogin() {
     const email = document.getElementById("userEmail").value.trim();
@@ -169,24 +157,53 @@ async function showDashboard() {
     
     updateBalanceDisplay();
 
-    const { data: tasks } = await sb.from("ant_tasks").select("*").eq("assignedto", user.email).or('review_status.is.null,review_status.eq.returned');
+    // FETCH: My tasks OR Mass Assigned tasks
+    const { data: tasks } = await sb.from("ant_tasks")
+        .select("*")
+        .or(`assignedto.eq.${user.email},assignedto.eq.MASS_ASSIGN`)
+        .is('review_status', null);
+
     document.getElementById("tasks").innerHTML = (tasks || []).map(t => {
-        const statusText = t.review_status === 'returned' ? 'Review' : '1st Pass';
-        const buttonLabel = t.review_status ? 'Available Work →' : 'Resume Work →';
+        const isMass = t.assignedto === 'MASS_ASSIGN';
+        const cardClass = isMass ? 'batch-card mass' : 'batch-card';
+        const button = isMass 
+            ? `<button class="claim-btn" onclick="claimTask('${t.id}')">CLAIM TASK</button>`
+            : `<button class="start-work-btn" onclick="openWork('${t.id}')">START WORK →</button>`;
+        
         return `
-            <div class="batch-card">
-                <div class="card-header"><span class="status-badge">${statusText}</span> <span style="font-size:10px;">ID: ${t.id.toString().slice(-4)}</span></div>
+            <div class="${cardClass}">
+                <div class="card-header">
+                    <span class="status-badge" style="${isMass ? 'background:var(--orange); color:white;' : ''}">
+                        ${isMass ? 'Pool Task' : 'Assigned'}
+                    </span> 
+                    <span style="font-size:10px;">ID: ${t.id.toString().slice(-4)}</span>
+                </div>
                 <div style="padding:15px;">
-                    <button class="start-work-btn" onclick="openWork('${t.id}')">${buttonLabel}</button>
+                    <div style="font-size:12px; margin-bottom:10px; opacity:0.8">Phase: ${t.phase || '1st Pass'}</div>
+                    ${button}
                 </div>
             </div>
         `;
     }).join("");
 }
 
-function updateBalanceDisplay() {
-    const earnings = (boxes.length * 0.019).toFixed(3);
-    document.getElementById("balance").innerText = earnings;
+async function claimTask(taskId) {
+    // Atomic check: Ensure it's still MASS_ASSIGN
+    const { data: task } = await sb.from("ant_tasks").select("assignedto").eq("id", taskId).single();
+    
+    if (task.assignedto !== 'MASS_ASSIGN') {
+        alert("This task has already been claimed by another coworker.");
+        showDashboard();
+        return;
+    }
+
+    const { error } = await sb.from("ant_tasks").update({ assignedto: user.email }).eq("id", taskId);
+    if (!error) {
+        alert("Task claimed! Opening workspace...");
+        openWork(taskId);
+    } else {
+        alert("Claim failed. Please try again.");
+    }
 }
 
 async function openWork(id) {
@@ -276,8 +293,8 @@ function draw() {
         ctx.strokeRect(b.x, b.y, b.w, b.h);
         if(i === selectedBoxIdx) {
             ctx.fillStyle = "white";
-            ctx.fillRect(b.x - 4/scale, b.y - 4/scale, 8/scale, 8/scale); // Top Left
-            ctx.fillRect(b.x + b.w - 4/scale, b.y + b.h - 4/scale, 8/scale, 8/scale); // Bottom Right
+            ctx.fillRect(b.x - 4/scale, b.y - 4/scale, 8/scale, 8/scale);
+            ctx.fillRect(b.x + b.w - 4/scale, b.y + b.h - 4/scale, 8/scale, 8/scale);
         }
         ctx.fillStyle = "lime"; ctx.font = `${12/scale}px bold sans-serif`;
         ctx.fillText(b.label.toUpperCase(), b.x, b.y - 5/scale);
@@ -306,8 +323,6 @@ function deleteBox() {
         selectedBoxIdx = -1;
         document.getElementById("labelPopup").style.display = "none";
         draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
-    } else {
-        alert("Select a box first by clicking on it.");
     }
 }
 
@@ -319,33 +334,28 @@ function updateSidePanel() {
         </div>`).join("");
 }
 
-function selectBoxFromList(i) {
-    selectedBoxIdx = i;
-    draw();
-    updateSidePanel();
-}
-
-async function saveProgress() { 
-    if(activeId) await sb.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); 
-}
-
+function selectBoxFromList(i) { selectedBoxIdx = i; draw(); updateSidePanel(); }
+async function saveProgress() { if(activeId) await sb.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
 function toggleDrawMode() { 
     isDrawMode = !isDrawMode; 
     document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)";
     document.getElementById("addBtn").style.color = isDrawMode ? "black" : "white";
 }
-
 function undo() { boxes.pop(); draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress(); }
 function resetView() { scale = 0.7; offsetX = 50; offsetY = 50; }
+function updateBalanceDisplay() { document.getElementById("balance").innerText = (boxes.length * 0.019).toFixed(3); }
+function getGreetingPrefix() { const h = new Date().getHours(); return h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : "Good Evening"; }
+function getSeasonalMessage() { const h = new Date().getHours(); return (h >= 23.5 || h < 5) ? "Take some rest, coworker." : "Happy labeling!"; }
 
 async function submitForReview() {
     await sb.from("ant_tasks").update({ review_status: "review_pending", annotations: boxes }).eq("id", activeId);
-    alert("Task submitted. Earnings will be finalized after admin review.");
+    alert("Task submitted for review.");
     closeWorkspace();
 }
 
 function logout() { localStorage.clear(); location.reload(); }
 function closeWorkspace() { showDashboard(); }
+setInterval(() => { if(!activeId && user) showDashboard(); }, 15000);
 </script>
 </body>
 </html>
