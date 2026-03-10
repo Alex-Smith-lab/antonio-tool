@@ -112,15 +112,24 @@ let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, resiz
 let canvas, ctx, img = new Image();
 
 window.onload = async () => {
+    // Check for Task ID in URL (Dynamic Link Support)
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskIdFromUrl = urlParams.get('tid');
+
     const savedEmail = localStorage.getItem('workerEmail');
     if(savedEmail) {
         const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
         if(data && data.status === 'approved') {
             user = data;
-            showDashboard();
-        } else {
-            localStorage.clear();
+            if(taskIdFromUrl) {
+                openWork(taskIdFromUrl);
+            } else {
+                showDashboard();
+            }
         }
+    } else if (taskIdFromUrl) {
+        // If someone with the link isn't logged in, redirect them to login first
+        alert("Please login to view this task link.");
     }
 };
 
@@ -138,11 +147,18 @@ async function handleLogin() {
     } else {
         user = existing;
         localStorage.setItem('workerEmail', email);
-        showDashboard();
+        
+        // After login, check if we need to go back to a specific task
+        const urlParams = new URLSearchParams(window.location.search);
+        const tid = urlParams.get('tid');
+        if(tid) openWork(tid); else showDashboard();
     }
 }
 
 async function showDashboard() {
+    // Clean URL when returning to dashboard
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
     localStorage.removeItem('activeTaskId');
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("topNav").style.display = "flex";
@@ -157,7 +173,6 @@ async function showDashboard() {
     
     updateBalanceDisplay();
 
-    // FETCH: My tasks OR Mass Assigned tasks
     const { data: tasks } = await sb.from("ant_tasks")
         .select("*")
         .or(`assignedto.eq.${user.email},assignedto.eq.MASS_ASSIGN`)
@@ -179,7 +194,7 @@ async function showDashboard() {
                     <span style="font-size:10px;">ID: ${t.id.toString().slice(-4)}</span>
                 </div>
                 <div style="padding:15px;">
-                    <div style="font-size:12px; margin-bottom:10px; opacity:0.8">Phase: ${t.phase || '1st Pass'}</div>
+                    <div style="font-size:11px; margin-bottom:10px; opacity:0.6">Task Link: <span style="color:var(--blue); cursor:pointer;" onclick="copyLink('${t.id}')">Copy Link 🔗</span></div>
                     ${button}
                 </div>
             </div>
@@ -187,35 +202,43 @@ async function showDashboard() {
     }).join("");
 }
 
+function copyLink(id) {
+    const link = `${window.location.origin}${window.location.pathname}?tid=${id}`;
+    navigator.clipboard.writeText(link);
+    alert("Task link copied to clipboard!");
+}
+
 async function claimTask(taskId) {
-    // Atomic check: Ensure it's still MASS_ASSIGN
     const { data: task } = await sb.from("ant_tasks").select("assignedto").eq("id", taskId).single();
-    
     if (task.assignedto !== 'MASS_ASSIGN') {
-        alert("This task has already been claimed by another coworker.");
+        alert("Task already claimed.");
         showDashboard();
         return;
     }
-
     const { error } = await sb.from("ant_tasks").update({ assignedto: user.email }).eq("id", taskId);
-    if (!error) {
-        alert("Task claimed! Opening workspace...");
-        openWork(taskId);
-    } else {
-        alert("Claim failed. Please try again.");
-    }
+    if (!error) openWork(taskId);
 }
 
 async function openWork(id) {
     activeId = id;
     localStorage.setItem('activeTaskId', id);
+    
+    // Set URL parameter without refreshing page
+    const newUrl = `${window.location.origin}${window.location.pathname}?tid=${id}`;
+    window.history.pushState({ path: newUrl }, '', newUrl);
+
+    document.getElementById("loginPage").style.display = "none";
     document.getElementById("dashboard").style.display = "none";
     document.getElementById("workspacePage").style.display = "block";
+    document.getElementById("topNav").style.display = "flex";
+    document.getElementById("footerBar").style.display = "flex";
     
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
 
     const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
+    if(!data) return alert("Task not found.");
+    
     boxes = data.annotations || [];
     img.src = data.imgdata;
     img.onload = () => { resetView(); draw(); updateSidePanel(); updateBalanceDisplay(); };
@@ -335,12 +358,23 @@ function updateSidePanel() {
 }
 
 function selectBoxFromList(i) { selectedBoxIdx = i; draw(); updateSidePanel(); }
-async function saveProgress() { if(activeId) await sb.from("ant_tasks").update({ annotations: boxes }).eq("id", activeId); }
+
+async function saveProgress() { 
+    if(activeId) {
+        const link = `${window.location.origin}${window.location.pathname}?tid=${activeId}`;
+        await sb.from("ant_tasks").update({ 
+            annotations: boxes,
+            review_link: link // SAVING LINK TO SUPABASE
+        }).eq("id", activeId); 
+    }
+}
+
 function toggleDrawMode() { 
     isDrawMode = !isDrawMode; 
     document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)";
     document.getElementById("addBtn").style.color = isDrawMode ? "black" : "white";
 }
+
 function undo() { boxes.pop(); draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress(); }
 function resetView() { scale = 0.7; offsetX = 50; offsetY = 50; }
 function updateBalanceDisplay() { document.getElementById("balance").innerText = (boxes.length * 0.019).toFixed(3); }
@@ -348,14 +382,19 @@ function getGreetingPrefix() { const h = new Date().getHours(); return h < 12 ? 
 function getSeasonalMessage() { const h = new Date().getHours(); return (h >= 23.5 || h < 5) ? "Take some rest, coworker." : "Happy labeling!"; }
 
 async function submitForReview() {
-    await sb.from("ant_tasks").update({ review_status: "review_pending", annotations: boxes }).eq("id", activeId);
-    alert("Task submitted for review.");
+    const link = `${window.location.origin}${window.location.pathname}?tid=${activeId}`;
+    await sb.from("ant_tasks").update({ 
+        review_status: "review_pending", 
+        annotations: boxes,
+        review_link: link 
+    }).eq("id", activeId);
+    alert("Task submitted. Review link saved.");
     closeWorkspace();
 }
 
 function logout() { localStorage.clear(); location.reload(); }
 function closeWorkspace() { showDashboard(); }
-setInterval(() => { if(!activeId && user) showDashboard(); }, 15000);
+setInterval(() => { if(!activeId && user) showDashboard(); }, 20000);
 </script>
 </body>
 </html>
