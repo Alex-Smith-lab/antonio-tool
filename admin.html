@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Antony Mbali Management</title>
+    <title>Admin - Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; display:flex; height:100vh; }
@@ -46,7 +46,9 @@
             <label>1. Upload Image:</label>
             <input type="file" id="taskFile">
             <label>2. Assign To:</label>
-            <select id="workerList"></select>
+            <select id="workerList">
+                <option value="MASS_ASSIGN">-- MASS ASSIGN (All Accounts) --</option>
+            </select>
             <label>3. Assignment Phase:</label>
             <select id="taskPhase">
                 <option value="1st Pass">1st Pass (Initial Labeling)</option>
@@ -88,7 +90,6 @@ async function loadData() {
     const { data: users } = await _supabase.from("ant_users").select("*");
     const { data: tasks } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
 
-    // User Table
     document.getElementById("userTable").innerHTML = (users || []).map(u => `
         <tr>
             <td>${u.name}</td>
@@ -102,31 +103,40 @@ async function loadData() {
     `).join("");
 
     const approved = (users || []).filter(u => u.status === "approved" && u.role === "worker");
-    document.getElementById("workerList").innerHTML = approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
+    const workerSelect = document.getElementById("workerList");
+    workerSelect.innerHTML = '<option value="MASS_ASSIGN">-- MASS ASSIGN (All Accounts) --</option>' + 
+        approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
 
-    // Supervision Table
     document.getElementById("supervisionTable").innerHTML = (tasks || []).map(t => {
         const boxCount = t.annotations ? t.annotations.length : 0;
         const statusColor = t.review_status === 'review_pending' ? 'cyan' : (t.completed ? 'lime' : 'orange');
-        const statusText = t.review_status === 'review_pending' ? 'Needs Review' : (t.completed ? 'Completed' : 'Working');
+        const statusText = t.review_status === 'review_pending' ? 'Needs Review' : (t.completed ? 'Completed' : (t.assignedto === 'MASS_ASSIGN' ? 'Unclaimed' : 'Working'));
 
         return `
-        <tr>
-            <td><small>${t.id}</small></td>
-            <td>${t.assignedto}</td>
-            <td><span class="anno-count">${boxCount} Boxes</span></td>
-            <td><span style="color:${statusColor}">${statusText}</span></td>
-            <td>
-                <button class="btn blue" onclick="viewWork('${t.id}')">View Work</button>
-                <button class="btn orange" onclick="returnToWorker('${t.id}')">Return</button>
-                <button class="btn red" onclick="deleteTask('${t.id}')">Delete Task</button>
-            </td>
-        </tr>
-    `}).join("");
+            <tr>
+                <td><small>${t.id}</small></td>
+                <td>${t.assignedto}</td>
+                <td><span class="anno-count">${boxCount} Boxes</span></td>
+                <td><span style="color:${statusColor}">${statusText}</span></td>
+                <td>
+                    <button class="btn blue" onclick="viewWork('${t.id}')">View</button>
+                    ${t.review_status === 'review_pending' ? `<button class="btn green" onclick="approveTask('${t.id}')">Approve</button>` : ''}
+                    <button class="btn orange" onclick="returnToWorker('${t.id}')">Return</button>
+                    <button class="btn red" onclick="deleteTask('${t.id}')">Delete</button>
+                </td>
+            </tr>
+        `;
+    }).join("");
 }
 
 async function updateStatus(email, status) {
     await _supabase.from("ant_users").update({ status }).eq("email", email);
+    loadData();
+}
+
+async function approveTask(taskId) {
+    await _supabase.from("ant_tasks").update({ completed: true, review_status: 'approved' }).eq("id", taskId);
+    alert("Task Approved!");
     loadData();
 }
 
@@ -137,38 +147,32 @@ async function returnToWorker(taskId) {
     }
 }
 
-async function deleteTask(taskId) {
-    if(confirm("Delete this task?")) {
-        await _supabase.from("ant_tasks").delete().eq("id", taskId);
-        loadData();
-    }
-}
-
 async function sendTask() {
     const file = document.getElementById("taskFile").files[0];
     const worker = document.getElementById("workerList").value;
     const phase = document.getElementById("taskPhase").value;
-    if (!file || !worker) return alert("Select file and worker");
+    if (!file) return alert("Select file");
 
     const reader = new FileReader();
     reader.onload = async e => {
-        const { error } = await _supabase.from("ant_tasks").insert([{
+        await _supabase.from("ant_tasks").insert([{
             id: Date.now(),
             imgdata: e.target.result,
             assignedto: worker,
             phase: phase,
             completed: false,
-            review_status: null, // Explicitly set to null for coworker filter
+            review_status: null,
             annotations: []
         }]);
-        if (error) alert("Error: " + error.message);
-        else { alert("Task assigned!"); loadData(); }
+        alert("Task Sent!");
+        loadData();
     };
     reader.readAsDataURL(file);
 }
 
-function viewWork(id) { alert("Viewing Task: " + id); }
+async function deleteTask(taskId) { if(confirm("Delete?")) { await _supabase.from("ant_tasks").delete().eq("id", taskId); loadData(); } }
 async function removeUser(email) { if(confirm("Delete user?")) { await _supabase.from("ant_users").delete().eq("email", email); loadData(); } }
+function viewWork(id) { alert("Viewing: " + id); }
 
 setInterval(loadData, 10000);
 loadData();
