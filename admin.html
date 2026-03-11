@@ -1,257 +1,267 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Admin - Antonio Management</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; display:flex; height:100vh; overflow: hidden; }
-        .sidebar { width:250px; background:black; padding:20px; border-right:1px solid #222; display: flex; flex-direction: column; }
-        .tab-btn { width:100%; padding:14px; margin-bottom:10px; background:none; border:none; color:#999; text-align:left; cursor:pointer; border-radius: 6px; font-size: 14px; transition: 0.3s; }
-        .tab-btn:hover { background: #1a1a1a; color: white; }
-        .tab-btn.active { background:#7b2ff7; color:white; font-weight: bold; }
-        .main { flex:1; padding:40px; overflow:auto; }
-        table { width:100%; border-collapse:collapse; margin-top:15px; }
-        td, th { padding:12px; border-bottom:1px solid #222; text-align:left; font-size: 13px; }
-        th { background: #111; color: #7b2ff7; text-transform: uppercase; letter-spacing: 1px; }
-        .btn { padding:6px 12px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px; margin-right:5px; transition: 0.2s; }
-        .green { background:#00c853; color:white; }
-        .red { background:#ff4444; color:white; }
-        .orange { background:#ff9800; color:white; }
-        .blue { background:#007bff; color:white; }
-        .purple { background:#7b2ff7; color:white; }
-        .panel { background:#161616; padding:20px; border-radius:10px; margin-bottom:20px; border: 1px solid #222; }
-        select, input[type="text"] { padding:10px; background:#222; color:white; border:1px solid #444; margin:5px 0; width:100%; max-width:300px; border-radius: 5px; }
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
-        .link-text { color: #007bff; text-decoration: none; font-size: 11px; font-weight: bold; }
-    </style>
+<meta charset="UTF-8">
+<title>Antonio Annotation - Enterprise</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; --orange: #ff9800; --red: #ff4444; }
+body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
+
+#topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
+.profile-area { display: flex; align-items: center; gap: 15px; }
+.spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; border: none; font-weight: bold; }
+
+#dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
+.task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
+.batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; position: relative; }
+.card-header { height: 50px; background: rgba(255,255,255,0.05); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
+.status-badge { background: var(--purple); color: white; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+
+#workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; }
+#workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; cursor: crosshair; overflow: hidden; }
+#sidePanel { position: absolute; right: 0; top: 0; width: 300px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
+.anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; border-left: 3px solid var(--purple); cursor: pointer; }
+
+#labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 5px; }
+.label-btn { padding: 8px 15px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; text-align: left; }
+.label-btn:hover { background: var(--purple); }
+
+.reassign-section { margin-top: auto; padding-top: 15px; border-top: 1px solid #333; }
+.reassign-btn { width: 100%; background: var(--orange); color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+
+.bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: #000; border-top: 1px solid #222; color: #888; display: none; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 11px; z-index: 300; }
+</style>
 </head>
 <body>
 
-<div id="auth-gate" style="position:fixed; inset:0; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column;">
-    <h1 style="color:#7b2ff7;">Admin Verification</h1>
-    <input type="text" id="adminEmailInput" placeholder="Enter Admin Email" style="text-align:center;">
-    <button class="btn purple" onclick="checkAuth()" style="margin-top:10px; padding:10px 30px;">Login</button>
+<div id="loginPage" style="text-align: center; padding-top: 100px;">
+<h1 style="color:var(--purple)">ANTONIO ANNOTATION</h1>
+<input id="userEmail" placeholder="Email" style="padding:10px; width:250px; background:#222; color:white; border:1px solid #444; border-radius:5px;"><br><br>
+<button onclick="handleLogin()" style="padding:10px 50px; background:var(--blue); color:white; border:none; border-radius:5px; cursor:pointer;">Enter Workspace</button>
 </div>
 
-<div class="sidebar">
-    <h2 style="color:#7b2ff7; margin-bottom: 30px;">a⌵ ADMIN</h2>
-    <button class="tab-btn active" onclick="showTab('approvals',this)">Staff Management</button>
-    <button class="tab-btn" onclick="showTab('tasks',this)">Assign New Task</button>
-    <button class="tab-btn" onclick="showTab('firstpass_inbox',this)" style="color: #00ff88;">📥 1st Pass Inbox</button>
-    <button class="tab-btn" onclick="showTab('review_inbox',this)" style="color: #ff9800;">🔍 Review Inbox</button>
-    <button class="tab-btn" onclick="showTab('supervision',this)">Full Supervision</button>
-    <button class="tab-btn" onclick="showTab('export',this)" style="border: 1px dashed #7b2ff7; margin-top: auto;">Export & Final Links</button>
+<div id="topNav">
+<div style="font-weight: bold; color:var(--purple)">a⌵ ENTERPRISE</div>
+<div class="profile-area">
+<button class="spreadsheet-btn">Earnings: $<span id="balance">0.00</span></button>
+<div id="workerProfile" style="font-size: 12px;"></div>
+<button onclick="logout()" style="color:var(--red); background:none; border:none; cursor:pointer;">Logout</button>
+</div>
 </div>
 
-<div class="main">
-    <div id="approvals" class="panel tab">
-        <h2>Coworker Management</h2>
-        <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="userTable"></tbody>
-        </table>
-    </div>
+<div id="dashboard">
+<h2 id="greet"></h2>
+<div id="tasks" class="task-grid"></div>
+</div>
 
-    <div id="tasks" class="panel tab" style="display:none">
-        <h2>Assign New Task</h2>
-        <div style="display:grid; gap:10px;">
-            <input type="text" id="imgUrl" placeholder="Image Data/URL">
-            <select id="workerList"></select>
-            <button class="btn green" onclick="sendTask()" style="width:200px; padding:12px;">Create Task</button>
-        </div>
-    </div>
+<div id="workspacePage">
+<div id="workzone"><canvas id="canvas"></canvas></div>
+<div id="sidePanel">
+<div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:15px;">
+<span style="font-size: 12px; font-weight: bold;">WORKSPACE TOOLS</span>
+<button onclick="closeWorkspace()" style="background:#333; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">EXIT</button>
+</div>
+<div id="annoList" style="flex-grow:1; overflow-y:auto;"></div>
+<div class="reassign-section">
+<button id="reassignBtn" class="reassign-btn" onclick="reassignToReview()">REASSIGN TO REVIEW</button>
+<button id="submitBtn" onclick="submitTask()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT PROGRESS</button>
+</div>
+</div>
 
-    <div id="firstpass_inbox" class="panel tab" style="display:none">
-        <h2>1st Pass Completed (Pending Reviewer Assignment)</h2>
-        <table>
-            <thead><tr><th>Task ID</th><th>Labeled By</th><th>Boxes</th><th>Assign Reviewer</th><th>Action</th></tr></thead>
-            <tbody id="inboxTable"></tbody>
-        </table>
-    </div>
+<div id="labelPopup">
+<button class="label-btn" onclick="assignLabel('Car')">Car</button>
+<button class="label-btn" onclick="assignLabel('Truck')">Truck</button>
+<button class="label-btn" onclick="assignLabel('Pedestrian')">Pedestrian</button>
+<button class="label-btn" onclick="assignLabel('Bus')">Bus</button>
+</div>
 
-    <div id="review_inbox" class="panel tab" style="display:none">
-        <h2>Active Review Tasks</h2>
-        <table>
-            <thead><tr><th>Task ID</th><th>Reviewer</th><th>Original Worker</th><th>Link</th><th>Status</th></tr></thead>
-            <tbody id="reviewTable"></tbody>
-        </table>
-    </div>
+<div style="position:fixed; bottom:60px; left:20px; display:flex; gap:10px;">
+<button onclick="toggleDrawMode()" id="addBtn" style="padding:10px 20px; background:var(--purple); color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">ADD BOX</button>
+<button onclick="undo()" style="padding:10px 20px; background:#444; color:white; border:none; border-radius:5px; cursor:pointer;">UNDO</button>
+</div>
+</div>
 
-    <div id="supervision" class="panel tab" style="display:none">
-        <h2>Full Supervision & Reassignment</h2>
-        <table>
-            <thead><tr><th>Task ID</th><th>Phase</th><th>Assigned To</th><th>Status</th><th>Quick Reassign</th><th>Actions</th></tr></thead>
-            <tbody id="supervisionTable"></tbody>
-        </table>
-    </div>
-
-    <div id="export" class="panel tab" style="display:none">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>Final Export & Links</h2>
-            <button class="btn green" onclick="exportToCSV()">Download Report</button>
-        </div>
-        <table>
-            <thead><tr><th>Task ID</th><th>Worker</th><th>Reviewer</th><th>Boxes</th><th>Final Link</th></tr></thead>
-            <tbody id="exportTable"></tbody>
-        </table>
-    </div>
+<div class="bottom-bar" id="footerBar">
+<div id="footerWorker">SYSTEM ACTIVE</div>
+<div>LINK: <span id="liveLink" style="color:var(--blue)">---</span></div>
 </div>
 
 <script>
-const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
+const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
-let allTasks = [], allUsers = [], allAdmins = [];
-const MASTER_ADMIN = "antonymbali96@gmail.com";
+let user = null, activeId = null, taskData = null, boxes = [], selectedBoxIdx = -1, isDrawMode = false;
+let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY;
+let canvas, ctx, img = new Image();
 
-// On Load: Check if already logged in
-window.onload = () => {
-    const saved = localStorage.getItem("admin_verified");
-    if(saved) {
-        document.getElementById("auth-gate").style.display = "none";
-        loadData();
+window.onload = async () => {
+    const savedEmail = localStorage.getItem('workerEmail');
+    const urlParams = new URLSearchParams(window.location.search);
+    const tid = urlParams.get('tid') || localStorage.getItem('activeTaskId');
+
+    if(savedEmail) {
+        const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
+        if(data) {
+            user = data;
+            if(tid) openWork(tid); else showDashboard();
+        }
     }
+};
+
+async function handleLogin() {
+    const email = document.getElementById("userEmail").value.trim().toLowerCase();
+    const { data } = await sb.from("ant_users").select("*").eq("email", email).single();
+    if(data) {
+        user = data;
+        localStorage.setItem('workerEmail', email);
+        showDashboard();
+    } else alert("Access Denied");
 }
 
-async function checkAuth() {
-    const input = document.getElementById("adminEmailInput").value.toLowerCase().trim();
-    if (input === MASTER_ADMIN) {
-        localStorage.setItem("admin_verified", input);
-        document.getElementById("auth-gate").style.display = "none";
-        loadData();
-    } else {
-        alert("Access Denied.");
-    }
+async function showDashboard() {
+    activeId = null;
+    localStorage.removeItem('activeTaskId');
+    window.history.replaceState({}, '', window.location.pathname);
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    document.getElementById("topNav").style.display = "flex";
+    document.getElementById("workspacePage").style.display = "none";
+    document.getElementById("footerBar").style.display = "flex";
+
+    document.getElementById("greet").innerText = `Welcome, ${user.name}`;
+    document.getElementById("workerProfile").innerText = user.email;
+
+    const { data: tasks } = await sb.from("ant_tasks")
+        .select("*")
+        .or(`assignedto.eq.${user.email},assignedto.eq.UNASSIGNED`)
+        .neq("phase", "Export");
+
+    document.getElementById("tasks").innerHTML = (tasks || []).map(t => `
+        <div class="batch-card">
+            <div class="card-header"><span class="status-badge">${t.phase}</span></div>
+            <div style="padding:15px;">
+                <p style="font-size:12px; margin:0;">ID: #${t.id.toString().slice(-6)}</p>
+                <button onclick="openWork('${t.id}')" style="width:100%; margin-top:10px; padding:8px; background:var(--purple); border:none; color:white; cursor:pointer; border-radius:4px;">OPEN TASK</button>
+            </div>
+        </div>
+    `).join("");
 }
 
-function showTab(id, btn) {
-    document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
-    document.getElementById(id).style.display = "block";
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    loadData();
-}
-
-async function loadData() {
-    const { data: users } = await _supabase.from("ant_users").select("*");
-    const { data: tasks } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
-
-    allUsers = users || [];
-    allTasks = tasks || [];
-
-    const approved = allUsers.filter(u => u.status === "approved");
-    const workerOptions = `<option value="UNASSIGNED">-- MASS ASSIGN --</option>` + approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
-    document.getElementById("workerList").innerHTML = workerOptions;
-
-    // Staff Table
-    document.getElementById("userTable").innerHTML = allUsers.map(u => `
-        <tr>
-            <td>${u.name}</td><td>${u.email}</td>
-            <td><span class="badge" style="background:${u.status === 'approved' ? '#00ff88' : 'orange'}">${u.status}</span></td>
-            <td><button class="btn purple" onclick="updateUserStatus('${u.email}', 'approved')">Approve</button></td>
-        </tr>`).join("");
-
-    // 1st Pass Inbox (Ready for Review)
-    document.getElementById("inboxTable").innerHTML = allTasks.filter(t => t.phase === '1st Pass' && t.completed).map(t => `
-        <tr>
-            <td>${t.id.toString().slice(-5)}</td>
-            <td>${t.assignedto}</td>
-            <td>${t.annotations?.length || 0}</td>
-            <td><select id="rev-${t.id}">${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}</select></td>
-            <td><button class="btn orange" onclick="assignReview('${t.id}')">Assign Reviewer</button></td>
-        </tr>`).join("");
-
-    // Review Inbox (Active Reviews)
-    document.getElementById("reviewTable").innerHTML = allTasks.filter(t => t.phase === 'Review').map(t => `
-        <tr>
-            <td>${t.id.toString().slice(-5)}</td>
-            <td>${t.assignedto}</td>
-            <td>${t.original_worker || 'N/A'}</td>
-            <td><a href="${t.review_link}" target="_blank" class="link-text">VIEW LIVE 🔗</a></td>
-            <td>${t.completed ? '✅ Finished' : '⏳ In Review'}</td>
-        </tr>`).join("");
-
-    // Supervision Table
-    document.getElementById("supervisionTable").innerHTML = allTasks.map(t => `
-        <tr>
-            <td>${t.id.toString().slice(-5)}</td>
-            <td>${t.phase}</td>
-            <td>${t.assignedto}</td>
-            <td>${t.completed ? 'Done' : 'Working'}</td>
-            <td>
-                <select onchange="reassignTask('${t.id}', this.value)" style="font-size:10px; width:100px;">
-                    <option value="">Reassign...</option>
-                    ${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}
-                </select>
-            </td>
-            <td>
-                <button class="btn blue" onclick="window.open('${t.review_link}','_blank')">Link</button>
-                <button class="btn red" onclick="deleteTask('${t.id}')">Del</button>
-            </td>
-        </tr>`).join("");
-
-    // Export Table
-    document.getElementById("exportTable").innerHTML = allTasks.filter(t => t.completed && (t.phase === 'Review' || t.phase === 'Export')).map(t => `
-        <tr>
-            <td>${t.id}</td>
-            <td>${t.original_worker || t.assignedto}</td>
-            <td>${t.phase === 'Review' ? t.assignedto : 'N/A'}</td>
-            <td>${t.annotations?.length || 0}</td>
-            <td><a href="${t.review_link}" target="_blank" class="link-text">Final Link 🔗</a></td>
-        </tr>`).join("");
-}
-
-async function assignReview(taskId) {
-    const reviewerEmail = document.getElementById(`rev-${taskId}`).value;
-    const task = allTasks.find(t => t.id == taskId);
+async function openWork(id) {
+    activeId = id;
+    localStorage.setItem('activeTaskId', id);
+    window.history.pushState({}, '', `?tid=${id}`);
     
-    await _supabase.from("ant_tasks").update({ 
-        assignedto: reviewerEmail, 
-        original_worker: task.assignedto, // Store who did the 1st pass
-        phase: 'Review', 
+    const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
+    taskData = data;
+    boxes = data.annotations || [];
+    
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("workspacePage").style.display = "block";
+    document.getElementById("liveLink").innerText = window.location.href;
+    
+    // Visibility of Reassign Button (Only in 1st Pass or for Admins)
+    document.getElementById("reassignBtn").style.display = (taskData.phase === "1st Pass") ? "block" : "none";
+    
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
+    img.src = data.imgdata;
+    img.onload = () => { resetView(); draw(); updateSidePanel(); updatePay(); };
+
+    canvas.onmousedown = handleDown;
+    window.onmousemove = handleMove;
+    window.onmouseup = () => { isDragging = false; save(); };
+}
+
+async function reassignToReview() {
+    const { error } = await sb.from("ant_tasks").update({ 
+        phase: 'Review',
         completed: false 
-    }).eq("id", taskId);
-    
-    alert("Task moved to Reviewer Dashboard.");
-    loadData();
+    }).eq("id", activeId);
+    if(!error) {
+        alert("Task moved to Review Inbox");
+        closeWorkspace();
+    }
 }
 
-async function reassignTask(taskId, email) {
-    if(!email || !confirm("Reassign this task?")) return;
-    await _supabase.from("ant_tasks").update({ assignedto: email, completed: false }).eq("id", taskId);
-    loadData();
+async function submitTask() {
+    let nextPhase = (taskData.phase === "Review") ? "Export" : "1st Pass";
+    await sb.from("ant_tasks").update({ 
+        phase: nextPhase, 
+        completed: (nextPhase === "Export"),
+        annotations: boxes 
+    }).eq("id", activeId);
+    alert("Task Submitted Successfully");
+    closeWorkspace();
 }
 
-async function sendTask() {
-    const img = document.getElementById("imgUrl").value;
-    const worker = document.getElementById("workerList").value;
-    if(!img) return alert("Missing Image URL/Data");
-    await _supabase.from("ant_tasks").insert([{ 
-        id: Date.now(), 
-        imgdata: img, 
-        assignedto: worker, 
-        phase: '1st Pass', 
-        completed: false, 
-        annotations: [] 
-    }]);
-    alert("Task Sent.");
-    loadData();
+function assignLabel(l) {
+    if(selectedBoxIdx > -1) {
+        // Financial Logic: If Reviewer edits a box they didn't create
+        if(taskData.phase === "Review" && boxes[selectedBoxIdx].creator !== user.email) {
+            boxes[selectedBoxIdx].penalty_applied = true;
+            boxes[selectedBoxIdx].reviewer_bonus = true;
+        }
+        boxes[selectedBoxIdx].label = l;
+        document.getElementById("labelPopup").style.display = "none";
+        draw(); updateSidePanel(); updatePay(); save();
+    }
 }
 
-async function deleteTask(id) { if(confirm("Delete?")) { await _supabase.from("ant_tasks").delete().eq("id", id); loadData(); } }
-async function updateUserStatus(email, status) { await _supabase.from("ant_users").update({ status }).eq("email", email); loadData(); }
-
-function exportToCSV() {
-    let csv = "Task ID,Worker,Reviewer,Boxes,Link\n";
-    allTasks.forEach(t => csv += `${t.id},${t.original_worker || t.assignedto},${t.phase === 'Review' ? t.assignedto : ''},${t.annotations?.length},${t.review_link}\n`);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Antonio_Report.csv`;
-    a.click();
+function updatePay() {
+    let base = (taskData.phase === "Review") ? 0.018 : 0.019;
+    let earnings = boxes.length * base;
+    document.getElementById("balance").innerText = earnings.toFixed(3);
 }
 
-setInterval(loadData, 20000);
+function save() {
+    if(activeId) sb.from("ant_tasks").update({ annotations: boxes, review_link: window.location.href }).eq("id", activeId);
+}
+
+// Maintenance Tools
+function resetView() { scale = 0.8; offsetX = 50; offsetY = 50; }
+function draw() {
+    canvas.width = window.innerWidth - 300; canvas.height = window.innerHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.save();
+    ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+    boxes.forEach((b, i) => {
+        ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
+        ctx.lineWidth = 2/scale;
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+    });
+    ctx.restore();
+}
+
+function handleDown(e) {
+    const mx = (e.clientX - offsetX) / scale;
+    const my = (e.clientY - offsetY) / scale;
+    if(isDrawMode) {
+        const sx = mx, sy = my;
+        canvas.onmouseup = (e2) => {
+            const ex = (e2.clientX - offsetX) / scale;
+            const ey = (e2.clientY - offsetY) / scale;
+            boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'New', creator: user.email });
+            selectedBoxIdx = boxes.length - 1;
+            showPopup(e2.clientX, e2.clientY);
+            toggleDrawMode();
+        };
+    } else {
+        selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
+        if(selectedBoxIdx === -1) { isDragging = true; lastX = e.clientX; lastY = e.clientY; }
+        else showPopup(e.clientX, e.clientY);
+        draw(); updateSidePanel();
+    }
+}
+
+function handleMove(e) { if(isDragging){ offsetX+=e.clientX-lastX; offsetY+=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY; draw(); } }
+function showPopup(x, y) { const p = document.getElementById("labelPopup"); p.style.display="flex"; p.style.left=x+"px"; p.style.top=y+"px"; }
+function toggleDrawMode() { isDrawMode = !isDrawMode; document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)"; document.getElementById("addBtn").style.color = isDrawMode ? "black" : "white"; }
+function updateSidePanel() { document.getElementById("annoList").innerHTML = boxes.map((b,i) => `<div class="anno-item" onclick="selectedBoxIdx=${i};draw();">#${i+1} ${b.label}</div>`).join(""); }
+function closeWorkspace() { showDashboard(); }
+function logout() { localStorage.clear(); location.reload(); }
+function undo() { boxes.pop(); draw(); updateSidePanel(); updatePay(); save(); }
 </script>
 </body>
 </html>
