@@ -15,7 +15,7 @@ body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
 #dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
 .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
 .batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; }
-.batch-card.mass { border-color: var(--orange); }
+.batch-card.unassigned { border-color: var(--orange); }
 .card-header { height: 60px; background: rgba(0,0,0,0.2); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
 .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: capitalize; }
 .start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
@@ -39,24 +39,24 @@ body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
 #annoList { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; padding-right: 5px; }
 .delete-box-area { padding-top: 10px; border-top: 1px solid #333; margin-bottom: 10px; }
 .delete-main-btn { width: 100%; background: #442222; color: #ff6666; border: 1px solid #663333; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-.delete-main-btn:hover { background: #662222; color: white; }
 </style>
 </head>
 <body oncontextmenu="return false;">
 
 <div id="loginPage" class="auth-page">
-<h2>Antony Mbali - Worker Login</h2>
+<h1 style="color:var(--purple)">a⌵ ANTONIO ANNOTATION</h1>
+<h2>Worker Portal</h2>
 <input id="userName" placeholder="Full Name">
 <input id="userEmail" placeholder="Email Address">
 <br>
-<button style="padding: 12px 40px; background: var(--blue); color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="handleLogin()">Login / Register</button>
+<button style="padding: 12px 40px; background: var(--blue); color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="handleLogin()">Login / Start Session</button>
 <div id="waitMessage" style="color:#ff9800; margin-top:20px; display:none; font-weight:bold;">Account pending admin approval. Please wait...</div>
 </div>
 
 <div id="topNav">
-<div style="font-weight: bold;">a⌵ LABELER</div>
+<div style="font-weight: bold; color:var(--purple)">a⌵ WORKSPACE</div>
 <div class="profile-area">
-<button class="spreadsheet-btn" onclick="alert('Worksheet: ' + boxes.length + ' active labels recorded.')">Earnings: $<span id="balance">0.00</span></button>
+<button class="spreadsheet-btn">Earnings Estimate: $<span id="balance">0.00</span></button>
 <div id="workerProfile" style="font-size: 13px; border-left: 1px solid #333; padding-left: 15px;"></div>
 <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; font-size: 12px;">Logout</button>
 </div>
@@ -72,14 +72,14 @@ body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
 <div id="workzone"><canvas id="canvas"></canvas></div>
 <div id="sidePanel">
 <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items: center;">
-<span style="font-weight: bold; font-size: 12px;">ANNOTATION FEED</span>
-<button onclick="closeWorkspace()" style="background:#333; border:none; color:white; padding: 5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">HOME PAGE</button>
+<span style="font-weight: bold; font-size: 12px;">LATEST LABELS</span>
+<button onclick="closeWorkspace()" style="background:#333; border:none; color:white; padding: 5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">SAVE & EXIT</button>
 </div>
 <div id="annoList"></div>
 <div class="delete-box-area">
-<button class="delete-main-btn" onclick="deleteBox()">DELETE SELECTED BOX</button>
+<button class="delete-main-btn" onclick="deleteBox()">DELETE BOX</button>
 </div>
-<button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT FOR REVIEW</button>
+<button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT TO ADMIN</button>
 </div>
 
 <div id="labelPopup">
@@ -87,10 +87,7 @@ body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
 <button class="label-btn" onclick="assignLabel('Bus')">Bus</button>
 <button class="label-btn" onclick="assignLabel('Truck')">Truck</button>
 <button class="label-btn" onclick="assignLabel('Pedestrian')">Pedestrian</button>
-<button class="label-btn" onclick="assignLabel('Animal')">Animal</button>
 <button class="label-btn" onclick="assignLabel('Motorcycle')">Motorcycle</button>
-<button class="label-btn" onclick="assignLabel('Trash')">Trash</button>
-<button class="label-btn" onclick="assignLabel('Towed')">Towed</button>
 </div>
 
 <div class="workspace-controls">
@@ -101,7 +98,7 @@ body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
 
 <div class="bottom-bar" id="footerBar">
 <div id="footerWorker">COWORKER: LOADING...</div>
-<div>ANTONY MBALI MANAGEMENT</div>
+<div id="connectionStatus" style="color:#00ff88">● SUPABASE CONNECTED</div>
 </div>
 
 <script>
@@ -112,888 +109,203 @@ let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, resiz
 let canvas, ctx, img = new Image();
 
 window.onload = async () => {
-// Check for Task ID in URL (Dynamic Link Support)
-const urlParams = new URLSearchParams(window.location.search);
-const taskIdFromUrl = urlParams.get('tid');
-
-const savedEmail = localStorage.getItem('workerEmail');
-if(savedEmail) {
-const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
-if(data && data.status === 'approved') {
-user = data;
-if(taskIdFromUrl) {
-openWork(taskIdFromUrl);
-} else {
-showDashboard();
-}
-}
-} else if (taskIdFromUrl) {
-// If someone with the link isn't logged in, redirect them to login first
-alert("Please login to view this task link.");
-}
+    const savedEmail = localStorage.getItem('workerEmail');
+    if(savedEmail) {
+        const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
+        if(data && data.status === 'approved') {
+            user = data;
+            showDashboard();
+        }
+    }
 };
 
 async function handleLogin() {
-const email = document.getElementById("userEmail").value.trim();
-const name = document.getElementById("userName").value.trim();
-if(!email || !name) return alert("Enter details");
+    const email = document.getElementById("userEmail").value.trim().toLowerCase();
+    const name = document.getElementById("userName").value.trim();
+    if(!email || !name) return alert("Enter all details");
 
-const { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
-if (!existing) {
-await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'pending', balance: 0 }]);
-document.getElementById("waitMessage").style.display = "block";
-} else if (existing.status === 'pending') {
-document.getElementById("waitMessage").style.display = "block";
-} else {
-user = existing;
-localStorage.setItem('workerEmail', email);
-
-// After login, check if we need to go back to a specific task
-const urlParams = new URLSearchParams(window.location.search);
-const tid = urlParams.get('tid');
-if(tid) openWork(tid); else showDashboard();
-}
+    const { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
+    if (!existing) {
+        await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'pending', balance: 0 }]);
+        document.getElementById("waitMessage").style.display = "block";
+    } else if (existing.status === 'pending') {
+        document.getElementById("waitMessage").style.display = "block";
+    } else {
+        user = existing;
+        localStorage.setItem('workerEmail', email);
+        showDashboard();
+    }
 }
 
 async function showDashboard() {
-// Clean URL when returning to dashboard
-window.history.replaceState({}, document.title, window.location.pathname);
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("topNav").style.display = "flex";
+    document.getElementById("footerBar").style.display = "flex";
+    document.getElementById("dashboard").style.display = "block";
+    document.getElementById("workspacePage").style.display = "none";
 
-localStorage.removeItem('activeTaskId');
-document.getElementById("loginPage").style.display = "none";
-document.getElementById("topNav").style.display = "flex";
-document.getElementById("footerBar").style.display = "flex";
-document.getElementById("dashboard").style.display = "block";
-document.getElementById("workspacePage").style.display = "none";
+    document.getElementById("greet").innerText = `${user.name}, ${getGreetingPrefix()}`;
+    document.getElementById("seasonalMsg").innerText = "Ready for the next batch?";
+    document.getElementById("workerProfile").innerHTML = `<b>${user.name}</b><br><span style="font-size:10px; opacity:0.6">${user.email}</span>`;
+    document.getElementById("footerWorker").innerText = `LOGGED IN AS: ${user.name.toUpperCase()}`;
 
-document.getElementById("greet").innerText = `${user.name}, ${getGreetingPrefix()}`;
-document.getElementById("seasonalMsg").innerText = getSeasonalMessage();
-document.getElementById("workerProfile").innerHTML = `<b>${user.name}</b><br><span style="font-size:10px; opacity:0.6">${user.email}</span>`;
-document.getElementById("footerWorker").innerText = `COWORKER: ${user.name.toUpperCase()}`;
+    // Show tasks assigned specifically to user OR Unassigned mass tasks
+    const { data: tasks } = await sb.from("ant_tasks")
+        .select("*")
+        .or(`assignedto.eq.${user.email},assignedto.eq.UNASSIGNED`)
+        .eq("completed", false);
 
-updateBalanceDisplay();
+    document.getElementById("tasks").innerHTML = (tasks || []).map(t => {
+        const isPool = t.assignedto === 'UNASSIGNED';
+        const cardClass = isPool ? 'batch-card unassigned' : 'batch-card';
+        const button = isPool 
+            ? `<button class="claim-btn" onclick="claimTask('${t.id}')">CLAIM TO DASHBOARD</button>` 
+            : `<button class="start-work-btn" onclick="openWork('${t.id}')">START TASK →</button>`;
 
-const { data: tasks } = await sb.from("ant_tasks")
-.select("*")
-.or(`assignedto.eq.${user.email},assignedto.eq.MASS_ASSIGN`)
-.is('review_status', null);
-
-document.getElementById("tasks").innerHTML = (tasks || []).map(t => {
-const isMass = t.assignedto === 'MASS_ASSIGN';
-const cardClass = isMass ? 'batch-card mass' : 'batch-card';
-const button = isMass
-? `<button class="claim-btn" onclick="claimTask('${t.id}')">CLAIM TASK</button>`
-: `<button class="start-work-btn" onclick="openWork('${t.id}')">START WORK →</button>`;
-
-return `
-<div class="${cardClass}">
-<div class="card-header">
-<span class="status-badge" style="${isMass ? 'background:var(--orange); color:white;' : ''}">
-${isMass ? 'Pool Task' : 'Assigned'}
-</span>
-<span style="font-size:10px;">ID: ${t.id.toString().slice(-4)}</span>
-</div>
-<div style="padding:15px;">
-<div style="font-size:11px; margin-bottom:10px; opacity:0.6">Task Link: <span style="color:var(--blue); cursor:pointer;" onclick="copyLink('${t.id}')">Copy Link 🔗</span></div>
-${button}
-</div>
-</div>
-`;
-}).join("");
-}
-
-function copyLink(id) {
-const link = `${window.location.origin}${window.location.pathname}?tid=${id}`;
-navigator.clipboard.writeText(link);
-alert("Task link copied to clipboard!");
+        return `<div class="${cardClass}">
+            <div class="card-header">
+                <span class="status-badge">${isPool ? 'Pool Task' : 'Assigned'}</span>
+                <span style="font-size:10px; opacity:0.5">#${t.id.toString().slice(-5)}</span>
+            </div>
+            <div style="padding:15px;">
+                <p style="font-size:12px; margin:0 0 10px 0;">Phase: ${t.phase}</p>
+                ${button}
+            </div>
+        </div>`;
+    }).join("");
 }
 
 async function claimTask(taskId) {
-const { data: task } = await sb.from("ant_tasks").select("assignedto").eq("id", taskId).single();
-if (task.assignedto !== 'MASS_ASSIGN') {
-alert("Task already claimed.");
-showDashboard();
-return;
-}
-const { error } = await sb.from("ant_tasks").update({ assignedto: user.email }).eq("id", taskId);
-if (!error) openWork(taskId);
+    const { error } = await sb.from("ant_tasks").update({ assignedto: user.email }).eq("id", taskId);
+    if (!error) showDashboard(); else alert("Task already claimed by someone else.");
 }
 
 async function openWork(id) {
-activeId = id;
-localStorage.setItem('activeTaskId', id);
+    activeId = id;
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("workspacePage").style.display = "block";
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
 
-// Set URL parameter without refreshing page
-const newUrl = `${window.location.origin}${window.location.pathname}?tid=${id}`;
-window.history.pushState({ path: newUrl }, '', newUrl);
+    const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
+    boxes = data.annotations || [];
+    img.src = data.imgdata;
+    img.onload = () => { resetView(); draw(); updateSidePanel(); updateBalanceDisplay(); };
 
-document.getElementById("loginPage").style.display = "none";
-document.getElementById("dashboard").style.display = "none";
-document.getElementById("workspacePage").style.display = "block";
-document.getElementById("topNav").style.display = "flex";
-document.getElementById("footerBar").style.display = "flex";
-
-canvas = document.getElementById("canvas");
-ctx = canvas.getContext("2d");
-
-const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
-if(!data) return alert("Task not found.");
-
-boxes = data.annotations || [];
-img.src = data.imgdata;
-img.onload = () => { resetView(); draw(); updateSidePanel(); updateBalanceDisplay(); };
-
-canvas.onwheel = (e) => {
-e.preventDefault();
-const zoomSpeed = 0.1;
-if (e.deltaY < 0) scale *= (1 + zoomSpeed); else scale /= (1 + zoomSpeed);
-draw();
-};
-
-canvas.onmousedown = (e) => {
-const mx = (e.clientX - offsetX) / scale;
-const my = (e.clientY - offsetY) / scale;
-
-if (selectedBoxIdx > -1) {
-const b = boxes[selectedBoxIdx];
-const handleSize = 15 / scale;
-if (Math.abs(mx - b.x) < handleSize && Math.abs(my - b.y) < handleSize) { resizeType = 'tl'; return; }
-if (Math.abs(mx - (b.x + b.w)) < handleSize && Math.abs(my - (b.y + b.h)) < handleSize) { resizeType = 'br'; return; }
+    // Canvas Events (Zoom/Pan/Draw)
+    canvas.onwheel = (e) => { e.preventDefault(); scale = e.deltaY < 0 ? scale * 1.1 : scale / 1.1; draw(); };
+    canvas.onmousedown = handleMouseDown;
+    window.onmousemove = handleMouseMove;
+    window.onmouseup = () => { isDragging = resizeType = null; saveProgress(); };
 }
 
-if (isDrawMode) {
-const sx = mx, sy = my;
-canvas.onmouseup = (e2) => {
-const ex = (e2.clientX - offsetX) / scale;
-const ey = (e2.clientY - offsetY) / scale;
-boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Unlabeled' });
-selectedBoxIdx = boxes.length - 1;
-showLabelPopup(e2.clientX, e2.clientY);
-toggleDrawMode();
-draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
-canvas.onmouseup = () => { isDragging = resizeType = null; };
-};
-} else {
-selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
-if (selectedBoxIdx === -1) {
-isDragging = true; lastX = e.clientX; lastY = e.clientY;
-document.getElementById("labelPopup").style.display = "none";
-} else { showLabelPopup(e.clientX, e.clientY); }
-draw(); updateSidePanel();
-}
-};
-
-window.onmousemove = (e) => {
-const mx = (e.clientX - offsetX) / scale;
-const my = (e.clientY - offsetY) / scale;
-
-if (isDragging) {
-offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
-lastX = e.clientX; lastY = e.clientY;
-} else if (resizeType && selectedBoxIdx > -1) {
-const b = boxes[selectedBoxIdx];
-if (resizeType === 'br') {
-b.w = mx - b.x; b.h = my - b.y;
-} else if (resizeType === 'tl') {
-const right = b.x + b.w; const bottom = b.y + b.h;
-b.x = mx; b.y = my; b.w = right - mx; b.h = bottom - my;
-}
-}
-draw();
-};
-window.onmouseup = () => { isDragging = resizeType = null; saveProgress(); };
+async function saveProgress() {
+    if(!activeId) return;
+    const currentLink = window.location.href + "?tid=" + activeId; // For admin viewing
+    await sb.from("ant_tasks").update({ 
+        annotations: boxes,
+        review_link: currentLink
+    }).eq("id", activeId);
 }
 
+async function submitForReview() {
+    if(!confirm("Submit for Admin Review?")) return;
+    await sb.from("ant_tasks").update({ 
+        completed: true, 
+        phase: '1st Pass',
+        annotations: boxes 
+    }).eq("id", activeId);
+    alert("Task sent to Admin Inbox.");
+    closeWorkspace();
+}
+
+// Maintenance functions
+function resetView() { scale = 0.8; offsetX = 100; offsetY = 50; }
 function draw() {
-canvas.width = window.innerWidth - 300; canvas.height = window.innerHeight;
-ctx.clearRect(0,0,canvas.width,canvas.height);
-ctx.save();
-ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
-ctx.drawImage(img, 0, 0);
-boxes.forEach((b, i) => {
-ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
-ctx.lineWidth = 2 / scale;
-ctx.strokeRect(b.x, b.y, b.w, b.h);
-if(i === selectedBoxIdx) {
-ctx.fillStyle = "white";
-ctx.fillRect(b.x - 4/scale, b.y - 4/scale, 8/scale, 8/scale);
-ctx.fillRect(b.x + b.w - 4/scale, b.y + b.h - 4/scale, 8/scale, 8/scale);
+    canvas.width = window.innerWidth - 300; canvas.height = window.innerHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.save();
+    ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+    boxes.forEach((b, i) => {
+        ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
+        ctx.lineWidth = 2 / scale;
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+        ctx.fillStyle = "lime"; ctx.font = `${12/scale}px sans-serif`;
+        ctx.fillText(b.label, b.x, b.y - 5/scale);
+    });
+    ctx.restore();
 }
-ctx.fillStyle = "lime"; ctx.font = `${12/scale}px bold sans-serif`;
-ctx.fillText(b.label.toUpperCase(), b.x, b.y - 5/scale);
-});
-ctx.restore();
+
+function handleMouseDown(e) {
+    const mx = (e.clientX - offsetX) / scale;
+    const my = (e.clientY - offsetY) / scale;
+    if (isDrawMode) {
+        const sx = mx, sy = my;
+        canvas.onmouseup = (e2) => {
+            const ex = (e2.clientX - offsetX) / scale;
+            const ey = (e2.clientY - offsetY) / scale;
+            boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Unlabeled' });
+            selectedBoxIdx = boxes.length - 1;
+            showLabelPopup(e2.clientX, e2.clientY);
+            toggleDrawMode();
+            draw(); updateSidePanel(); updateBalanceDisplay();
+            canvas.onmouseup = () => { isDragging = resizeType = null; };
+        };
+    } else {
+        selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
+        if (selectedBoxIdx === -1) { isDragging = true; lastX = e.clientX; lastY = e.clientY; }
+        else { showLabelPopup(e.clientX, e.clientY); }
+        draw(); updateSidePanel();
+    }
+}
+
+function handleMouseMove(e) {
+    if (isDragging) {
+        offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY; draw();
+    }
 }
 
 function showLabelPopup(x, y) {
-const pop = document.getElementById("labelPopup");
-pop.style.display = "flex";
-pop.style.left = Math.min(x, window.innerWidth - 150) + "px";
-pop.style.top = Math.min(y, window.innerHeight - 300) + "px";
+    const pop = document.getElementById("labelPopup");
+    pop.style.display = "flex";
+    pop.style.left = x + "px"; pop.style.top = y + "px";
 }
 
 function assignLabel(l) {
-if(selectedBoxIdx > -1) {
-boxes[selectedBoxIdx].label = l;
-document.getElementById("labelPopup").style.display = "none";
-draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
-}
+    if(selectedBoxIdx > -1) {
+        boxes[selectedBoxIdx].label = l;
+        document.getElementById("labelPopup").style.display = "none";
+        draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
+    }
 }
 
 function deleteBox() {
-if(selectedBoxIdx > -1) {
-boxes.splice(selectedBoxIdx, 1);
-selectedBoxIdx = -1;
-document.getElementById("labelPopup").style.display = "none";
-draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
-}
+    if(selectedBoxIdx > -1) {
+        boxes.splice(selectedBoxIdx, 1);
+        selectedBoxIdx = -1;
+        draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
+    }
 }
 
 function updateSidePanel() {
-document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
-<div class="anno-item" style="${i === selectedBoxIdx ? 'background:#333; border-color:cyan;' : ''}" onclick="selectBoxFromList(${i})">
-<span>#${i+1} <b>${b.label}</b></span>
-<span style="font-size:9px; color:var(--purple)">$0.019</span>
-</div>`).join("");
+    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
+        <div class="anno-item" style="${i === selectedBoxIdx ? 'border-color:cyan;' : ''}" onclick="selectedBoxIdx=${i};draw();updateSidePanel();">
+            <span>#${i+1} <b>${b.label}</b></span>
+            <span style="color:var(--purple); font-size:10px;">$0.019</span>
+        </div>`).join("");
 }
 
-function selectBoxFromList(i) { selectedBoxIdx = i; draw(); updateSidePanel(); }
-
-async function saveProgress() {
-if(activeId) {
-const link = `${window.location.origin}${window.location.pathname}?tid=${activeId}`;
-await sb.from("ant_tasks").update({
-annotations: boxes,
-review_link: link // SAVING LINK TO SUPABASE
-}).eq("id", activeId);
-}
-}
-
-function toggleDrawMode() {
-isDrawMode = !isDrawMode;
-document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)";
-document.getElementById("addBtn").style.color = isDrawMode ? "black" : "white";
-}
-
-function undo() { boxes.pop(); draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress(); }
-function resetView() { scale = 0.7; offsetX = 50; offsetY = 50; }
 function updateBalanceDisplay() { document.getElementById("balance").innerText = (boxes.length * 0.019).toFixed(3); }
+function toggleDrawMode() { isDrawMode = !isDrawMode; document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)"; document.getElementById("addBtn").style.color = isDrawMode ? "black" : "white"; }
 function getGreetingPrefix() { const h = new Date().getHours(); return h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : "Good Evening"; }
-function getSeasonalMessage() { const h = new Date().getHours(); return (h >= 23.5 || h < 5) ? "Take some rest, coworker." : "Happy labeling!"; }
-
-async function submitForReview() {
-const link = `${window.location.origin}${window.location.pathname}?tid=${activeId}`;
-await sb.from("ant_tasks").update({
-review_status: "review_pending",
-annotations: boxes,
-review_link: link
-}).eq("id", activeId);
-alert("Task submitted. Review link saved.");
-closeWorkspace();
-}
-
+function undo() { boxes.pop(); draw(); updateSidePanel(); updateBalanceDisplay(); }
 function logout() { localStorage.clear(); location.reload(); }
-function closeWorkspace() { showDashboard(); }
-setInterval(() => { if(!activeId && user) showDashboard(); }, 20000);
+function closeWorkspace() { activeId = null; showDashboard(); }
+
+// Heartbeat to keep connection alive
+setInterval(() => { if(!activeId && user) showDashboard(); }, 30000);
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
