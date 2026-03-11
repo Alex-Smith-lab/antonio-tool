@@ -24,15 +24,13 @@
         select, input[type="file"], input[type="text"] { padding:10px; background:#222; color:white; border:1px solid #444; margin:5px 0; width:100%; max-width:300px; border-radius: 5px; }
         .anno-count { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
-        .status-pass { background: #4b0082; color: white; }
-        .status-review { background: #007bff; color: white; }
     </style>
 </head>
 <body>
 
 <div id="auth-gate" style="position:fixed; inset:0; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column;">
     <h1 style="color:#7b2ff7;">Admin Verification</h1>
-    <input type="text" id="adminEmail" placeholder="Enter Admin Email" style="text-align:center;">
+    <input type="text" id="adminEmailInput" placeholder="Enter Admin Email" style="text-align:center;">
     <button class="btn purple" onclick="checkAuth()" style="margin-top:10px; padding:10px 30px;">Login</button>
 </div>
 
@@ -43,15 +41,12 @@
     <button class="tab-btn" onclick="showTab('firstpass_inbox',this)" style="color: #00ff88;">📥 1st Pass Inbox</button>
     <button class="tab-btn" onclick="showTab('supervision',this)">Full Supervision</button>
     <button class="tab-btn" onclick="showTab('admin_access',this)">Admin Controls</button>
-    
-    <div style="margin-top: auto; padding-top: 20px;">
-        <button class="tab-btn" onclick="showTab('export',this)" style="border: 1px dashed #7b2ff7;">Export & Links</button>
-    </div>
+    <button class="tab-btn" onclick="showTab('export',this)" style="border: 1px dashed #7b2ff7; margin-top: auto;">Export & Links</button>
 </div>
 
 <div class="main">
     <div id="approvals" class="panel tab">
-        <h2>Coworker Approvals</h2>
+        <h2>Coworker Management</h2>
         <table>
             <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="userTable"></tbody>
@@ -61,82 +56,77 @@
     <div id="tasks" class="panel tab" style="display:none">
         <h2>Assign New Task</h2>
         <div style="display:grid; gap:10px;">
-            <label>1. Upload Image:</label>
             <input type="file" id="taskFile">
-            <label>2. Assign To:</label>
             <select id="workerList"></select>
-            <label>3. Assignment Phase:</label>
             <select id="taskPhase">
                 <option value="1st Pass">1st Pass (Initial Labeling)</option>
                 <option value="Review">Review (Quality Check)</option>
             </select>
-            <button class="btn green" onclick="sendTask()" style="width:200px; padding:12px; margin-top:10px;">Send Task</button>
+            <button class="btn green" onclick="sendTask()" style="width:200px; padding:12px;">Send Task</button>
         </div>
     </div>
 
     <div id="firstpass_inbox" class="panel tab" style="display:none">
-        <h2>1st Pass Completed (Awaiting Reviewer)</h2>
-        <p style="color:#999;">These tasks were finished by the 1st pass team. Assign them to a reviewer below.</p>
+        <h2>1st Pass Completed</h2>
         <table>
-            <thead><tr><th>Task ID</th><th>From (1st Pass)</th><th>Boxes</th><th>Assign to Reviewer</th><th>Action</th></tr></thead>
+            <thead><tr><th>Task ID</th><th>Worker</th><th>Boxes</th><th>Assign Reviewer</th><th>Action</th></tr></thead>
             <tbody id="inboxTable"></tbody>
         </table>
     </div>
 
     <div id="supervision" class="panel tab" style="display:none">
-        <h2>Full Task Supervision</h2>
+        <h2>Task Supervision</h2>
         <table>
-            <thead><tr><th>Task ID</th><th>Phase</th><th>Worker</th><th>Boxes</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Task ID</th><th>Phase</th><th>Worker</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="supervisionTable"></tbody>
         </table>
     </div>
 
     <div id="admin_access" class="panel tab" style="display:none">
-        <h2>System Permissions</h2>
+        <h2>Admin Management</h2>
         <div class="panel">
-            <h3>Add New Admin Access</h3>
-            <p>Grant permission to access this management dashboard.</p>
-            <input type="text" id="newAdminEmail" placeholder="Email address...">
-            <button class="btn purple" onclick="grantAdmin()">Grant Access</button>
+            <input type="text" id="newAdminEmail" placeholder="Email to grant admin access...">
+            <button class="btn purple" onclick="grantAdmin()">Add Admin</button>
         </div>
+        <table>
+            <thead><tr><th>Admin Email</th><th>Action</th></tr></thead>
+            <tbody id="adminTable"></tbody>
+        </table>
     </div>
 
     <div id="export" class="panel tab" style="display:none">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>Export Data</h2>
-            <button class="btn green" onclick="exportToCSV()">Download CSV</button>
+            <h2>Export & Review Links</h2>
+            <button class="btn green" onclick="exportToCSV()">Download CSV Report</button>
         </div>
-        <tbody id="exportTable"></tbody>
+        <table>
+            <thead><tr><th>Task ID</th><th>Worker</th><th>Phase</th><th>Review Link</th></tr></thead>
+            <tbody id="exportTable"></tbody>
+        </table>
     </div>
 </div>
 
 <script>
-const SUPABASE_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w";
-const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
-let allTasks = [];
-let allUsers = [];
-const DEFAULT_ADMIN = "antonymbali96@gmail.com";
+let allTasks = [], allUsers = [], allAdmins = [];
+const MASTER_ADMIN = "antonymbali96@gmail.com";
 
-// Security Check
-function checkAuth() {
-    const input = document.getElementById("adminEmail").value.toLowerCase().trim();
-    if (input === DEFAULT_ADMIN) {
+async function checkAuth() {
+    const input = document.getElementById("adminEmailInput").value.toLowerCase().trim();
+    const { data } = await _supabase.from("ant_admins").select("email").eq("email", input);
+    
+    if (input === MASTER_ADMIN || (data && data.length > 0)) {
         document.getElementById("auth-gate").style.display = "none";
         initRealtime();
         loadData();
     } else {
-        alert("Unauthorized Access Denied.");
+        alert("Access Denied");
     }
 }
 
-// Maintenance: Realtime Connection to avoid disconnection
 function initRealtime() {
-    _supabase.channel('db-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'ant_tasks' }, () => loadData())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'ant_users' }, () => loadData())
-    .subscribe();
+    _supabase.channel('admin-sync').on('postgres_changes', { event: '*', schema: 'public' }, () => loadData()).subscribe();
 }
 
 function showTab(id, btn) {
@@ -150,130 +140,108 @@ function showTab(id, btn) {
 async function loadData() {
     const { data: users } = await _supabase.from("ant_users").select("*");
     const { data: tasks } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
-    
-    allTasks = tasks || [];
+    const { data: admins } = await _supabase.from("ant_admins").select("*");
+
     allUsers = users || [];
+    allTasks = tasks || [];
+    allAdmins = admins || [];
 
-    const approvedUsers = allUsers.filter(u => u.status === "approved");
-    const workerOptions = approvedUsers.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
+    const approved = allUsers.filter(u => u.status === "approved");
+    const workerOptions = approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
+    document.getElementById("workerList").innerHTML = workerOptions;
 
-    // 1. Staff Table
+    // Staff Table
     document.getElementById("userTable").innerHTML = allUsers.map(u => `
         <tr>
             <td>${u.name}</td>
             <td>${u.email}</td>
             <td><span class="badge" style="background:${u.status === 'pending' ? 'orange' : '#00ff88'}">${u.status}</span></td>
             <td>
-                <button class="btn green" onclick="updateStatus('${u.email}', 'approved')">Approve</button>
-                <button class="btn red" onclick="removeUser('${u.email}')">Remove</button>
+                <button class="btn green" onclick="updateUserStatus('${u.email}', 'approved')">Approve</button>
+                <button class="btn orange" onclick="updateUserStatus('${u.email}', 'pending')">Waitlist</button>
+                <button class="btn red" onclick="deleteUser('${u.email}')">Remove</button>
             </td>
         </tr>
     `).join("");
 
-    // 2. Dropdown Lists
-    document.getElementById("workerList").innerHTML = workerOptions;
-
-    // 3. 1st Pass Inbox (Completed by 1st pass but not yet assigned for review)
-    const inboxTasks = allTasks.filter(t => t.phase === '1st Pass' && t.completed === true && t.review_status !== 'approved');
-    document.getElementById("inboxTable").innerHTML = inboxTasks.map(t => `
+    // Admin Table
+    document.getElementById("adminTable").innerHTML = allAdmins.map(a => `
         <tr>
-            <td><small>${t.id}</small></td>
+            <td>${a.email}</td>
+            <td><button class="btn red" onclick="removeAdmin('${a.email}')">Revoke Access</button></td>
+        </tr>
+    `).join("");
+
+    // Inbox Table
+    document.getElementById("inboxTable").innerHTML = allTasks.filter(t => t.phase === '1st Pass' && t.completed).map(t => `
+        <tr>
+            <td>${t.id}</td>
             <td>${t.assignedto}</td>
-            <td><span class="anno-count">${t.annotations?.length || 0} Boxes</span></td>
-            <td>
-                <select id="reassign-${t.id}" style="width:150px; font-size:11px;">${workerOptions}</select>
-            </td>
-            <td>
-                <button class="btn purple" onclick="assignToReviewer('${t.id}')">Send to Review</button>
-            </td>
+            <td>${t.annotations?.length || 0}</td>
+            <td><select id="rev-${t.id}">${workerOptions}</select></td>
+            <td><button class="btn purple" onclick="assignReview('${t.id}')">Assign</button></td>
         </tr>
     `).join("");
 
-    // 4. Full Supervision Table
-    document.getElementById("supervisionTable").innerHTML = allTasks.map(t => `
-        <tr>
-            <td><small>${t.id}</small></td>
-            <td><span class="badge ${t.phase === '1st Pass' ? 'status-pass' : 'status-review'}">${t.phase}</span></td>
-            <td>
-                <select onchange="reassignTask('${t.id}', this.value)" style="width:130px; border:none; background:transparent; color:white;">
-                    ${allUsers.map(u => `<option value="${u.email}" ${u.email === t.assignedto ? 'selected' : ''}>${u.name}</option>`).join("")}
-                </select>
-            </td>
-            <td><span class="anno-count">${t.annotations?.length || 0}</span></td>
-            <td>${t.completed ? '✅ Done' : '⏳ In Progress'}</td>
-            <td>
-                <button class="btn blue" onclick="viewWork('${t.id}')">View</button>
-                <button class="btn red" onclick="deleteTask('${t.id}')">Delete</button>
-            </td>
-        </tr>
-    `).join("");
+    // Supervision & Export
+    let supervisionHtml = "";
+    let exportHtml = "";
+    allTasks.forEach(t => {
+        supervisionHtml += `<tr><td>${t.id}</td><td>${t.phase}</td><td>${t.assignedto}</td><td>${t.completed ? 'Done' : 'Working'}</td><td><button class="btn blue" onclick="viewWork('${t.id}')">View</button></td></tr>`;
+        exportHtml += `<tr><td>${t.id}</td><td>${t.assignedto}</td><td>${t.phase}</td><td><small>${t.review_link || 'N/A'}</small></td></tr>`;
+    });
+    document.getElementById("supervisionTable").innerHTML = supervisionHtml;
+    document.getElementById("exportTable").innerHTML = exportHtml;
 }
 
-// Actions
-async function assignToReviewer(taskId) {
-    const reviewerEmail = document.getElementById(`reassign-${taskId}`).value;
-    await _supabase.from("ant_tasks").update({ 
-        assignedto: reviewerEmail, 
-        phase: 'Review', 
-        completed: false,
-        review_status: 'review_pending' 
-    }).eq("id", taskId);
-    alert("Task reassigned to Reviewer!");
+async function updateUserStatus(email, status) { await _supabase.from("ant_users").update({ status }).eq("email", email); loadData(); }
+async function deleteUser(email) { if(confirm("Delete user?")) await _supabase.from("ant_users").delete().eq("email", email); loadData(); }
+
+async function grantAdmin() {
+    const email = document.getElementById("newAdminEmail").value.toLowerCase().trim();
+    if(email) await _supabase.from("ant_admins").insert([{ email }]);
     loadData();
 }
 
-async function reassignTask(taskId, newEmail) {
-    await _supabase.from("ant_tasks").update({ assignedto: newEmail }).eq("id", taskId);
+async function removeAdmin(email) {
+    if(email === MASTER_ADMIN) return alert("Cannot remove Master Admin");
+    await _supabase.from("ant_admins").delete().eq("email", email);
+    loadData();
+}
+
+async function assignReview(taskId) {
+    const rev = document.getElementById(`rev-${taskId}`).value;
+    await _supabase.from("ant_tasks").update({ assignedto: rev, phase: 'Review', completed: false }).eq("id", taskId);
+    loadData();
 }
 
 async function sendTask() {
     const file = document.getElementById("taskFile").files[0];
     const worker = document.getElementById("workerList").value;
     const phase = document.getElementById("taskPhase").value;
-    if (!file) return alert("Select file");
-
     const reader = new FileReader();
     reader.onload = async e => {
-        await _supabase.from("ant_tasks").insert([{
-            id: Date.now(),
-            imgdata: e.target.result,
-            assignedto: worker,
-            phase: phase,
-            completed: false,
-            annotations: []
-        }]);
-        alert("Task Sent!");
+        await _supabase.from("ant_tasks").insert([{ id: Date.now(), imgdata: e.target.result, assignedto: worker, phase: phase, completed: false, annotations: [] }]);
         loadData();
     };
     reader.readAsDataURL(file);
 }
 
-async function updateStatus(email, status) { await _supabase.from("ant_users").update({ status }).eq("email", email); loadData(); }
-async function removeUser(email) { if(confirm("Remove?")) await _supabase.from("ant_users").delete().eq("email", email); loadData(); }
-async function deleteTask(id) { if(confirm("Delete task?")) await _supabase.from("ant_tasks").delete().eq("id", id); loadData(); }
-
 function viewWork(id) {
     const t = allTasks.find(x => x.id == id);
     if(t && t.review_link) window.open(t.review_link, '_blank');
-    else alert("Worker hasn't generated a link yet.");
-}
-
-function grantAdmin() {
-    const email = document.getElementById("newAdminEmail").value;
-    alert("Admin access for " + email + " has been added to the internal security list.");
 }
 
 function exportToCSV() {
-    let csv = "ID,Worker,Phase,Boxes,Status\n";
-    allTasks.forEach(t => csv += `${t.id},${t.assignedto},${t.phase},${t.annotations?.length || 0},${t.completed}\n`);
+    let csv = "Task ID,Coworker,Phase,Review Link\n";
+    allTasks.forEach(t => csv += `${t.id},${t.assignedto},${t.phase},${t.review_link || ''}\n`);
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'report.csv';
+    a.download = `Project_Report_${Date.now()}.csv`;
     a.click();
 }
 
-// Fallback Polling (Keeps session alive)
 setInterval(loadData, 30000);
 </script>
 </body>
