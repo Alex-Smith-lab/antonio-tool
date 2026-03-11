@@ -5,45 +5,102 @@
     <title>Admin - Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background:#0b0b0b; color:white; font-family:sans-serif; margin:0; display:flex; height:100vh; overflow: hidden; }
-        .sidebar { width:250px; background:black; padding:20px; border-right:1px solid #222; display: flex; flex-direction: column; }
-        .tab-btn { width:100%; padding:14px; margin-bottom:10px; background:none; border:none; color:#999; text-align:left; cursor:pointer; border-radius: 6px; font-size: 14px; transition: 0.3s; }
-        .tab-btn:hover { background: #1a1a1a; color: white; }
-        .tab-btn.active { background:#7b2ff7; color:white; font-weight: bold; }
-        .main { flex:1; padding:40px; overflow:auto; }
-        table { width:100%; border-collapse:collapse; margin-top:15px; }
-        td, th { padding:12px; border-bottom:1px solid #222; text-align:left; font-size: 13px; }
-        th { background: #111; color: #7b2ff7; text-transform: uppercase; letter-spacing: 1px; }
-        .btn { padding:6px 12px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px; margin-right:5px; transition: 0.2s; }
+        /* Global & Laptop Optimization */
+        body { 
+            background:#0b0b0b; 
+            color:white; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin:0; 
+            display:flex; 
+            height:100vh; 
+            overflow: hidden; 
+            font-size: 12px; /* Reduced base font */
+        }
+
+        /* Sidebar & Swiping Navigation */
+        .sidebar { 
+            width:220px; 
+            background:black; 
+            padding:15px; 
+            border-right:1px solid #222; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
+        }
+        
+        /* Bottom Swipe Container */
+        .nav-scroll-container {
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 10px;
+            gap: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: #7b2ff7 #000;
+        }
+        .nav-scroll-container::-webkit-scrollbar { height: 4px; }
+        .nav-scroll-container::-webkit-scrollbar-thumb { background: #7b2ff7; border-radius: 10px; }
+
+        .tab-btn { 
+            padding:10px 15px; 
+            background:#111; 
+            border:1px solid #222; 
+            color:#999; 
+            text-align:center; 
+            cursor:pointer; 
+            border-radius: 6px; 
+            font-size: 11px; 
+            transition: 0.3s;
+            flex-shrink: 0;
+        }
+        .tab-btn:hover { background: #1a1a1a; color: white; border-color: #444; }
+        .tab-btn.active { background:#7b2ff7; color:white; font-weight: bold; border-color: #7b2ff7; }
+
+        .main { flex:1; padding:25px; overflow:auto; }
+        
+        /* Tables & Content Refinement */
+        h2 { font-size: 16px; margin-top: 0; color: #7b2ff7; }
+        table { width:100%; border-collapse:collapse; margin-top:10px; }
+        td, th { padding:8px 10px; border-bottom:1px solid #222; text-align:left; font-size: 11px; }
+        th { background: #111; color: #7b2ff7; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .btn { padding:5px 10px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px; margin-right:3px; transition: 0.2s; }
         .green { background:#00c853; color:white; }
         .red { background:#ff4444; color:white; }
         .orange { background:#ff9800; color:white; }
         .blue { background:#007bff; color:white; }
         .purple { background:#7b2ff7; color:white; }
-        .panel { background:#161616; padding:20px; border-radius:10px; margin-bottom:20px; border: 1px solid #222; }
-        select, input[type="file"], input[type="text"] { padding:10px; background:#222; color:white; border:1px solid #444; margin:5px 0; width:100%; max-width:300px; border-radius: 5px; }
-        .anno-count { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
-        .link-text { color: #007bff; text-decoration: none; font-size: 11px; }
-        .link-text:hover { text-decoration: underline; }
+
+        .panel { background:#161616; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px solid #222; }
+        select, input[type="file"], input[type="text"] { padding:8px; background:#222; color:white; border:1px solid #444; margin:5px 0; width:100%; max-width:250px; border-radius: 4px; font-size: 11px; }
+        
+        .anno-count { background: #333; padding: 2px 5px; border-radius: 3px; font-size: 9px; }
+        .badge { padding: 3px 6px; border-radius: 10px; font-size: 9px; font-weight: bold; }
+        .link-text { color: #007bff; text-decoration: none; font-size: 10px; }
     </style>
 </head>
 <body>
 
 <div id="auth-gate" style="position:fixed; inset:0; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column;">
-    <h1 style="color:#7b2ff7;">Admin Verification</h1>
+    <h1 style="color:#7b2ff7; font-size: 24px;">Admin Verification</h1>
     <input type="text" id="adminEmailInput" placeholder="Enter Admin Email" style="text-align:center;">
     <button class="btn purple" onclick="checkAuth()" style="margin-top:10px; padding:10px 30px;">Login</button>
 </div>
 
 <div class="sidebar">
-    <h2 style="color:#7b2ff7; margin-bottom: 30px;">a⌵ ADMIN</h2>
-    <button class="tab-btn active" onclick="showTab('approvals',this)">Staff Management</button>
-    <button class="tab-btn" onclick="showTab('tasks',this)">Assign New Task</button>
-    <button class="tab-btn" onclick="showTab('firstpass_inbox',this)" style="color: #00ff88;">📥 1st Pass Inbox</button>
-    <button class="tab-btn" onclick="showTab('supervision',this)">Full Supervision</button>
-    <button class="tab-btn" onclick="showTab('admin_access',this)">Admin Controls</button>
-    <button class="tab-btn" onclick="showTab('export',this)" style="border: 1px dashed #7b2ff7; margin-top: auto;">Export & Links</button>
+    <div>
+        <h2 style="color:#7b2ff7; margin-bottom: 20px; letter-spacing: 2px;">a⌵ ADMIN</h2>
+        <p style="font-size: 10px; color: #555;">SYSTEM MANAGEMENT</p>
+    </div>
+
+    <div class="nav-scroll-container">
+        <button class="tab-btn active" onclick="showTab('approvals',this)">Staff</button>
+        <button class="tab-btn" onclick="showTab('tasks',this)">New Task</button>
+        <button class="tab-btn" onclick="showTab('firstpass_inbox',this)">📥 1st Pass</button>
+        <button class="tab-btn" onclick="showTab('supervision',this)">Supervision</button>
+        <button class="tab-btn" onclick="showTab('admin_access',this)">Admins</button>
+        <button class="tab-btn" onclick="showTab('export',this)">Export</button>
+    </div>
 </div>
 
 <div class="main">
@@ -57,7 +114,7 @@
 
     <div id="tasks" class="panel tab" style="display:none">
         <h2>Assign New Task</h2>
-        <div style="display:grid; gap:10px;">
+        <div style="display:grid; gap:5px;">
             <label>Upload Image:</label>
             <input type="file" id="taskFile">
             <label>Assign To:</label>
@@ -67,12 +124,12 @@
                 <option value="1st Pass">1st Pass (Initial Labeling)</option>
                 <option value="Review">Review (Quality Check)</option>
             </select>
-            <button class="btn green" onclick="sendTask()" style="width:200px; padding:12px;">Send Task</button>
+            <button class="btn green" onclick="sendTask()" style="width:150px; padding:10px; margin-top:10px;">Send Task</button>
         </div>
     </div>
 
     <div id="firstpass_inbox" class="panel tab" style="display:none">
-        <h2>1st Pass Completed (Ready for Review)</h2>
+        <h2>1st Pass Completed</h2>
         <table>
             <thead><tr><th>Task ID</th><th>Completed By</th><th>Boxes</th><th>Assign Reviewer</th><th>Action</th></tr></thead>
             <tbody id="inboxTable"></tbody>
@@ -80,16 +137,16 @@
     </div>
 
     <div id="supervision" class="panel tab" style="display:none">
-        <h2>Task Supervision & Live Tracking</h2>
+        <h2>Live Tracking</h2>
         <table>
-            <thead><tr><th>Task ID</th><th>Phase</th><th>Worker (Claimed By)</th><th>Status</th><th>Reassign</th><th>Actions</th></tr></thead>
+            <thead><tr><th>ID</th><th>Phase</th><th>Worker</th><th>Status</th><th>Reassign</th><th>Actions</th></tr></thead>
             <tbody id="supervisionTable"></tbody>
         </table>
     </div>
 
     <div id="admin_access" class="panel tab" style="display:none">
-        <h2>Admin Management</h2>
-        <div class="panel">
+        <h2>Admin Controls</h2>
+        <div class="panel" style="background: #111;">
             <input type="text" id="newAdminEmail" placeholder="Email address...">
             <button class="btn purple" onclick="grantAdmin()">Grant Access</button>
         </div>
@@ -101,11 +158,11 @@
 
     <div id="export" class="panel tab" style="display:none">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>Export & Review Links</h2>
-            <button class="btn green" onclick="exportToCSV()">Download CSV Report</button>
+            <h2>Export & Links</h2>
+            <button class="btn green" onclick="exportToCSV()">Download CSV</button>
         </div>
         <table>
-            <thead><tr><th>Task ID</th><th>Worker</th><th>Phase</th><th>Clickable Link</th></tr></thead>
+            <thead><tr><th>Task ID</th><th>Worker</th><th>Phase</th><th>Link</th></tr></thead>
             <tbody id="exportTable"></tbody>
         </table>
     </div>
@@ -151,11 +208,10 @@ async function loadData() {
     allAdmins = admins || [];
 
     const approved = allUsers.filter(u => u.status === "approved");
-    const workerOptionsHTML = `<option value="UNASSIGNED">-- MASS ASSIGN (To Dashboard) --</option>` + 
+    const workerOptionsHTML = `<option value="UNASSIGNED">-- MASS ASSIGN --</option>` + 
                               approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
     document.getElementById("workerList").innerHTML = workerOptionsHTML;
 
-    // Staff Management
     document.getElementById("userTable").innerHTML = allUsers.map(u => `
         <tr>
             <td>${u.name}</td>
@@ -163,56 +219,51 @@ async function loadData() {
             <td><span class="badge" style="background:${u.status === 'pending' ? 'orange' : '#00ff88'}">${u.status}</span></td>
             <td>
                 <button class="btn green" onclick="updateUserStatus('${u.email}', 'approved')">Approve</button>
-                <button class="btn orange" onclick="updateUserStatus('${u.email}', 'pending')">Waitlist</button>
-                <button class="btn red" onclick="deleteUser('${u.email}')">Remove</button>
+                <button class="btn red" onclick="deleteUser('${u.email}')">×</button>
             </td>
         </tr>
     `).join("");
 
-    // Admin List
     document.getElementById("adminTable").innerHTML = `<tr><td>${MASTER_ADMIN}</td><td>Master</td><td>-</td></tr>` + 
         allAdmins.map(a => `<tr><td>${a.email}</td><td>Registered</td><td><button class="btn red" onclick="removeAdmin('${a.email}')">Remove</button></td></tr>`).join("");
 
-    // 1st Pass Inbox
     document.getElementById("inboxTable").innerHTML = allTasks.filter(t => t.phase === '1st Pass' && t.completed).map(t => `
         <tr>
-            <td>${t.id}</td>
+            <td>...${String(t.id).slice(-4)}</td>
             <td>${t.assignedto}</td>
             <td><span class="anno-count">${t.annotations?.length || 0}</span></td>
-            <td><select id="rev-${t.id}">${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}</select></td>
-            <td><button class="btn purple" onclick="assignReview('${t.id}')">Assign Reviewer</button></td>
+            <td><select id="rev-${t.id}" style="width:100px;">${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}</select></td>
+            <td><button class="btn purple" onclick="assignReview('${t.id}')">Assign</button></td>
         </tr>
     `).join("");
 
-    // Supervision Table with Claimed status and Reassign
     document.getElementById("supervisionTable").innerHTML = allTasks.map(t => {
         const workerDisplay = t.assignedto === "UNASSIGNED" ? "<span style='color:orange;'>Unclaimed</span>" : t.assignedto;
         return `
         <tr>
-            <td>${t.id}</td>
+            <td>...${String(t.id).slice(-4)}</td>
             <td>${t.phase}</td>
             <td>${workerDisplay}</td>
-            <td>${t.completed ? '✅ Done' : '⏳ Working'}</td>
+            <td>${t.completed ? '✅' : '⏳'}</td>
             <td>
-                <select onchange="reassignTask('${t.id}', this.value)" style="font-size:10px; width:120px;">
-                    <option value="">Select Worker...</option>
+                <select onchange="reassignTask('${t.id}', this.value)" style="font-size:9px; width:100px;">
+                    <option value="">Move to...</option>
                     ${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}
                 </select>
             </td>
             <td>
                 <button class="btn blue" onclick="viewWork('${t.id}')">View</button>
-                <button class="btn red" onclick="deleteTask('${t.id}')">Delete</button>
+                <button class="btn red" onclick="deleteTask('${t.id}')">Del</button>
             </td>
         </tr>`;
     }).join("");
 
-    // Clickable Export
     document.getElementById("exportTable").innerHTML = allTasks.map(t => `
         <tr>
             <td>${t.id}</td>
             <td>${t.assignedto}</td>
             <td>${t.phase}</td>
-            <td>${t.review_link ? `<a href="${t.review_link}" target="_blank" class="link-text">Open Task 🔗</a>` : 'N/A'}</td>
+            <td>${t.review_link ? `<a href="${t.review_link}" target="_blank" class="link-text">Open 🔗</a>` : 'N/A'}</td>
         </tr>
     `).join("");
 }
@@ -224,7 +275,7 @@ async function reassignTask(taskId, email) {
 }
 
 async function deleteTask(id) {
-    if(confirm("Delete this task forever?")) {
+    if(confirm("Delete task?")) {
         await _supabase.from("ant_tasks").delete().eq("id", id);
         loadData();
     }
@@ -246,7 +297,7 @@ async function sendTask() {
             completed: false, 
             annotations: [] 
         }]);
-        alert("Task created on dashboard!");
+        alert("Task Created");
         loadData();
     };
     reader.readAsDataURL(file);
