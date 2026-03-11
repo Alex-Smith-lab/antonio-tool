@@ -60,7 +60,7 @@
         <div style="display:grid; gap:10px;">
             <label>Upload Image:</label>
             <input type="file" id="taskFile">
-            <label>Assign To (Supports Mass Assign):</label>
+            <label>Assign To:</label>
             <select id="workerList"></select>
             <label>Phase:</label>
             <select id="taskPhase">
@@ -74,15 +74,15 @@
     <div id="firstpass_inbox" class="panel tab" style="display:none">
         <h2>1st Pass Completed (Ready for Review)</h2>
         <table>
-            <thead><tr><th>Task ID</th><th>Worker</th><th>Boxes</th><th>Assign Reviewer</th><th>Action</th></tr></thead>
+            <thead><tr><th>Task ID</th><th>Completed By</th><th>Boxes</th><th>Assign Reviewer</th><th>Action</th></tr></thead>
             <tbody id="inboxTable"></tbody>
         </table>
     </div>
 
     <div id="supervision" class="panel tab" style="display:none">
-        <h2>Task Supervision</h2>
+        <h2>Task Supervision & Live Tracking</h2>
         <table>
-            <thead><tr><th>Task ID</th><th>Phase</th><th>Worker</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Task ID</th><th>Phase</th><th>Worker (Claimed By)</th><th>Status</th><th>Reassign</th><th>Actions</th></tr></thead>
             <tbody id="supervisionTable"></tbody>
         </table>
     </div>
@@ -90,7 +90,6 @@
     <div id="admin_access" class="panel tab" style="display:none">
         <h2>Admin Management</h2>
         <div class="panel">
-            <h3>Add New Admin</h3>
             <input type="text" id="newAdminEmail" placeholder="Email address...">
             <button class="btn purple" onclick="grantAdmin()">Grant Access</button>
         </div>
@@ -121,20 +120,17 @@ const MASTER_ADMIN = "antonymbali96@gmail.com";
 async function checkAuth() {
     const input = document.getElementById("adminEmailInput").value.toLowerCase().trim();
     const { data: admins } = await _supabase.from("ant_admins").select("email").eq("email", input);
-    
     if (input === MASTER_ADMIN || (admins && admins.length > 0)) {
         document.getElementById("auth-gate").style.display = "none";
         initRealtime();
         loadData();
     } else {
-        alert("Access Denied. Only registered admins can enter.");
+        alert("Access Denied.");
     }
 }
 
 function initRealtime() {
-    _supabase.channel('admin-sync')
-    .on('postgres_changes', { event: '*', schema: 'public' }, () => loadData())
-    .subscribe();
+    _supabase.channel('admin-sync').on('postgres_changes', { event: '*', schema: 'public' }, () => loadData()).subscribe();
 }
 
 function showTab(id, btn) {
@@ -155,11 +151,11 @@ async function loadData() {
     allAdmins = admins || [];
 
     const approved = allUsers.filter(u => u.status === "approved");
-    const workerOptions = `<option value="MASS_ASSIGN">-- MASS ASSIGN ALL --</option>` + 
-                         approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
-    document.getElementById("workerList").innerHTML = workerOptions;
+    const workerOptionsHTML = `<option value="UNASSIGNED">-- MASS ASSIGN (To Dashboard) --</option>` + 
+                              approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
+    document.getElementById("workerList").innerHTML = workerOptionsHTML;
 
-    // Staff Table
+    // Staff Management
     document.getElementById("userTable").innerHTML = allUsers.map(u => `
         <tr>
             <td>${u.name}</td>
@@ -173,106 +169,116 @@ async function loadData() {
         </tr>
     `).join("");
 
-    // Admin Table
+    // Admin List
     document.getElementById("adminTable").innerHTML = `<tr><td>${MASTER_ADMIN}</td><td>Master</td><td>-</td></tr>` + 
-        allAdmins.map(a => `
-        <tr>
-            <td>${a.email}</td>
-            <td>Registered</td>
-            <td><button class="btn red" onclick="removeAdmin('${a.email}')">Remove Admin</button></td>
-        </tr>
-    `).join("");
+        allAdmins.map(a => `<tr><td>${a.email}</td><td>Registered</td><td><button class="btn red" onclick="removeAdmin('${a.email}')">Remove</button></td></tr>`).join("");
 
-    // 1st Pass Inbox (Any completed 1st pass task)
+    // 1st Pass Inbox
     document.getElementById("inboxTable").innerHTML = allTasks.filter(t => t.phase === '1st Pass' && t.completed).map(t => `
         <tr>
             <td>${t.id}</td>
             <td>${t.assignedto}</td>
             <td><span class="anno-count">${t.annotations?.length || 0}</span></td>
             <td><select id="rev-${t.id}">${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}</select></td>
-            <td><button class="btn purple" onclick="assignReview('${t.id}')">Assign to Review</button></td>
+            <td><button class="btn purple" onclick="assignReview('${t.id}')">Assign Reviewer</button></td>
         </tr>
     `).join("");
 
-    // Supervision & Clickable Export
-    let supervisionHtml = "";
-    let exportHtml = "";
-    allTasks.forEach(t => {
-        supervisionHtml += `<tr><td>${t.id}</td><td>${t.phase}</td><td>${t.assignedto}</td><td>${t.completed ? 'Done' : 'Working'}</td><td><button class="btn blue" onclick="viewWork('${t.id}')">View</button></td></tr>`;
-        const link = t.review_link ? `<a href="${t.review_link}" target="_blank" class="link-text">Open Task 🔗</a>` : 'No Link Yet';
-        exportHtml += `<tr><td>${t.id}</td><td>${t.assignedto}</td><td>${t.phase}</td><td>${link}</td></tr>`;
-    });
-    document.getElementById("supervisionTable").innerHTML = supervisionHtml;
-    document.getElementById("exportTable").innerHTML = exportHtml;
+    // Supervision Table with Claimed status and Reassign
+    document.getElementById("supervisionTable").innerHTML = allTasks.map(t => {
+        const workerDisplay = t.assignedto === "UNASSIGNED" ? "<span style='color:orange;'>Unclaimed</span>" : t.assignedto;
+        return `
+        <tr>
+            <td>${t.id}</td>
+            <td>${t.phase}</td>
+            <td>${workerDisplay}</td>
+            <td>${t.completed ? '✅ Done' : '⏳ Working'}</td>
+            <td>
+                <select onchange="reassignTask('${t.id}', this.value)" style="font-size:10px; width:120px;">
+                    <option value="">Select Worker...</option>
+                    ${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}
+                </select>
+            </td>
+            <td>
+                <button class="btn blue" onclick="viewWork('${t.id}')">View</button>
+                <button class="btn red" onclick="deleteTask('${t.id}')">Delete</button>
+            </td>
+        </tr>`;
+    }).join("");
+
+    // Clickable Export
+    document.getElementById("exportTable").innerHTML = allTasks.map(t => `
+        <tr>
+            <td>${t.id}</td>
+            <td>${t.assignedto}</td>
+            <td>${t.phase}</td>
+            <td>${t.review_link ? `<a href="${t.review_link}" target="_blank" class="link-text">Open Task 🔗</a>` : 'N/A'}</td>
+        </tr>
+    `).join("");
 }
 
-async function updateUserStatus(email, status) { await _supabase.from("ant_users").update({ status }).eq("email", email); loadData(); }
-async function deleteUser(email) { if(confirm("Delete user?")) await _supabase.from("ant_users").delete().eq("email", email); loadData(); }
-
-async function grantAdmin() {
-    const email = document.getElementById("newAdminEmail").value.toLowerCase().trim();
+async function reassignTask(taskId, email) {
     if(!email) return;
-    await _supabase.from("ant_admins").insert([{ email }]);
-    document.getElementById("newAdminEmail").value = "";
+    await _supabase.from("ant_tasks").update({ assignedto: email }).eq("id", taskId);
     loadData();
 }
 
-async function removeAdmin(email) {
-    if(confirm("Revoke admin access for " + email + "?")) {
-        await _supabase.from("ant_admins").delete().eq("email", email);
+async function deleteTask(id) {
+    if(confirm("Delete this task forever?")) {
+        await _supabase.from("ant_tasks").delete().eq("id", id);
         loadData();
     }
-}
-
-async function assignReview(taskId) {
-    const rev = document.getElementById(`rev-${taskId}`).value;
-    await _supabase.from("ant_tasks").update({ assignedto: rev, phase: 'Review', completed: false }).eq("id", taskId);
-    loadData();
 }
 
 async function sendTask() {
     const file = document.getElementById("taskFile").files[0];
     const worker = document.getElementById("workerList").value;
     const phase = document.getElementById("taskPhase").value;
-    if(!file) return alert("Please select a file.");
+    if(!file) return alert("Select file");
 
     const reader = new FileReader();
     reader.onload = async e => {
-        const workersToAssign = worker === "MASS_ASSIGN" ? allUsers.filter(u => u.status === 'approved').map(u => u.email) : [worker];
-        
-        for (let targetEmail of workersToAssign) {
-            await _supabase.from("ant_tasks").insert([{ 
-                id: Date.now() + Math.floor(Math.random() * 1000), 
-                imgdata: e.target.result, 
-                assignedto: targetEmail, 
-                phase: phase, 
-                completed: false, 
-                annotations: [] 
-            }]);
-        }
-        alert("Task(s) Sent!");
+        await _supabase.from("ant_tasks").insert([{ 
+            id: Date.now(), 
+            imgdata: e.target.result, 
+            assignedto: worker, 
+            phase: phase, 
+            completed: false, 
+            annotations: [] 
+        }]);
+        alert("Task created on dashboard!");
         loadData();
     };
     reader.readAsDataURL(file);
 }
 
+async function updateUserStatus(email, status) { await _supabase.from("ant_users").update({ status }).eq("email", email); loadData(); }
+async function deleteUser(email) { if(confirm("Delete user?")) await _supabase.from("ant_users").delete().eq("email", email); loadData(); }
+async function grantAdmin() {
+    const email = document.getElementById("newAdminEmail").value.toLowerCase().trim();
+    if(email) await _supabase.from("ant_admins").insert([{ email }]);
+    loadData();
+}
+async function removeAdmin(email) { await _supabase.from("ant_admins").delete().eq("email", email); loadData(); }
+async function assignReview(taskId) {
+    const rev = document.getElementById(`rev-${taskId}`).value;
+    await _supabase.from("ant_tasks").update({ assignedto: rev, phase: 'Review', completed: false }).eq("id", taskId);
+    loadData();
+}
 function viewWork(id) {
     const t = allTasks.find(x => x.id == id);
     if(t && t.review_link) window.open(t.review_link, '_blank');
-    else alert("Worker has not generated a link yet.");
 }
-
 function exportToCSV() {
-    let csv = "Task ID,Coworker,Phase,Review Link\n";
-    allTasks.forEach(t => csv += `${t.id},${t.assignedto},${t.phase},${t.review_link || 'N/A'}\n`);
+    let csv = "Task ID,Worker,Phase,Review Link\n";
+    allTasks.forEach(t => csv += `${t.id},${t.assignedto},${t.phase},${t.review_link || ''}\n`);
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `Antonio_Report_${Date.now()}.csv`;
+    a.download = `Report_${Date.now()}.csv`;
     a.click();
 }
 
-// Maintenance Interval
 setInterval(loadData, 30000);
 </script>
 </body>
