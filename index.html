@@ -79,7 +79,7 @@ body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
 <div class="delete-box-area">
 <button class="delete-main-btn" onclick="deleteBox()">DELETE BOX</button>
 </div>
-<button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT TO ADMIN</button>
+<button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT Task</button>
 </div>
 
 <div id="labelPopup">
@@ -145,7 +145,7 @@ document.getElementById("dashboard").style.display = "block";
 document.getElementById("workspacePage").style.display = "none";
 
 document.getElementById("greet").innerText = `${user.name}, ${getGreetingPrefix()}`;
-document.getElementById("seasonalMsg").innerText = "Happy Tasking!?";
+document.getElementById("seasonalMsg").innerText = "Happy Tasking!";
 document.getElementById("workerProfile").innerHTML = `<b>${user.name}</b><br><span style="font-size:10px; opacity:0.6">${user.email}</span>`;
 document.getElementById("footerWorker").innerText = `LOGGED IN AS: ${user.name.toUpperCase()}`;
 
