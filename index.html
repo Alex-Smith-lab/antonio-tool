@@ -2,13 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Antonio Annotation - Master Workspace</title>
+<title>Labeler - Workspace</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; --orange: #ff9800; --red: #ff4444; }
+:root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; --orange: #ff9800; }
 body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
 
-/* Layouts */
 #topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
 .profile-area { display: flex; align-items: center; gap: 15px; }
 .spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; border: none; font-weight: bold; }
@@ -19,284 +18,294 @@ body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
 .batch-card.unassigned { border-color: var(--orange); }
 .card-header { height: 60px; background: rgba(0,0,0,0.2); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
 .status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: capitalize; }
+.start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
+.claim-btn { width: 100%; background: var(--orange); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
 
-/* Workspace UI */
-#workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; flex-direction: column; }
-#toolBar { height: 50px; background: #111; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 15px; gap: 8px; }
-#mainWorkArea { display: flex; flex: 1; overflow: hidden; position: relative; }
+#workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; }
+#workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; cursor: crosshair; overflow: hidden; }
+#sidePanel { position: absolute; right: 0; top: 0; width: 300px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
+.anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; border-left: 3px solid var(--purple); cursor: pointer; }
 
-/* Camera Sidebar */
-#cameraSidebar { width: 160px; background: #0a0a0a; border-right: 1px solid #222; display: flex; flex-direction: column; overflow-y: auto; transition: 0.3s; }
-.cam-slot { padding: 5px; border-bottom: 1px solid #222; }
-.cam-label { font-size: 9px; color: var(--purple); font-weight: bold; }
-.cam-preview { width: 100%; aspect-ratio: 16/9; background: #000; border: 1px solid #333; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #444; }
-.cam-preview.expanded { position: fixed; top: 10%; left: 200px; width: 60%; height: 60%; z-index: 1000; border: 2px solid var(--purple); background: #000; }
-
-#workzone { flex: 1; position: relative; cursor: crosshair; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-#sidePanel { width: 300px; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
-
-/* Controls & Popups */
-.tool-btn { background: #222; border: 1px solid #444; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
-.tool-btn.active { background: var(--purple); border-color: white; }
 #labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 5px; min-width: 120px; }
 .label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; text-align: left; font-size: 12px; }
+.label-btn:hover { background: var(--purple); }
+.workspace-controls { position: absolute; bottom: 60px; left: 20px; display: flex; gap: 10px; }
+.control-btn { padding: 10px 18px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
 
-/* Bottom Elements */
+.auth-page { text-align: center; padding-top: 100px; }
+.auth-page input { padding: 12px; margin: 10px; width: 250px; background: #222; color: white; border: 1px solid #444; border-radius: 5px; }
 .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: var(--purple); color: white; display: none; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; }
-.anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; border-left: 3px solid var(--purple); cursor: pointer; }
-.quality-metric { background: #1a1a1a; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #333; }
+
+#annoList { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; padding-right: 5px; }
+.delete-box-area { padding-top: 10px; border-top: 1px solid #333; margin-bottom: 10px; }
+.delete-main-btn { width: 100%; background: #442222; color: #ff6666; border: 1px solid #663333; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
 </style>
 </head>
 <body oncontextmenu="return false;">
 
-<div id="loginPage" class="auth-page" style="text-align: center; padding-top: 100px;">
-    <h1 style="color:var(--purple)">a⌵ ANTONIO ANNOTATION</h1>
-    <h2>Worker Portal</h2>
-    <input id="userName" placeholder="Full Name" style="padding:12px; margin:10px; width:250px; background:#222; color:white; border:1px solid #444; border-radius:5px;">
-    <input id="userEmail" placeholder="Email Address" style="padding:12px; margin:10px; width:250px; background:#222; color:white; border:1px solid #444; border-radius:5px;">
-    <br>
-    <button style="padding: 12px 40px; background: var(--blue); color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="handleLogin()">Login / Start Session</button>
-    <div id="waitMessage" style="color:#ff9800; margin-top:20px; display:none; font-weight:bold;">Account pending admin approval...</div>
+<div id="loginPage" class="auth-page">
+<h1 style="color:var(--purple)">a⌵ ANTONIO ANNOTATION</h1>
+<h2>Worker Portal</h2>
+<input id="userName" placeholder="Full Name">
+<input id="userEmail" placeholder="Email Address">
+<br>
+<button style="padding: 12px 40px; background: var(--blue); color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="handleLogin()">Login / Start Session</button>
+<div id="waitMessage" style="color:#ff9800; margin-top:20px; display:none; font-weight:bold;">Account pending admin approval. Please wait...</div>
 </div>
 
 <div id="topNav">
-    <div style="font-weight: bold; color:var(--purple)">a⌵ WORKSPACE</div>
-    <div class="profile-area">
-        <div class="quality-text" style="font-size: 12px; color: #00ff88;">Quality: <span id="userQuality">100</span>%</div>
-        <button class="spreadsheet-btn">Earnings: $<span id="balance">0.00</span></button>
-        <div id="workerProfile" style="font-size: 13px; border-left: 1px solid #333; padding-left: 15px;"></div>
-        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; font-size: 12px;">Logout</button>
-    </div>
+<div style="font-weight: bold; color:var(--purple)">a⌵ WORKSPACE</div>
+<div class="profile-area">
+<button class="spreadsheet-btn">Earnings Estimate: $<span id="balance">0.00</span></button>
+<div id="workerProfile" style="font-size: 13px; border-left: 1px solid #333; padding-left: 15px;"></div>
+<button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; font-size: 12px;">Logout</button>
+</div>
 </div>
 
 <div id="dashboard">
-    <h2 id="greet"></h2>
-    <p style="opacity: 0.6;" id="seasonalMsg"></p>
-    <div id="tasks" class="task-grid"></div>
+<h2 id="greet"></h2>
+<p style="opacity: 0.6;" id="seasonalMsg"></p>
+<div id="tasks" class="task-grid"></div>
 </div>
 
 <div id="workspacePage">
-    <div id="toolBar">
-        <button class="tool-btn active" onclick="setTool('2d')" id="btn2d">2D BOX</button>
-        <button class="tool-btn" onclick="setTool('poly')" id="btnpoly">POLYGON</button>
-        <button class="tool-btn" onclick="setTool('seg')" id="btnseg">SEMSEG</button>
-        <button class="tool-btn" onclick="setTool('cuboid')" id="btncuboid">CUBOID</button>
-        <button class="tool-btn" onclick="setTool('line')" id="btnline">POLYLINES</button>
-        <div style="flex-grow: 1;"></div>
-        <div id="frameInfo" style="font-family: monospace; color: var(--orange); font-size: 12px;">FRAME: 0 / 0</div>
-    </div>
-
-    <div id="mainWorkArea">
-        <div id="cameraSidebar">
-            <div class="cam-slot"><span class="cam-label">FNC</span><div class="cam-preview" onclick="this.classList.toggle('expanded')">CAM_01</div></div>
-            <div class="cam-slot"><span class="cam-label">FWC C</span><div class="cam-preview" onclick="this.classList.toggle('expanded')">CAM_02</div></div>
-            <div class="cam-slot"><span class="cam-label">RNC C</span><div class="cam-preview" onclick="this.classList.toggle('expanded')">CAM_03</div></div>
-            <div class="cam-slot"><span class="cam-label">RNC R</span><div class="cam-preview" onclick="this.classList.toggle('expanded')">CAM_04</div></div>
-            <div class="cam-slot"><span class="cam-label">FWC R</span><div class="cam-preview" onclick="this.classList.toggle('expanded')">CAM_05</div></div>
-            <div class="cam-slot"><span class="cam-label">RNC L</span><div class="cam-preview" onclick="this.classList.toggle('expanded')">CAM_06</div></div>
-            <div class="cam-slot"><span class="cam-label">FWC L</span><div class="cam-preview" onclick="this.classList.toggle('expanded')">CAM_07</div></div>
-        </div>
-
-        <div id="workzone">
-            <canvas id="canvas"></canvas>
-            <video id="hiddenVideo" style="display:none;"></video>
-        </div>
-
-        <div id="sidePanel">
-            <div class="quality-metric">
-                <div style="font-size: 10px; opacity: 0.6;">CURRENT QUALITY</div>
-                <div id="sideQuality" style="font-size: 20px; font-weight: bold; color: #00ff88;">100%</div>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <span style="font-size: 11px; font-weight: bold;">OBJECT LIST</span>
-                <button onclick="closeWorkspace()" style="background:#333; border:none; color:white; padding: 2px 8px; border-radius:4px; cursor:pointer; font-size:10px;">SAVE & EXIT</button>
-            </div>
-            <div id="annoList" style="flex-grow: 1; overflow-y: auto;"></div>
-            <button class="delete-main-btn" onclick="deleteBox()" style="margin-bottom: 10px;">DELETE SELECTED</button>
-            <button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT TO ADMIN</button>
-        </div>
-    </div>
+<div id="workzone"><canvas id="canvas"></canvas></div>
+<div id="sidePanel">
+<div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items: center;">
+<span style="font-weight: bold; font-size: 12px;">LATEST LABELS</span>
+<button onclick="closeWorkspace()" style="background:#333; border:none; color:white; padding: 5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">SAVE & EXIT</button>
+</div>
+<div id="annoList"></div>
+<div class="delete-box-area">
+<button class="delete-main-btn" onclick="deleteBox()">DELETE BOX</button>
+</div>
+<button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT TO ADMIN</button>
 </div>
 
 <div id="labelPopup">
-    <button class="label-btn" onclick="assignLabel('Car')">Car</button>
-    <button class="label-btn" onclick="assignLabel('Truck')">Truck</button>
-    <button class="label-btn" onclick="assignLabel('Pedestrian')">Pedestrian</button>
-    <button class="label-btn" onclick="assignLabel('Sign')">Sign</button>
+<button class="label-btn" onclick="assignLabel('Car')">Car</button>
+<button class="label-btn" onclick="assignLabel('Bus')">Bus</button>
+<button class="label-btn" onclick="assignLabel('Truck')">Truck</button>
+<button class="label-btn" onclick="assignLabel('Pedestrian')">Pedestrian</button>
+<button class="label-btn" onclick="assignLabel('Motorcycle')">Motorcycle</button>
+</div>
+
+<div class="workspace-controls">
+<button class="control-btn" style="background:var(--purple);" onclick="toggleDrawMode()" id="addBtn">ADD BOX</button>
+<button class="control-btn" style="background:#444;" onclick="undo()">UNDO</button>
+</div>
 </div>
 
 <div class="bottom-bar" id="footerBar">
-    <div id="footerWorker">COWORKER: LOADING...</div>
-    <div id="connectionStatus" style="color:#00ff88">● SUPABASE CONNECTED</div>
+<div id="footerWorker">COWORKER: LOADING...</div>
+<div id="connectionStatus" style="color:#00ff88">● SUPABASE CONNECTED</div>
 </div>
 
 <script>
 const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
 let user = null, activeId = null, boxes = [], selectedBoxIdx = -1, isDrawMode = false;
-let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY;
-let frames = [], currentFrameIdx = 0;
-let canvas, ctx, currentTool = '2d';
+let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, resizeType = null;
+let canvas, ctx, img = new Image();
 
 window.onload = async () => {
-    const savedEmail = localStorage.getItem('workerEmail');
-    if(savedEmail) {
-        const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
-        if(data && data.status === 'approved') { user = data; showDashboard(); }
-    }
+const savedEmail = localStorage.getItem('workerEmail');
+if(savedEmail) {
+const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
+if(data && data.status === 'approved') {
+user = data;
+showDashboard();
+}
+}
 };
 
 async function handleLogin() {
-    const email = document.getElementById("userEmail").value.trim().toLowerCase();
-    const name = document.getElementById("userName").value.trim();
-    if(!email || !name) return alert("Enter details");
+const email = document.getElementById("userEmail").value.trim().toLowerCase();
+const name = document.getElementById("userName").value.trim();
+if(!email || !name) return alert("Enter all details");
 
-    const { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
-    if (!existing) {
-        await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'pending', balance: 0, quality: 100 }]);
-        document.getElementById("waitMessage").style.display = "block";
-    } else {
-        user = existing;
-        localStorage.setItem('workerEmail', email);
-        showDashboard();
-    }
+const { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
+if (!existing) {
+await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'pending', balance: 0 }]);
+document.getElementById("waitMessage").style.display = "block";
+} else if (existing.status === 'pending') {
+document.getElementById("waitMessage").style.display = "block";
+} else {
+user = existing;
+localStorage.setItem('workerEmail', email);
+showDashboard();
+}
 }
 
 async function showDashboard() {
-    document.getElementById("loginPage").style.display = "none";
-    document.getElementById("topNav").style.display = "flex";
-    document.getElementById("footerBar").style.display = "flex";
-    document.getElementById("dashboard").style.display = "block";
-    document.getElementById("workspacePage").style.display = "none";
+document.getElementById("loginPage").style.display = "none";
+document.getElementById("topNav").style.display = "flex";
+document.getElementById("footerBar").style.display = "flex";
+document.getElementById("dashboard").style.display = "block";
+document.getElementById("workspacePage").style.display = "none";
 
-    document.getElementById("userQuality").innerText = user.quality || 100;
-    document.getElementById("workerProfile").innerHTML = `<b>${user.name}</b><br><span style="font-size:10px; opacity:0.6">${user.email}</span>`;
-    document.getElementById("footerWorker").innerText = `LOGGED IN AS: ${user.name.toUpperCase()}`;
+document.getElementById("greet").innerText = `${user.name}, ${getGreetingPrefix()}`;
+document.getElementById("seasonalMsg").innerText = "Ready for the next batch?";
+document.getElementById("workerProfile").innerHTML = `<b>${user.name}</b><br><span style="font-size:10px; opacity:0.6">${user.email}</span>`;
+document.getElementById("footerWorker").innerText = `LOGGED IN AS: ${user.name.toUpperCase()}`;
 
-    const { data: tasks } = await sb.from("ant_tasks").select("*").or(`assignedto.eq.${user.email},assignedto.eq.UNASSIGNED`).eq("completed", false);
-    
-    document.getElementById("tasks").innerHTML = (tasks || []).map(t => `
-        <div class="batch-card">
-            <div class="card-header"><span class="status-badge">${t.phase}</span></div>
-            <div style="padding:15px;">
-                <p style="font-size:12px;">Task ID: ${t.id.toString().slice(-6)}</p>
-                <button class="start-work-btn" onclick="openWork('${t.id}')">OPEN WORKSPACE</button>
-            </div>
-        </div>`).join("");
+// Show tasks assigned specifically to user OR Unassigned mass tasks
+const { data: tasks } = await sb.from("ant_tasks")
+.select("*")
+.or(`assignedto.eq.${user.email},assignedto.eq.UNASSIGNED`)
+.eq("completed", false);
+
+document.getElementById("tasks").innerHTML = (tasks || []).map(t => {
+const isPool = t.assignedto === 'UNASSIGNED';
+const cardClass = isPool ? 'batch-card unassigned' : 'batch-card';
+const button = isPool
+? `<button class="claim-btn" onclick="claimTask('${t.id}')">CLAIM TO DASHBOARD</button>`
+: `<button class="start-work-btn" onclick="openWork('${t.id}')">START TASK →</button>`;
+
+return `<div class="${cardClass}">
+<div class="card-header">
+<span class="status-badge">${isPool ? 'Pool Task' : 'Assigned'}</span>
+<span style="font-size:10px; opacity:0.5">#${t.id.toString().slice(-5)}</span>
+</div>
+<div style="padding:15px;">
+<p style="font-size:12px; margin:0 0 10px 0;">Phase: ${t.phase}</p>
+${button}
+</div>
+</div>`;
+}).join("");
+}
+
+async function claimTask(taskId) {
+const { error } = await sb.from("ant_tasks").update({ assignedto: user.email }).eq("id", taskId);
+if (!error) showDashboard(); else alert("Task already claimed by someone else.");
 }
 
 async function openWork(id) {
-    activeId = id;
-    document.getElementById("dashboard").style.display = "none";
-    document.getElementById("workspacePage").style.display = "flex";
-    document.getElementById("sideQuality").innerText = (user.quality || 100) + "%";
-    
-    canvas = document.getElementById("canvas");
-    ctx = canvas.getContext("2d");
-
-    const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
-    boxes = data.annotations || [];
-    
-    // Video Frame Handling
-    const video = document.getElementById("hiddenVideo");
-    video.src = data.imgdata;
-    video.crossOrigin = "Anonymous";
-    video.onloadeddata = async () => {
-        await splitVideoIntoFrames(video);
-        draw();
-        updateSidePanel();
-    };
-}
-
-async function splitVideoIntoFrames(video) {
-    const totalFrames = Math.floor(video.duration * 10); // 10fps sample
-    frames = [];
-    for(let i=0; i<totalFrames; i++) {
-        video.currentTime = i / 10;
-        await new Promise(r => video.onseeked = r);
-        const fCanvas = document.createElement("canvas");
-        fCanvas.width = video.videoWidth; fCanvas.height = video.videoHeight;
-        fCanvas.getContext("2d").drawImage(video, 0, 0);
-        frames.push(fCanvas.toDataURL("image/jpeg", 0.8));
-    }
-    currentFrameIdx = 0;
-}
-
-function draw() {
-    if(!frames[currentFrameIdx]) return;
-    const img = new Image();
-    img.src = frames[currentFrameIdx];
-    img.onload = () => {
-        canvas.width = window.innerWidth - 460;
-        canvas.height = window.innerHeight - 90;
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.save();
-        ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
-        ctx.drawImage(img, 0, 0);
-        
-        boxes.forEach((b, i) => {
-            ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
-            ctx.strokeRect(b.x, b.y, b.w, b.h);
-        });
-        ctx.restore();
-        document.getElementById("frameInfo").innerText = `FRAME: ${currentFrameIdx+1} / ${frames.length}`;
-    };
-}
-
-// ARROW KEYS for frame movement
-window.onkeydown = (e) => {
-    if(e.key === "ArrowRight" && currentFrameIdx < frames.length-1) { currentFrameIdx++; draw(); }
-    if(e.key === "ArrowLeft" && currentFrameIdx > 0) { currentFrameIdx--; draw(); }
-};
-
-function setTool(tool) {
-    currentTool = tool;
-    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('btn' + tool).classList.add('active');
-    isDrawMode = true; 
-}
-
-// Logic for Reviewer Touch / Quality Drop
-async function submitForReview() {
-    const { data: task } = await sb.from("ant_tasks").select("reviewer_touched").eq("id", activeId).single();
-    if(task.reviewer_touched) {
-        let newQuality = Math.max(0, (user.quality || 100) - 5);
-        await sb.from("ant_users").update({ quality: newQuality }).eq("email", user.email);
-        alert("Quality reduced by 5% because a reviewer modified this task.");
-    }
-    await sb.from("ant_tasks").update({ completed: true, phase: 'Review', annotations: boxes }).eq("id", activeId);
-    closeWorkspace();
-}
-
-// Existing helpers kept intact
-function handleMouseDown(e) {
-    const mx = (e.clientX - 160 - offsetX) / scale;
-    const my = (e.clientY - 110 - offsetY) / scale;
-    if(isDrawMode) {
-        const sx = mx, sy = my;
-        canvas.onmouseup = (e2) => {
-            const ex = (e2.clientX - 160 - offsetX) / scale;
-            const ey = (e2.clientY - 110 - offsetY) / scale;
-            boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Car', tool: currentTool });
-            selectedBoxIdx = boxes.length - 1;
-            draw(); updateSidePanel();
-            canvas.onmouseup = null;
-        };
-    }
-}
+activeId = id;
+document.getElementById("dashboard").style.display = "none";
+document.getElementById("workspacePage").style.display = "block";
 canvas = document.getElementById("canvas");
+ctx = canvas.getContext("2d");
+
+const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
+boxes = data.annotations || [];
+img.src = data.imgdata;
+img.onload = () => { resetView(); draw(); updateSidePanel(); updateBalanceDisplay(); };
+
+// Canvas Events (Zoom/Pan/Draw)
+canvas.onwheel = (e) => { e.preventDefault(); scale = e.deltaY < 0 ? scale * 1.1 : scale / 1.1; draw(); };
 canvas.onmousedown = handleMouseDown;
+window.onmousemove = handleMouseMove;
+window.onmouseup = () => { isDragging = resizeType = null; saveProgress(); };
+}
+
+async function saveProgress() {
+if(!activeId) return;
+const currentLink = window.location.href + "?tid=" + activeId; // For admin viewing
+await sb.from("ant_tasks").update({
+annotations: boxes,
+review_link: currentLink
+}).eq("id", activeId);
+}
+
+async function submitForReview() {
+if(!confirm("Submit for Admin Review?")) return;
+await sb.from("ant_tasks").update({
+completed: true,
+phase: '1st Pass',
+annotations: boxes
+}).eq("id", activeId);
+alert("Task sent to Admin Inbox.");
+closeWorkspace();
+}
+
+// Maintenance functions
+function resetView() { scale = 0.8; offsetX = 100; offsetY = 50; }
+function draw() {
+canvas.width = window.innerWidth - 300; canvas.height = window.innerHeight;
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.save();
+ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+ctx.drawImage(img, 0, 0);
+boxes.forEach((b, i) => {
+ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
+ctx.lineWidth = 2 / scale;
+ctx.strokeRect(b.x, b.y, b.w, b.h);
+ctx.fillStyle = "lime"; ctx.font = `${12/scale}px sans-serif`;
+ctx.fillText(b.label, b.x, b.y - 5/scale);
+});
+ctx.restore();
+}
+
+function handleMouseDown(e) {
+const mx = (e.clientX - offsetX) / scale;
+const my = (e.clientY - offsetY) / scale;
+if (isDrawMode) {
+const sx = mx, sy = my;
+canvas.onmouseup = (e2) => {
+const ex = (e2.clientX - offsetX) / scale;
+const ey = (e2.clientY - offsetY) / scale;
+boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Unlabeled' });
+selectedBoxIdx = boxes.length - 1;
+showLabelPopup(e2.clientX, e2.clientY);
+toggleDrawMode();
+draw(); updateSidePanel(); updateBalanceDisplay();
+canvas.onmouseup = () => { isDragging = resizeType = null; };
+};
+} else {
+selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
+if (selectedBoxIdx === -1) { isDragging = true; lastX = e.clientX; lastY = e.clientY; }
+else { showLabelPopup(e.clientX, e.clientY); }
+draw(); updateSidePanel();
+}
+}
+
+function handleMouseMove(e) {
+if (isDragging) {
+offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
+lastX = e.clientX; lastY = e.clientY; draw();
+}
+}
+
+function showLabelPopup(x, y) {
+const pop = document.getElementById("labelPopup");
+pop.style.display = "flex";
+pop.style.left = x + "px"; pop.style.top = y + "px";
+}
+
+function assignLabel(l) {
+if(selectedBoxIdx > -1) {
+boxes[selectedBoxIdx].label = l;
+document.getElementById("labelPopup").style.display = "none";
+draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
+}
+}
+
+function deleteBox() {
+if(selectedBoxIdx > -1) {
+boxes.splice(selectedBoxIdx, 1);
+selectedBoxIdx = -1;
+draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
+}
+}
 
 function updateSidePanel() {
-    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
-        <div class="anno-item" style="${i === selectedBoxIdx ? 'border-color:cyan;' : ''}" onclick="selectedBoxIdx=${i};draw();">
-            <span>#${i+1} [${b.tool}] ${b.label}</span>
-        </div>`).join("");
+document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
+<div class="anno-item" style="${i === selectedBoxIdx ? 'border-color:cyan;' : ''}" onclick="selectedBoxIdx=${i};draw();updateSidePanel();">
+<span>#${i+1} <b>${b.label}</b></span>
+<span style="color:var(--purple); font-size:10px;">$0.019</span>
+</div>`).join("");
 }
 
-function deleteBox() { if(selectedBoxIdx > -1) { boxes.splice(selectedBoxIdx, 1); selectedBoxIdx=-1; draw(); updateSidePanel(); } }
+function updateBalanceDisplay() { document.getElementById("balance").innerText = (boxes.length * 0.019).toFixed(3); }
+function toggleDrawMode() { isDrawMode = !isDrawMode; document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)"; document.getElementById("addBtn").style.color = isDrawMode ? "black" : "white"; }
+function getGreetingPrefix() { const h = new Date().getHours(); return h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : "Good Evening"; }
+function undo() { boxes.pop(); draw(); updateSidePanel(); updateBalanceDisplay(); }
 function logout() { localStorage.clear(); location.reload(); }
-function closeWorkspace() { location.reload(); }
+function closeWorkspace() { activeId = null; showDashboard(); }
+
+// Heartbeat to keep connection alive
+setInterval(() => { if(!activeId && user) showDashboard(); }, 30000);
 </script>
 </body>
 </html>
