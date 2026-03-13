@@ -2,310 +2,249 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Labeler - Workspace</title>
+<title>Antonio Annotation - Professional Suite</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; --orange: #ff9800; }
-body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
+:root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; --orange: #ff9800; --red: #ff4444; }
+body { background: var(--bg); color: white; font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; overflow: hidden; user-select: none; }
 
-#topNav { position: fixed; top: 0; width: 100%; height: 60px; background: black; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
-.profile-area { display: flex; align-items: center; gap: 15px; }
-.spreadsheet-btn { background: #1d6f42; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; border: none; font-weight: bold; }
+/* Layouts */
+#topNav { position: fixed; top: 0; width: 100%; height: 60px; background: #000; border-bottom: 1px solid #222; display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; box-sizing: border-box; }
+#workspacePage { display: none; position: fixed; inset: 0; background: #000; z-index: 200; display: flex; flex-direction: column; }
 
-#dashboard { padding: 100px 60px; display: none; overflow-y: auto; height: 100vh; box-sizing: border-box; }
-.task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
-.batch-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; }
-.batch-card.unassigned { border-color: var(--orange); }
-.card-header { height: 60px; background: rgba(0,0,0,0.2); padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-.status-badge { background: white; color: black; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: capitalize; }
-.start-work-btn { width: 100%; background: var(--purple); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
-.claim-btn { width: 100%; background: var(--orange); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
+/* Multi-Camera Sidebar */
+#cameraGrid { width: 180px; background: #111; border-right: 1px solid #333; display: flex; flex-direction: column; overflow-y: auto; transition: 0.3s; }
+.camera-box { border-bottom: 1px solid #222; padding: 5px; position: relative; }
+.camera-label { font-size: 9px; color: #888; margin-bottom: 2px; display: block; }
+.cam-preview { width: 100%; aspect-ratio: 16/9; background: #000; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; }
+.cam-preview.expanded { position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; z-index: 1000; border: 5px solid var(--purple); }
 
-#workspacePage { display: none; position: fixed; inset: 0; background: #050505; z-index: 200; }
-#workzone { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; cursor: crosshair; overflow: hidden; }
-#sidePanel { position: absolute; right: 0; top: 0; width: 300px; bottom: 0; background: #111; border-left: 1px solid #222; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
-.anno-item { background: #222; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 13px; display: flex; justify-content: space-between; border-left: 3px solid var(--purple); cursor: pointer; }
+/* Tools Toolbar */
+#toolbar { height: 50px; background: #1a1a1a; display: flex; align-items: center; padding: 0 15px; gap: 10px; border-bottom: 1px solid #333; }
+.tool-btn { background: #333; border: 1px solid #444; color: white; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+.tool-btn.active { background: var(--purple); border-color: white; }
 
-#labelPopup { position: fixed; background: #1a1a1a; border: 1px solid var(--purple); padding: 15px; border-radius: 8px; z-index: 500; display: none; flex-direction: column; gap: 5px; min-width: 120px; }
-.label-btn { padding: 8px; background: #333; border: none; color: white; border-radius: 4px; cursor: pointer; text-align: left; font-size: 12px; }
-.label-btn:hover { background: var(--purple); }
-.workspace-controls { position: absolute; bottom: 60px; left: 20px; display: flex; gap: 10px; }
-.control-btn { padding: 10px 18px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+/* Main Area */
+#mainContainer { display: flex; flex: 1; overflow: hidden; }
+#workzone { flex: 1; position: relative; background: #050505; display: flex; align-items: center; justify-content: center; }
+canvas { max-width: 100%; max-height: 100%; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
 
+/* Side Panel */
+#sidePanel { width: 280px; background: #111; border-left: 1px solid #333; display: flex; flex-direction: column; padding: 15px; }
+.metric-box { background: #1a1a1a; padding: 10px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--blue); }
+
+/* Auth */
 .auth-page { text-align: center; padding-top: 100px; }
-.auth-page input { padding: 12px; margin: 10px; width: 250px; background: #222; color: white; border: 1px solid #444; border-radius: 5px; }
-.bottom-bar { position: fixed; bottom: 0; width: 100%; height: 40px; background: var(--purple); color: white; display: none; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; z-index: 300; }
+.auth-input { padding: 12px; margin: 10px; width: 260px; background: #222; border: 1px solid #444; color: white; border-radius: 6px; }
 
-#annoList { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; padding-right: 5px; }
-.delete-box-area { padding-top: 10px; border-top: 1px solid #333; margin-bottom: 10px; }
-.delete-main-btn { width: 100%; background: #442222; color: #ff6666; border: 1px solid #663333; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+/* Timeline */
+#timeline { height: 40px; background: #111; border-top: 1px solid #333; display: flex; align-items: center; padding: 0 20px; font-size: 12px; color: var(--purple); }
 </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
 <div id="loginPage" class="auth-page">
-<h1 style="color:var(--purple)">a⌵ ANTONIO ANNOTATION</h1>
-<h2>Worker Portal</h2>
-<input id="userName" placeholder="Full Name">
-<input id="userEmail" placeholder="Email Address">
-<br>
-<button style="padding: 12px 40px; background: var(--blue); color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="handleLogin()">Login / Start Session</button>
-<div id="waitMessage" style="color:#ff9800; margin-top:20px; display:none; font-weight:bold;">Account pending admin approval. Please wait...</div>
+    <h1 style="color:var(--purple); letter-spacing: 2px;">ANTONIO ADMIN CONNECT</h1>
+    <input id="userName" class="auth-input" placeholder="Worker Name">
+    <input id="userEmail" class="auth-input" placeholder="Email Address">
+    <br>
+    <button onclick="handleLogin()" style="padding: 12px 50px; background: var(--purple); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">INITIALIZE SESSION</button>
 </div>
 
 <div id="topNav">
-<div style="font-weight: bold; color:var(--purple)">a⌵ WORKSPACE</div>
-<div class="profile-area">
-<button class="spreadsheet-btn">Earnings Estimate: $<span id="balance">0.00</span></button>
-<div id="workerProfile" style="font-size: 13px; border-left: 1px solid #333; padding-left: 15px;"></div>
-<button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer; font-size: 12px;">Logout</button>
-</div>
+    <div style="font-weight: bold; color:var(--purple)">a⌵ CORE_WORKSPACE_V2</div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <div id="profileStats" style="text-align: right; font-size: 12px;"></div>
+        <button onclick="logout()" style="color:var(--red); background:none; border:none; cursor:pointer;">Exit</button>
+    </div>
 </div>
 
-<div id="dashboard">
-<h2 id="greet"></h2>
-<p style="opacity: 0.6;" id="seasonalMsg"></p>
-<div id="tasks" class="task-grid"></div>
+<div id="dashboard" style="display:none; padding: 80px 40px;">
+    <h2>Available Batches</h2>
+    <div id="tasks" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;"></div>
 </div>
 
 <div id="workspacePage">
-<div id="workzone"><canvas id="canvas"></canvas></div>
-<div id="sidePanel">
-<div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items: center;">
-<span style="font-weight: bold; font-size: 12px;">LATEST LABELS</span>
-<button onclick="closeWorkspace()" style="background:#333; border:none; color:white; padding: 5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">SAVE & EXIT</button>
-</div>
-<div id="annoList"></div>
-<div class="delete-box-area">
-<button class="delete-main-btn" onclick="deleteBox()">DELETE BOX</button>
-</div>
-<button onclick="submitForReview()" style="width:100%; background:var(--blue); color:white; border:none; padding:15px; border-radius:6px; font-weight:bold; cursor:pointer;">SUBMIT TO ADMIN</button>
-</div>
+    <div id="toolbar">
+        <span style="font-size: 10px; color: #666; margin-right: 10px;">TOOLS:</span>
+        <button class="tool-btn" id="tool_2d" onclick="setTool('2d')">2D BOX</button>
+        <button class="tool-btn" id="tool_poly" onclick="setTool('poly')">POLYGON</button>
+        <button class="tool-btn" id="tool_seg" onclick="setTool('seg')">SEMSEG</button>
+        <button class="tool-btn" id="tool_cuboid" onclick="setTool('cuboid')">CUBOID</button>
+        <button class="tool-btn" id="tool_line" onclick="setTool('line')">POLYLINES</button>
+        <div style="flex-grow: 1;"></div>
+        <div id="frameCounter" style="font-family: monospace; color: var(--orange);">FRAME: 0 / 0</div>
+    </div>
 
-<div id="labelPopup">
-<button class="label-btn" onclick="assignLabel('Car')">Car</button>
-<button class="label-btn" onclick="assignLabel('Bus')">Bus</button>
-<button class="label-btn" onclick="assignLabel('Truck')">Truck</button>
-<button class="label-btn" onclick="assignLabel('Pedestrian')">Pedestrian</button>
-<button class="label-btn" onclick="assignLabel('Motorcycle')">Motorcycle</button>
-</div>
+    <div id="mainContainer">
+        <div id="cameraGrid">
+            <div class="camera-box"><span class="camera-label">FNC</span><div class="cam-preview" onclick="toggleCam(this)">CAM_01</div></div>
+            <div class="camera-box"><span class="camera-label">FWC C</span><div class="cam-preview" onclick="toggleCam(this)">CAM_02</div></div>
+            <div class="camera-box"><span class="camera-label">RNC C</span><div class="cam-preview" onclick="toggleCam(this)">CAM_03</div></div>
+            <div class="camera-box"><span class="camera-label">RNC R</span><div class="cam-preview" onclick="toggleCam(this)">CAM_04</div></div>
+            <div class="camera-box"><span class="camera-label">FWC R</span><div class="cam-preview" onclick="toggleCam(this)">CAM_05</div></div>
+            <div class="camera-box"><span class="camera-label">RNC L</span><div class="cam-preview" onclick="toggleCam(this)">CAM_06</div></div>
+            <div class="camera-box"><span class="camera-label">FWC L</span><div class="cam-preview" onclick="toggleCam(this)">CAM_07</div></div>
+        </div>
 
-<div class="workspace-controls">
-<button class="control-btn" style="background:var(--purple);" onclick="toggleDrawMode()" id="addBtn">ADD BOX</button>
-<button class="control-btn" style="background:#444;" onclick="undo()">UNDO</button>
-</div>
-</div>
+        <div id="workzone">
+            <canvas id="canvas"></canvas>
+            <video id="videoSource" style="display:none;"></video>
+        </div>
 
-<div class="bottom-bar" id="footerBar">
-<div id="footerWorker">COWORKER: LOADING...</div>
-<div id="connectionStatus" style="color:#00ff88">● SUPABASE CONNECTED</div>
+        <div id="sidePanel">
+            <div class="metric-box">
+                <div style="font-size: 11px; opacity: 0.7;">QUALITY SCORE</div>
+                <div id="qualityValue" style="font-size: 24px; font-weight: bold;">100%</div>
+            </div>
+            <h4 style="margin: 0 0 10px 0; font-size: 12px;">ANNOTATIONS</h4>
+            <div id="annoList" style="flex: 1; overflow-y: auto;"></div>
+            <button onclick="submitTask()" style="background: var(--purple); color:white; border:none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">SUBMIT SESSION</button>
+        </div>
+    </div>
+
+    <div id="timeline">
+        <span id="videoStatus">VIDEO STREAM: READY</span>
+        <span style="margin-left: auto;">Use Left/Right Arrows to Seek</span>
+    </div>
 </div>
 
 <script>
+// Supabase Configuration
 const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
-let user = null, activeId = null, boxes = [], selectedBoxIdx = -1, isDrawMode = false;
-let scale = 1, offsetX = 0, offsetY = 0, isDragging = false, lastX, lastY, resizeType = null;
-let canvas, ctx, img = new Image();
+let user = null, activeTask = null;
+let currentTool = '2d';
+let frames = [], currentFrameIdx = 0;
+let canvas, ctx;
 
-window.onload = async () => {
-    const savedEmail = localStorage.getItem('workerEmail');
-    if(savedEmail) {
-        const { data } = await sb.from("ant_users").select("*").eq("email", savedEmail).single();
-        if(data && data.status === 'approved') {
-            user = data;
-            showDashboard();
-        }
-    }
-};
-
+// Auth Logic
 async function handleLogin() {
     const email = document.getElementById("userEmail").value.trim().toLowerCase();
     const name = document.getElementById("userName").value.trim();
-    if(!email || !name) return alert("Enter all details");
-
-    const { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
+    
+    let { data: existing } = await sb.from("ant_users").select("*").eq("email", email).single();
+    
     if (!existing) {
-        await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'pending', balance: 0 }]);
-        document.getElementById("waitMessage").style.display = "block";
-    } else if (existing.status === 'pending') {
-        document.getElementById("waitMessage").style.display = "block";
+        const { data } = await sb.from("ant_users").insert([{ email, name, role: 'worker', status: 'approved', quality: 100 }]).select().single();
+        user = data;
     } else {
         user = existing;
-        localStorage.setItem('workerEmail', email);
-        showDashboard();
     }
+    
+    localStorage.setItem('workerEmail', email);
+    initDashboard();
 }
 
-async function showDashboard() {
+async function initDashboard() {
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("topNav").style.display = "flex";
-    document.getElementById("footerBar").style.display = "flex";
     document.getElementById("dashboard").style.display = "block";
-    document.getElementById("workspacePage").style.display = "none";
-
-    document.getElementById("greet").innerText = `${user.name}, ${getGreetingPrefix()}`;
-    document.getElementById("seasonalMsg").innerText = "Ready for the next batch?";
-    document.getElementById("workerProfile").innerHTML = `<b>${user.name}</b><br><span style="font-size:10px; opacity:0.6">${user.email}</span>`;
-    document.getElementById("footerWorker").innerText = `LOGGED IN AS: ${user.name.toUpperCase()}`;
-
-    // Show tasks assigned specifically to user OR Unassigned mass tasks
-    const { data: tasks } = await sb.from("ant_tasks")
-        .select("*")
-        .or(`assignedto.eq.${user.email},assignedto.eq.UNASSIGNED`)
-        .eq("completed", false);
-
-    document.getElementById("tasks").innerHTML = (tasks || []).map(t => {
-        const isPool = t.assignedto === 'UNASSIGNED';
-        const cardClass = isPool ? 'batch-card unassigned' : 'batch-card';
-        const button = isPool 
-            ? `<button class="claim-btn" onclick="claimTask('${t.id}')">CLAIM TO DASHBOARD</button>` 
-            : `<button class="start-work-btn" onclick="openWork('${t.id}')">START TASK →</button>`;
-
-        return `<div class="${cardClass}">
-            <div class="card-header">
-                <span class="status-badge">${isPool ? 'Pool Task' : 'Assigned'}</span>
-                <span style="font-size:10px; opacity:0.5">#${t.id.toString().slice(-5)}</span>
-            </div>
-            <div style="padding:15px;">
-                <p style="font-size:12px; margin:0 0 10px 0;">Phase: ${t.phase}</p>
-                ${button}
-            </div>
-        </div>`;
-    }).join("");
+    
+    document.getElementById("profileStats").innerHTML = `<b>${user.name}</b> | Quality: ${user.quality}%`;
+    
+    const { data: tasks } = await sb.from("ant_tasks").select("*").eq("completed", false);
+    document.getElementById("tasks").innerHTML = tasks.map(t => `
+        <div style="background:#1a1a1a; padding:20px; border-radius:10px; border:1px solid #333;">
+            <div style="color:var(--purple); font-weight:bold; margin-bottom:10px;">TASK #${t.id.toString().slice(-4)}</div>
+            <button onclick="openWorkspace('${t.id}')" style="width:100%; padding:10px; background:var(--blue); border:none; color:white; border-radius:5px; cursor:pointer;">OPEN WORKSPACE</button>
+        </div>
+    `).join("");
 }
 
-async function claimTask(taskId) {
-    const { error } = await sb.from("ant_tasks").update({ assignedto: user.email }).eq("id", taskId);
-    if (!error) showDashboard(); else alert("Task already claimed by someone else.");
-}
-
-async function openWork(id) {
-    activeId = id;
+// Video Annotation Logic
+async function openWorkspace(taskId) {
+    const { data: task } = await sb.from("ant_tasks").select("*").eq("id", taskId).single();
+    activeTask = task;
+    
     document.getElementById("dashboard").style.display = "none";
-    document.getElementById("workspacePage").style.display = "block";
+    document.getElementById("workspacePage").style.display = "flex";
+    document.getElementById("qualityValue").innerText = user.quality + "%";
+    
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
-
-    const { data } = await sb.from("ant_tasks").select("*").eq("id", id).single();
-    boxes = data.annotations || [];
-    img.src = data.imgdata;
-    img.onload = () => { resetView(); draw(); updateSidePanel(); updateBalanceDisplay(); };
-
-    // Canvas Events (Zoom/Pan/Draw)
-    canvas.onwheel = (e) => { e.preventDefault(); scale = e.deltaY < 0 ? scale * 1.1 : scale / 1.1; draw(); };
-    canvas.onmousedown = handleMouseDown;
-    window.onmousemove = handleMouseMove;
-    window.onmouseup = () => { isDragging = resizeType = null; saveProgress(); };
+    
+    // Process Video Frames
+    const video = document.getElementById("videoSource");
+    video.src = task.imgdata; // In video mode, imgdata holds video URL
+    video.crossOrigin = "Anonymous";
+    
+    video.onloadeddata = async () => {
+        await extractFrames(video);
+        renderFrame();
+    };
 }
 
-async function saveProgress() {
-    if(!activeId) return;
-    const currentLink = window.location.href + "?tid=" + activeId; // For admin viewing
-    await sb.from("ant_tasks").update({ 
-        annotations: boxes,
-        review_link: currentLink
-    }).eq("id", activeId);
-}
-
-async function submitForReview() {
-    if(!confirm("Submit for Admin Review?")) return;
-    await sb.from("ant_tasks").update({ 
-        completed: true, 
-        phase: '1st Pass',
-        annotations: boxes 
-    }).eq("id", activeId);
-    alert("Task sent to Admin Inbox.");
-    closeWorkspace();
-}
-
-// Maintenance functions
-function resetView() { scale = 0.8; offsetX = 100; offsetY = 50; }
-function draw() {
-    canvas.width = window.innerWidth - 300; canvas.height = window.innerHeight;
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.save();
-    ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
-    ctx.drawImage(img, 0, 0);
-    boxes.forEach((b, i) => {
-        ctx.strokeStyle = i === selectedBoxIdx ? "cyan" : "lime";
-        ctx.lineWidth = 2 / scale;
-        ctx.strokeRect(b.x, b.y, b.w, b.h);
-        ctx.fillStyle = "lime"; ctx.font = `${12/scale}px sans-serif`;
-        ctx.fillText(b.label, b.x, b.y - 5/scale);
-    });
-    ctx.restore();
-}
-
-function handleMouseDown(e) {
-    const mx = (e.clientX - offsetX) / scale;
-    const my = (e.clientY - offsetY) / scale;
-    if (isDrawMode) {
-        const sx = mx, sy = my;
-        canvas.onmouseup = (e2) => {
-            const ex = (e2.clientX - offsetX) / scale;
-            const ey = (e2.clientY - offsetY) / scale;
-            boxes.push({ x: sx, y: sy, w: ex-sx, h: ey-sy, label: 'Unlabeled' });
-            selectedBoxIdx = boxes.length - 1;
-            showLabelPopup(e2.clientX, e2.clientY);
-            toggleDrawMode();
-            draw(); updateSidePanel(); updateBalanceDisplay();
-            canvas.onmouseup = () => { isDragging = resizeType = null; };
-        };
-    } else {
-        selectedBoxIdx = boxes.findIndex(b => mx > b.x && mx < b.x+b.w && my > b.y && my < b.y+b.h);
-        if (selectedBoxIdx === -1) { isDragging = true; lastX = e.clientX; lastY = e.clientY; }
-        else { showLabelPopup(e.clientX, e.clientY); }
-        draw(); updateSidePanel();
+async function extractFrames(video) {
+    const duration = video.duration;
+    const fps = 10; // Extract 10 frames per second of video
+    const totalFrames = Math.floor(duration * fps);
+    frames = [];
+    
+    for(let i=0; i<totalFrames; i++) {
+        video.currentTime = i / fps;
+        await new Promise(r => video.onseeked = r);
+        
+        const frameCanvas = document.createElement("canvas");
+        frameCanvas.width = video.videoWidth;
+        frameCanvas.height = video.videoHeight;
+        frameCanvas.getContext("2d").drawImage(video, 0, 0);
+        frames.push(frameCanvas.toDataURL("image/jpeg", 0.7));
     }
+    
+    document.getElementById("frameCounter").innerText = `FRAME: 1 / ${frames.length}`;
 }
 
-function handleMouseMove(e) {
-    if (isDragging) {
-        offsetX += e.clientX - lastX; offsetY += e.clientY - lastY;
-        lastX = e.clientX; lastY = e.clientY; draw();
+function renderFrame() {
+    if(!frames[currentFrameIdx]) return;
+    const img = new Image();
+    img.src = frames[currentFrameIdx];
+    img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        document.getElementById("frameCounter").innerText = `FRAME: ${currentFrameIdx + 1} / ${frames.length}`;
+    };
+}
+
+// Navigation Key Events
+window.addEventListener("keydown", (e) => {
+    if(e.key === "ArrowRight") {
+        if(currentFrameIdx < frames.length - 1) { currentFrameIdx++; renderFrame(); }
     }
-}
-
-function showLabelPopup(x, y) {
-    const pop = document.getElementById("labelPopup");
-    pop.style.display = "flex";
-    pop.style.left = x + "px"; pop.style.top = y + "px";
-}
-
-function assignLabel(l) {
-    if(selectedBoxIdx > -1) {
-        boxes[selectedBoxIdx].label = l;
-        document.getElementById("labelPopup").style.display = "none";
-        draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
+    if(e.key === "ArrowLeft") {
+        if(currentFrameIdx > 0) { currentFrameIdx--; renderFrame(); }
     }
+});
+
+// Tool Selection
+function setTool(tool) {
+    currentTool = tool;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tool_${tool}`).classList.add('active');
 }
 
-function deleteBox() {
-    if(selectedBoxIdx > -1) {
-        boxes.splice(selectedBoxIdx, 1);
-        selectedBoxIdx = -1;
-        draw(); updateSidePanel(); updateBalanceDisplay(); saveProgress();
+// Camera Toggle
+function toggleCam(el) {
+    el.classList.toggle('expanded');
+}
+
+// Quality Drop Logic
+async function submitTask() {
+    // If reviewer_touched flag is set in DB, drop quality
+    const { data } = await sb.from("ant_tasks").select("reviewer_touched").eq("id", activeTask.id).single();
+    
+    if(data.reviewer_touched) {
+        let newQuality = Math.max(0, user.quality - 5);
+        await sb.from("ant_users").update({ quality: newQuality }).eq("email", user.email);
+        alert("Quality drop detected: Reviewer modified your previous work.");
     }
+    
+    await sb.from("ant_tasks").update({ completed: true }).eq("id", activeTask.id);
+    location.reload();
 }
 
-function updateSidePanel() {
-    document.getElementById("annoList").innerHTML = boxes.map((b, i) => `
-        <div class="anno-item" style="${i === selectedBoxIdx ? 'border-color:cyan;' : ''}" onclick="selectedBoxIdx=${i};draw();updateSidePanel();">
-            <span>#${i+1} <b>${b.label}</b></span>
-            <span style="color:var(--purple); font-size:10px;">$0.019</span>
-        </div>`).join("");
-}
-
-function updateBalanceDisplay() { document.getElementById("balance").innerText = (boxes.length * 0.019).toFixed(3); }
-function toggleDrawMode() { isDrawMode = !isDrawMode; document.getElementById("addBtn").style.background = isDrawMode ? "white" : "var(--purple)"; document.getElementById("addBtn").style.color = isDrawMode ? "black" : "white"; }
-function getGreetingPrefix() { const h = new Date().getHours(); return h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : "Good Evening"; }
-function undo() { boxes.pop(); draw(); updateSidePanel(); updateBalanceDisplay(); }
 function logout() { localStorage.clear(); location.reload(); }
-function closeWorkspace() { activeId = null; showDashboard(); }
-
-// Heartbeat to keep connection alive
-setInterval(() => { if(!activeId && user) showDashboard(); }, 30000);
 </script>
 </body>
 </html>
