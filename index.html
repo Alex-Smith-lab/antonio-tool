@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Labeler - Workspace</title>
+<title>Labeler - AnnotatorS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root { --purple: #7b2ff7; --bg: #0b0b0b; --card: #161616; --border: #333; --blue: #007bff; --orange: #ff9800; }
@@ -50,7 +50,7 @@ body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
 <input id="userEmail" placeholder="Email Address">
 <br>
 <button style="padding: 12px 40px; background: var(--blue); color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="handleLogin()">Login / Start Session</button>
-<div id="waitMessage" style="color:#ff9800; margin-top:20px; display:none; font-weight:bold;">Account pending admin approval. Please wait...</div>
+<div id="waitMessage" style="color:#ff9800; margin-top:20px; display:none; font-weight:bold;">Account on waitlist Waiting staff approval. Please wait...</div>
 </div>
 
 <div id="topNav">
@@ -98,7 +98,7 @@ body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
 
 <div class="bottom-bar" id="footerBar">
 <div id="footerWorker">COWORKER: LOADING...</div>
-<div id="connectionStatus" style="color:#00ff88">● SUPABASE CONNECTED</div>
+<div id="connectionStatus" style="color:#00ff88">● expert annotation</div>
 </div>
 
 <script>
@@ -209,13 +209,13 @@ review_link: currentLink
 }
 
 async function submitForReview() {
-if(!confirm("Submit for Admin Review?")) return;
+if(!confirm("Submit for Review?")) return;
 await sb.from("ant_tasks").update({
 completed: true,
 phase: '1st Pass',
 annotations: boxes
 }).eq("id", activeId);
-alert("Task sent to Admin Inbox.");
+alert("Task sent to Review Queue.");
 closeWorkspace();
 }
 
