@@ -1,342 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Admin - Management</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-/* Base Styles & Small Font Adjustment */
-body {
-background:#0b0b0b;
-color:white;
-font-family:sans-serif;
-margin:0;
-display:flex;
-height:100vh;
-overflow: hidden;
-font-size: 12px;
-}
-
-/* Narrower Left Panel with Vertical Scroll */
-.sidebar {
-width:180px;
-background:black;
-padding:15px;
-border-right:1px solid #222;
-display: flex;
-flex-direction: column;
-overflow-y: auto; /* Allows vertical scroll for menu items */
-flex-shrink: 0;
-}
-
-.tab-btn {
-width:100%;
-padding:10px;
-margin-bottom:8px;
-background:none;
-border:none;
-color:#999;
-text-align:left;
-cursor:pointer;
-border-radius: 6px;
-font-size: 12px;
-transition: 0.3s;
-word-wrap: break-word;
-}
-.tab-btn:hover { background: #1a1a1a; color: white; }
-.tab-btn.active { background:#7b2ff7; color:white; font-weight: bold; }
-
-/* Main Area with Horizontal Scroll for Tables */
-.main {
-flex:1;
-padding:20px;
-overflow-x: auto; /* Allows swiping left/right at the bottom */
-overflow-y: auto; /* Standard up/down scroll */
-background: #0b0b0b;
-}
-
-/* Table Optimization */
-table {
-width: 100%;
-min-width: 800px; /* Forces horizontal scroll on small laptops */
-border-collapse:collapse;
-margin-top:15px;
-}
-td, th {
-padding:10px;
-border-bottom:1px solid #222;
-text-align:left;
-font-size: 11px;
-white-space: nowrap; /* Prevents text wrapping to keep table clean */
-}
-th { background: #111; color: #7b2ff7; text-transform: uppercase; letter-spacing: 1px; }
-
-/* Panel UI */
-.panel {
-background:#161616;
-padding:15px;
-border-radius:10px;
-margin-bottom:20px;
-border: 1px solid #222;
-}
-
-.btn {
-padding:5px 10px;
-border:none;
-border-radius:4px;
-font-weight:bold;
-cursor:pointer;
-font-size:10px;
-margin-right:5px;
-transition: 0.2s;
-}
-.green { background:#00c853; color:white; }
-.red { background:#ff4444; color:white; }
-.orange { background:#ff9800; color:white; }
-.blue { background:#007bff; color:white; }
-.purple { background:#7b2ff7; color:white; }
-
-select, input[type="file"], input[type="text"] {
-padding:8px;
-background:#222;
-color:white;
-border:1px solid #444;
-margin:5px 0;
-width:100%;
-max-width:250px;
-border-radius: 5px;
-font-size: 11px;
-}
-
-/* Aesthetic scrollbars for "Smart Appearance" */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0b0b0b; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #7b2ff7; }
-</style>
+    <meta charset="UTF-8">
+    <title>Admin - TM Control Center</title>
+    <link rel="stylesheet" href="admin-style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<div id="auth-gate" style="position:fixed; inset:0; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column;">
-<h1 style="color:#7b2ff7;">Admin Verification</h1>
-<input type="text" id="adminEmailInput" placeholder="Enter Admin Email" style="text-align:center;">
-<button class="btn purple" onclick="checkAuth()" style="margin-top:10px; padding:10px 30px;">Login</button>
+<div id="auth-gate" class="auth-overlay">
+    <div class="auth-box">
+        <h1 style="color:#7b2ff7;">Admin Verification</h1>
+        <input type="text" id="adminEmailInput" placeholder="Enter Admin Email">
+        <button class="btn purple" onclick="checkAuth()">Login to Management</button>
+    </div>
 </div>
 
 <div class="sidebar">
-<h3 style="color:#7b2ff7; margin-bottom: 20px;">a⌵ ADMIN</h3>
-<button class="tab-btn active" onclick="showTab('approvals',this)">Staff Management</button>
-<button class="tab-btn" onclick="showTab('tasks',this)">Assign New Task</button>
-<button class="tab-btn" onclick="showTab('firstpass_inbox',this)" style="color: #00ff88;">📥 1st Pass Inbox</button>
-<button class="tab-btn" onclick="showTab('supervision',this)">Full Supervision</button>
-<button class="tab-btn" onclick="showTab('admin_access',this)">Admin Controls</button>
-<button class="tab-btn" onclick="showTab('export',this)" style="border: 1px dashed #7b2ff7; margin-top: 20px;">Export & Links</button>
+    <h3 class="logo">TM <span>ADMIN</span></h3>
+    <button class="tab-btn active" onclick="showTab('approvals',this)">Staff Management</button>
+    <button class="tab-btn" onclick="showTab('tasks',this)">Assign New Task</button>
+    <button class="tab-btn inbox-btn" onclick="showTab('firstpass_inbox',this)">📥 1st Pass Inbox</button>
+    <button class="tab-btn" onclick="showTab('supervision',this)">Full Supervision</button>
+    <button class="tab-btn export-btn" onclick="showTab('export',this)">Export & Links</button>
 </div>
 
 <div class="main">
-<div id="approvals" class="panel tab">
-<h2>Coworker Management</h2>
-<table>
-<thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
-<tbody id="userTable"></tbody>
-</table>
+    <div id="approvals" class="panel tab">
+        <h2>Coworker Management (Waitlist)</h2>
+        <p>Approve users here to grant them access to their dashboard.</p>
+        <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="userTable"></tbody>
+        </table>
+    </div>
+
+    <div id="tasks" class="panel tab" style="display:none">
+        <h2>Create & Assign Task</h2>
+        <div class="form-group">
+            <input type="file" id="taskFile">
+            <select id="workerList"></select>
+            <select id="taskPhase">
+                <option value="1st Pass">1st Pass (Initial Labeling)</option>
+                <option value="Review">Review (Quality Check)</option>
+            </select>
+            <button class="btn green" onclick="sendTask()">Deploy Task</button>
+        </div>
+    </div>
+
+    <div id="firstpass_inbox" class="panel tab" style="display:none">
+        <h2>1st Pass Completed</h2>
+        <table id="inboxTable">...</table>
+    </div>
 </div>
 
-<div id="tasks" class="panel tab" style="display:none">
-<h2>Assign New Task</h2>
-<div style="display:grid; gap:10px;">
-<label>Upload Image:</label>
-<input type="file" id="taskFile">
-<label>Assign To:</label>
-<select id="workerList"></select>
-<label>Phase:</label>
-<select id="taskPhase">
-<option value="1st Pass">1st Pass (Initial Labeling)</option>
-<option value="Review">Review (Quality Check)</option>
-</select>
-<button class="btn green" onclick="sendTask()" style="width:150px; padding:10px;">Send Task</button>
-</div>
-</div>
-
-<div id="firstpass_inbox" class="panel tab" style="display:none">
-<h2>1st Pass Completed</h2>
-<table>
-<thead><tr><th>Task ID</th><th>Completed By</th><th>Boxes</th><th>Assign Reviewer</th><th>Action</th></tr></thead>
-<tbody id="inboxTable"></tbody>
-</table>
-</div>
-
-<div id="supervision" class="panel tab" style="display:none">
-<h2>Task Supervision</h2>
-<table>
-<thead><tr><th>Task ID</th><th>Phase</th><th>Worker</th><th>Status</th><th>Reassign</th><th>Actions</th></tr></thead>
-<tbody id="supervisionTable"></tbody>
-</table>
-</div>
-
-<div id="admin_access" class="panel tab" style="display:none">
-<h2>Admin Management</h2>
-<div class="panel">
-<input type="text" id="newAdminEmail" placeholder="Email address...">
-<button class="btn purple" onclick="grantAdmin()">Grant Access</button>
-</div>
-<table>
-<thead><tr><th>Admin Email</th><th>Status</th><th>Action</th></tr></thead>
-<tbody id="adminTable"></tbody>
-</table>
-</div>
-
-<div id="export" class="panel tab" style="display:none">
-<div style="display:flex; justify-content:space-between; align-items:center;">
-<h2>Export & Review Links</h2>
-<button class="btn green" onclick="exportToCSV()">Download CSV</button>
-</div>
-<table>
-<thead><tr><th>Task ID</th><th>Worker</th><th>Phase</th><th>Clickable Link</th></tr></thead>
-<tbody id="exportTable"></tbody>
-</table>
-</div>
-</div>
-
-<script>
-const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
-
-let allTasks = [], allUsers = [], allAdmins = [];
-const MASTER_ADMIN = "antonymbali96@gmail.com";
-
-async function checkAuth() {
-const input = document.getElementById("adminEmailInput").value.toLowerCase().trim();
-const { data: admins } = await _supabase.from("ant_admins").select("email").eq("email", input);
-if (input === MASTER_ADMIN || (admins && admins.length > 0)) {
-document.getElementById("auth-gate").style.display = "none";
-initRealtime();
-loadData();
-} else {
-alert("Access Denied.");
-}
-}
-
-function initRealtime() {
-_supabase.channel('admin-sync').on('postgres_changes', { event: '*', schema: 'public' }, () => loadData()).subscribe();
-}
-
-function showTab(id, btn) {
-document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
-document.getElementById(id).style.display = "block";
-document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-btn.classList.add("active");
-loadData();
-}
-
-async function loadData() {
-const { data: users } = await _supabase.from("ant_users").select("*");
-const { data: tasks } = await _supabase.from("ant_tasks").select("*").order('created_at', { ascending: false });
-const { data: admins } = await _supabase.from("ant_admins").select("*");
-
-allUsers = users || [];
-allTasks = tasks || [];
-allAdmins = admins || [];
-
-const approved = allUsers.filter(u => u.status === "approved");
-const workerOptionsHTML = `<option value="UNASSIGNED">-- MASS ASSIGN --</option>` +
-approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
-document.getElementById("workerList").innerHTML = workerOptionsHTML;
-
-document.getElementById("userTable").innerHTML = allUsers.map(u => `
-<tr>
-<td>${u.name}</td>
-<td>${u.email}</td>
-<td><span style="color:${u.status === 'pending' ? 'orange' : '#00ff88'}">${u.status}</span></td>
-<td>
-<button class="btn green" onclick="updateUserStatus('${u.email}', 'approved')">Approve</button>
-<button class="btn red" onclick="deleteUser('${u.email}')">Remove</button>
-</td>
-</tr>
-`).join("");
-
-document.getElementById("adminTable").innerHTML = `<tr><td>${MASTER_ADMIN}</td><td>Master</td><td>-</td></tr>` +
-allAdmins.map(a => `<tr><td>${a.email}</td><td>Registered</td><td><button class="btn red" onclick="removeAdmin('${a.email}')">Remove</button></td></tr>`).join("");
-
-document.getElementById("inboxTable").innerHTML = allTasks.filter(t => t.phase === '1st Pass' && t.completed).map(t => `
-<tr>
-<td>${t.id}</td>
-<td>${t.assignedto}</td>
-<td>${t.annotations?.length || 0}</td>
-<td><select id="rev-${t.id}" style="width:100px;">${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}</select></td>
-<td><button class="btn purple" onclick="assignReview('${t.id}')">Assign</button></td>
-</tr>
-`).join("");
-
-document.getElementById("supervisionTable").innerHTML = allTasks.map(t => `
-<tr>
-<td>${t.id}</td>
-<td>${t.phase}</td>
-<td>${t.assignedto}</td>
-<td>${t.completed ? '✅ Done' : '⏳ Working'}</td>
-<td>
-<select onchange="reassignTask('${t.id}', this.value)" style="width:100px;">
-<option value="">Reassign...</option>
-${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}
-</select>
-</td>
-<td>
-<button class="btn blue" onclick="viewWork('${t.id}')">View</button>
-<button class="btn red" onclick="deleteTask('${t.id}')">Del</button>
-</td>
-</tr>`).join("");
-
-document.getElementById("exportTable").innerHTML = allTasks.map(t => `
-<tr>
-<td>${t.id}</td>
-<td>${t.assignedto}</td>
-<td>${t.phase}</td>
-<td>${t.review_link ? `<a href="${t.review_link}" target="_blank" style="color:#7b2ff7;">Link 🔗</a>` : 'N/A'}</td>
-</tr>
-`).join("");
-}
-
-async function reassignTask(taskId, email) { if(!email) return; await _supabase.from("ant_tasks").update({ assignedto: email }).eq("id", taskId); loadData(); }
-async function deleteTask(id) { if(confirm("Delete task?")) { await _supabase.from("ant_tasks").delete().eq("id", id); loadData(); } }
-async function sendTask() {
-const file = document.getElementById("taskFile").files[0];
-const worker = document.getElementById("workerList").value;
-const phase = document.getElementById("taskPhase").value;
-if(!file) return alert("Select file");
-const reader = new FileReader();
-reader.onload = async e => {
-await _supabase.from("ant_tasks").insert([{ id: Date.now(), imgdata: e.target.result, assignedto: worker, phase: phase, completed: false, annotations: [] }]);
-alert("Task Sent!");
-loadData();
-};
-reader.readAsDataURL(file);
-}
-async function updateUserStatus(email, status) { await _supabase.from("ant_users").update({ status }).eq("email", email); loadData(); }
-async function deleteUser(email) { if(confirm("Delete user?")) await _supabase.from("ant_users").delete().eq("email", email); loadData(); }
-async function grantAdmin() {
-const email = document.getElementById("newAdminEmail").value.toLowerCase().trim();
-if(email) await _supabase.from("ant_admins").insert([{ email }]);
-loadData();
-}
-async function removeAdmin(email) { await _supabase.from("ant_admins").delete().eq("email", email); loadData(); }
-async function assignReview(taskId) {
-const rev = document.getElementById(`rev-${taskId}`).value;
-await _supabase.from("ant_tasks").update({ assignedto: rev, phase: 'Review', completed: false }).eq("id", taskId);
-loadData();
-}
-function viewWork(id) {
-const t = allTasks.find(x => x.id == id);
-if(t && t.review_link) window.open(t.review_link, '_blank');
-}
-function exportToCSV() {
-let csv = "Task ID,Worker,Phase,Link\n";
-allTasks.forEach(t => csv += `${t.id},${t.assignedto},${t.phase},${t.review_link || ''}\n`);
-const blob = new Blob([csv], { type: 'text/csv' });
-const a = document.createElement('a');
-a.href = URL.createObjectURL(blob);
-a.download = `Report.csv`;
-a.click();
-}
-setInterval(loadData, 30000);
-</script>
+<script src="admin-auth.js"></script>
+<script src="admin-core.js"></script>
 </body>
 </html>
