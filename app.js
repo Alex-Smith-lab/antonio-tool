@@ -1,31 +1,20 @@
-// Ensure this is at the very top of app.js
-const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "YOUR_KEY");
+const sb = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
 
 async function handleLogin() {
-    const email = document.getElementById("userEmail").value.trim().toLowerCase();
+    const email = document.getElementById("userEmail").value.toLowerCase().trim();
     const name = document.getElementById("userName").value.trim();
-    
-    if (!email || !name) return alert("Please fill in all fields");
 
-    // 1. Check if user exists
-    const { data: user, error } = await sb.from("ant_users").select("*").eq("email", email).single();
+    const { data: user } = await sb.from("ant_users").select("*").eq("email", email).single();
 
     if (!user) {
-        // 2. Register New User
-        await sb.from("ant_users").insert([{ email, name, status: 'pending', role: 'worker' }]);
+        await sb.from("ant_users").insert([{ email, name, status: 'pending' }]);
         document.getElementById("waitMessage").style.display = "block";
-        alert("Registration successful! You are now on the waitlist.");
     } else if (user.status === 'pending') {
-        // 3. Already on Waitlist
         document.getElementById("waitMessage").style.display = "block";
-        alert("Still waiting for Admin approval.");
-    } else if (user.status === 'approved') {
-        // 4. Success - Enter Dashboard
-        localStorage.setItem('workerEmail', email);
-        // Hide Login, Show Dashboard
+    } else {
+        localStorage.setItem("workerEmail", email);
         document.getElementById("loginPage").style.display = "none";
-        document.getElementById("topNav").style.display = "flex";
         document.getElementById("dashboard").style.display = "block";
-        showDashboard(); // Call your dashboard loading function
+        loadWorkerTasks(email);
     }
 }
