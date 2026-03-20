@@ -1,19 +1,14 @@
+const _supabase = window.supabase.createClient("https://qhftvfatzsogxbbqzxry.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w");
+
 async function checkAuth() {
-    const input = document.getElementById("adminEmailInput").value.toLowerCase().trim();
-    const MASTER_ADMIN = "antonymbali96@gmail.com";
+    const email = document.getElementById("adminEmailInput").value.trim().toLowerCase();
+    const { data } = await _supabase.from("ant_admins").select("email").eq("email", email);
 
-    console.log("Attempting admin login for:", input);
-
-    // Check database for admin rights
-    const { data: admins, error } = await _supabase.from("ant_admins").select("email").eq("email", input);
-
-    if (input === MASTER_ADMIN || (admins && admins.length > 0)) {
-        console.log("Admin verified.");
-        // Hide the gate
+    if (email === "antonymbali96@gmail.com" || (data && data.length > 0)) {
         document.getElementById("auth-gate").style.display = "none";
-        // Initialize the admin dashboard
-        if (typeof loadData === "function") loadData();
+        document.getElementById("admin-content").style.display = "flex";
+        loadData(); // Defined in admin-core.js
     } else {
-        alert("Access Denied: You do not have admin privileges.");
+        alert("Unauthorized Admin");
     }
 }
