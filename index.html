@@ -2,46 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AnnotatorS - TM</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%23007bff'>TM</text></svg>">
+    <title>AnnotatorS - Login</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-
-<div id="loginPage" class="login-container">
-    <div class="login-left">
-        <div class="overlay-text">High-Precision Annotation</div>
-        <div class="annotation-preview-bg"></div> 
-    </div>
-    <div class="login-right">
-        <h1 class="logo-text">TM <span>ANNOTATION</span></h1>
-        <div class="auth-form">
+    <div id="loginPage" class="split-login">
+        <div class="login-left" style="background-image: url('scene.jpg');"></div>
+        <div class="login-right">
+            <h1>TM <span>ANNOTATION</span></h1>
             <input id="userName" placeholder="Full Name">
-            <input id="userEmail" placeholder="Email Address">
-            <button class="login-btn" onclick="handleLogin()">Access Dashboard</button>
-            <div id="waitMessage" class="waitlist-box">
-                ● Account on waitlist. Awaiting Admin Approval...
-            </div>
+            <input id="userEmail" placeholder="Email">
+            <button onclick="handleLogin()">Access Dashboard</button>
+            <p id="waitMessage" style="display:none; color:orange;">On Waitlist: Awaiting Admin Approval...</p>
         </div>
     </div>
-</div>
 
-<div id="topNav" style="display:none;"> ... </div>
-
-<div id="workspacePage" style="display:none;">
-    <div id="toolbar">
-        <button onclick="setTool('2d')">2D Box</button>
-        <button onclick="setTool('3d')">3D Cuboid</button>
-        <button onclick="setTool('lidar')">Lidar Points</button>
-        <button onclick="setTool('poly')">Polygon</button>
-        <button onclick="setTool('line')">Polyline</button>
-        <button onclick="setTool('calib')">Calibration</button>
-    </div>
-    <div id="workzone"><canvas id="canvas"></canvas></div>
+    <div id="dashboard" style="display:none;">
+        <nav id="topNav">Welcome to your Workspace</nav>
+        <div id="taskList"></div>
     </div>
 
-<script src="app.js"></script>
-<script src="workspace.js"></script>
+    <div id="workspace" style="display:none;">
+        <canvas id="canvas"></canvas>
+        <div id="tools">
+            </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="workspace.js"></script>
 </body>
 </html>
