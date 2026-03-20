@@ -2,59 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - TM Control Center</title>
+    <title>TM Admin - Control Center</title>
     <link rel="stylesheet" href="admin-style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-
-<div id="auth-gate" class="auth-overlay">
-    <div class="auth-box">
-        <h1 style="color:#7b2ff7;">Admin Verification</h1>
-        <input type="text" id="adminEmailInput" placeholder="Enter Admin Email">
-        <button class="btn purple" onclick="checkAuth()">Login to Management</button>
-    </div>
-</div>
-
-<div class="sidebar">
-    <h3 class="logo">TM <span>ADMIN</span></h3>
-    <button class="tab-btn active" onclick="showTab('approvals',this)">Staff Management</button>
-    <button class="tab-btn" onclick="showTab('tasks',this)">Assign New Task</button>
-    <button class="tab-btn inbox-btn" onclick="showTab('firstpass_inbox',this)">📥 1st Pass Inbox</button>
-    <button class="tab-btn" onclick="showTab('supervision',this)">Full Supervision</button>
-    <button class="tab-btn export-btn" onclick="showTab('export',this)">Export & Links</button>
-</div>
-
-<div class="main">
-    <div id="approvals" class="panel tab">
-        <h2>Coworker Management (Waitlist)</h2>
-        <p>Approve users here to grant them access to their dashboard.</p>
-        <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="userTable"></tbody>
-        </table>
-    </div>
-
-    <div id="tasks" class="panel tab" style="display:none">
-        <h2>Create & Assign Task</h2>
-        <div class="form-group">
-            <input type="file" id="taskFile">
-            <select id="workerList"></select>
-            <select id="taskPhase">
-                <option value="1st Pass">1st Pass (Initial Labeling)</option>
-                <option value="Review">Review (Quality Check)</option>
-            </select>
-            <button class="btn green" onclick="sendTask()">Deploy Task</button>
+    <div id="auth-gate" class="auth-overlay">
+        <div class="auth-box">
+            <h1 class="logo">TM <span>ADMIN</span></h1>
+            <input type="text" id="adminEmailInput" placeholder="Admin Email">
+            <button class="btn purple" onclick="checkAuth()">Login</button>
         </div>
     </div>
 
-    <div id="firstpass_inbox" class="panel tab" style="display:none">
-        <h2>1st Pass Completed</h2>
-        <table id="inboxTable">...</table>
+    <div id="admin-content" style="display:none; height: 100vh; width: 100vw; display: flex;">
+        <div class="sidebar">
+            <h3 class="logo">TM <span>DASHBOARD</span></h3>
+            <button class="tab-btn active" onclick="showTab('approvals',this)">Staff Management</button>
+            <button class="tab-btn" onclick="showTab('tasks',this)">Assign Task</button>
+        </div>
+        <div class="main">
+            <div id="approvals" class="panel tab">
+                <h2>Coworker Management</h2>
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody id="userTable"></tbody>
+                </table>
+            </div>
+            <div id="tasks" class="panel tab" style="display:none">
+                <h2>Deploy New Task</h2>
+                <input type="file" id="taskFile">
+                <select id="workerList"></select>
+                <select id="toolType">
+                    <option>2D Box</option><option>3D Cuboid</option>
+                    <option>Lidar</option><option>Polygon</option>
+                </select>
+                <button class="btn green" onclick="sendTask()">Deploy</button>
+            </div>
+        </div>
     </div>
-</div>
-
-<script src="admin-auth.js"></script>
-<script src="admin-core.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="admin-core.js"></script>
 </body>
 </html>
