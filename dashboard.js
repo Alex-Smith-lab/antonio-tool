@@ -1,49 +1,42 @@
-async function showDashboard(){
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
 
-loginPage.style.display = "none";
-dashboard.style.display = "block";
-topNav.style.display = "flex";
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/dashboard.js"></script>
 
-greet.innerText = `${user.name}, ${getGreetingPrefix()}`;
+<link rel="stylesheet" href="css/styles.css">
+</head>
 
-workerProfile.innerHTML = `
-<b>${user.name}</b><br>
-<span>${user.email}</span>
-`;
+<body>
 
-const { data: tasks } = await sb
-.from("ant_tasks")
-.select("*")
-.or(`assignedto.eq.${user.email},assignedto.eq.UNASSIGNED`)
-.eq("completed", false);
+<!-- HEADER -->
+<div class="topbar">
+<div class="logo">AVALA AI</div>
 
-tasksContainer(tasks);
-}
-
-function tasksContainer(tasks){
-tasks.innerHTML = (tasks || []).map(t => {
-
-const isPool = t.assignedto === 'UNASSIGNED';
-
-return `
-<div class="batch-card">
-<p>Phase: ${t.phase}</p>
-
-${
-isPool
-? `<button onclick="claimTask('${t.id}')">CLAIM</button>`
-: `<button onclick="openWork('${t.id}')">START</button>`
-}
+<div class="profile" onclick="toggleProfile()">
+👤 Profile
 </div>
-`;
+</div>
 
-}).join("");
-}
+<!-- TASKBAR -->
+<div class="taskbar">
+<div>👩‍💻 Coworker: <span id="username"></span></div>
+<div>Company: Avala AI</div>
+</div>
 
-async function claimTask(id){
-await sb.from("ant_tasks")
-.update({ assignedto: user.email })
-.eq("id", id);
+<!-- GREETING -->
+<div class="greeting">
+<img class="avatar" src="assets/avatars/default.png">
+<h2 id="greet"></h2>
+<p id="season"></p>
+</div>
 
-showDashboard();
-}
+<!-- TASKS -->
+<div id="tasks" class="task-grid"></div>
+
+</body>
+</html>
