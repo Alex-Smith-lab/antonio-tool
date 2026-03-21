@@ -1,32 +1,324 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Login</title>
+<title>Antony Annotation PRO</title>
+
+<!-- 👑 KING ICON -->
+<link rel="icon" href="https://cdn-icons-png.flaticon.com/512/616/616554.png">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
-<script src="js/auth.js"></script>
 
-<link rel="stylesheet" href="css/styles.css">
+<style>
+:root{
+--bg:#0b0b0b;
+--card:#161616;
+--text:#fff;
+--purple:#7b2ff7;
+}
+
+body.light{
+--bg:#fff;
+--card:#f2f2f2;
+--text:#000;
+}
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:var(--bg);
+color:var(--text);
+overflow:hidden;
+}
+
+/* PAGES */
+.page{display:none;height:100vh;}
+.active{display:flex}
+
+/* LOGIN */
+#login{display:flex;}
+.left{
+flex:1;
+/* ✅ YOUR IMAGE INSERTED */
+background:url('/mnt/data/e4484700-4f14-4ebe-9401-95226336af8c.png') center/cover no-repeat;
+}
+.right{
+flex:1;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+}
+
+/* DASHBOARD */
+#dashboard{flex-direction:column;}
+.topbar{
+height:60px;
+display:flex;
+justify-content:space-between;
+padding:0 20px;
+align-items:center;
+background:black;
+}
+.tasks{padding:20px;}
+.card{
+background:var(--card);
+padding:15px;
+margin:10px 0;
+border-radius:8px;
+}
+
+/* WORKSPACE */
+#workspace{position:relative;}
+canvas{
+position:absolute;
+left:200px;
+right:250px;
+top:60px;
+bottom:0;
+}
+
+.sidebar{
+position:absolute;
+left:0;
+top:60px;
+bottom:0;
+width:200px;
+background:#111;
+padding:10px;
+}
+
+.rightpanel{
+position:absolute;
+right:0;
+top:60px;
+bottom:0;
+width:250px;
+background:#111;
+padding:10px;
+}
+</style>
 </head>
 
-<body style="display:flex;height:100vh;">
+<body>
 
-<!-- LEFT IMAGE -->
-<div style="flex:1;background:url('https://mindkosh.com/blog/2d-and-3d-data-annotation/') center/cover;"></div>
-
-<!-- RIGHT LOGIN -->
-<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;">
-<h1 style="color:#7b2ff7;">Cuboid Annotation</h1>
-
-<input id="name" placeholder="Full Name"><br><br>
+<!-- LOGIN -->
+<div id="login" class="page active">
+<div class="left"></div>
+<div class="right">
+<h1 style="color:#7b2ff7">Cuboid Annotation</h1>
+<input id="name" placeholder="Name"><br><br>
 <input id="email" placeholder="Email"><br><br>
-
-<button onclick="login()">Login</button>
-
-<button onclick="toggleTheme()">🌗 Toggle Theme</button>
+<button onclick="login()">Login</button><br><br>
+<button onclick="toggleTheme()">🌗 Theme</button>
 </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="page">
+<div class="topbar">
+<div>🏢 Company</div>
+<div onclick="logout()">👤 Profile</div>
+</div>
+
+<div class="tasks" id="tasks"></div>
+</div>
+
+<!-- WORKSPACE -->
+<div id="workspace" class="page">
+
+<div class="topbar">
+<div>🧠 Workspace</div>
+<div onclick="back()">⬅ Back</div>
+</div>
+
+<div class="sidebar">
+<b>Cameras</b><br><br>
+FWC_C<br>RNC_R<br>FNC<br>RNC_L<br>FWC_R<br>FWC_L<br>RNC_C
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div class="rightpanel">
+<b>Annotations</b>
+<div id="annoList"></div>
+</div>
+
+</div>
+
+<script>
+// ✅ SUPABASE
+const sb = supabase.createClient(
+"https://qhftvfatzsogxbbqzxry.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w"
+);
+
+// GLOBAL
+let user=null, taskId=null;
+let canvas,ctx,img=new Image();
+let boxes=[];
+let scale=1,offsetX=0,offsetY=0;
+let drawing=false, startX,startY;
+
+// 🧠 AUTO SAVE
+async function autoSave(){
+if(!taskId) return;
+await sb.from("ant_tasks").update({
+annotations: boxes
+}).eq("id", taskId);
+}
+
+// AUTO SAVE EVERY 5s
+setInterval(autoSave,5000);
+
+// PAGE SWITCH
+function show(id){
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+}
+
+// THEME
+function toggleTheme(){
+document.body.classList.toggle("light");
+}
+
+// LOGIN
+async function login(){
+const email=document.getElementById("email").value;
+const name=document.getElementById("name").value;
+
+let {data}=await sb.from("ant_users").select("*").eq("email",email).single();
+
+if(!data){
+await sb.from("ant_users").insert([{email,name,status:"approved"}]);
+data={email,name};
+}
+
+user=data;
+loadTasks();
+show("dashboard");
+}
+
+// LOAD TASKS
+async function loadTasks(){
+const {data}=await sb.from("ant_tasks").select("*");
+
+document.getElementById("tasks").innerHTML=data.map(t=>`
+<div class="card">
+Task ${t.id}
+<button onclick="openTask('${t.id}')">Start</button>
+</div>`).join("");
+}
+
+// OPEN WORKSPACE
+async function openTask(id){
+taskId=id;
+show("workspace");
+
+canvas=document.getElementById("canvas");
+ctx=canvas.getContext("2d");
+
+const {data}=await sb.from("ant_tasks").select("*").eq("id",id).single();
+
+boxes = data.annotations || [];
+
+img.src=data.imgdata;
+img.onload=draw;
+
+// ZOOM
+canvas.onwheel=e=>{
+e.preventDefault();
+scale*=e.deltaY<0?1.1:0.9;
+draw();
+};
+
+// DRAW
+canvas.onmousedown=e=>{
+drawing=true;
+startX=(e.clientX-offsetX)/scale;
+startY=(e.clientY-offsetY)/scale;
+};
+
+canvas.onmouseup=e=>{
+if(!drawing)return;
+drawing=false;
+
+let endX=(e.clientX-offsetX)/scale;
+let endY=(e.clientY-offsetY)/scale;
+
+// 🎯 SNAP
+endX=Math.round(endX/10)*10;
+endY=Math.round(endY/10)*10;
+
+// 🔥 TRUE ROTATION PARAM
+boxes.push({
+x:startX,y:startY,
+w:endX-startX,h:endY-startY,
+d:20,
+angle:0.5
+});
+
+draw();
+updateList();
+autoSave();
+};
+}
+
+// DRAW
+function draw(){
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+ctx.save();
+ctx.translate(offsetX,offsetY);
+ctx.scale(scale,scale);
+
+ctx.drawImage(img,0,0);
+
+boxes.forEach(b=>{
+
+let dx=b.d*Math.cos(b.angle);
+let dy=b.d*Math.sin(b.angle);
+
+// FRONT
+ctx.strokeStyle="lime";
+ctx.strokeRect(b.x,b.y,b.w,b.h);
+
+// BACK (ROTATED)
+ctx.strokeStyle="cyan";
+ctx.strokeRect(b.x+dx,b.y-dy,b.w,b.h);
+
+// CONNECT
+ctx.beginPath();
+ctx.moveTo(b.x,b.y);
+ctx.lineTo(b.x+dx,b.y-dy);
+
+ctx.moveTo(b.x+b.w,b.y);
+ctx.lineTo(b.x+b.w+dx,b.y-dy);
+
+ctx.moveTo(b.x,b.y+b.h);
+ctx.lineTo(b.x+dx,b.y+b.h-dy);
+
+ctx.moveTo(b.x+b.w,b.y+b.h);
+ctx.lineTo(b.x+b.w+dx,b.y+b.h-dy);
+
+ctx.stroke();
+});
+
+ctx.restore();
+}
+
+// LIST
+function updateList(){
+document.getElementById("annoList").innerHTML=
+boxes.map((b,i)=>`Box ${i+1}`).join("<br>");
+}
+
+function back(){show("dashboard")}
+function logout(){location.reload()}
+</script>
 
 </body>
 </html>
