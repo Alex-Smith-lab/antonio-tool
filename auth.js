@@ -1,51 +1,25 @@
-let user = null;
+async function login() {
+const name = document.getElementById("name").value;
+const email = document.getElementById("email").value;
 
-window.onload = async () => {
-const savedEmail = localStorage.getItem('workerEmail');
+if(!name || !email) return alert("Fill all");
 
-if(savedEmail){
-const { data } = await sb.from("ant_users")
-.select("*")
-.eq("email", savedEmail)
-.single();
+const { data: existing } = await sb.from("ant_users")
+.select("*").eq("email", email).single();
 
-if(data && data.status === 'approved'){
-user = data;
-showDashboard();
-}
-}
-};
-
-async function handleLogin(){
-const email = userEmail.value.trim().toLowerCase();
-const name = userName.value.trim();
-
-if(!email || !name) return alert("Enter details");
-
-const { data: existing } = await sb
-.from("ant_users")
-.select("*")
-.eq("email", email)
-.single();
-
-if(!existing){
+if (!existing) {
 await sb.from("ant_users").insert([{
-email, name, role: 'worker', status: 'pending', balance: 0
+name, email, role:"worker", status:"pending"
 }]);
-
-waitMessage.style.display = "block";
-}
-else if(existing.status === 'pending'){
-waitMessage.style.display = "block";
-}
-else{
-user = existing;
-localStorage.setItem("workerEmail", email);
-showDashboard();
-}
+document.getElementById("wait").innerText = "Waiting admin approval...";
+return;
 }
 
-function logout(){
-localStorage.clear();
-location.reload();
+if (existing.status !== "approved") {
+document.getElementById("wait").innerText = "Pending approval...";
+return;
+}
+
+localStorage.setItem("user", JSON.stringify(existing));
+window.location.href = "dashboard.html";
 }
