@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Workspace</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/workspace.js"></script>
+
+<link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="topbar">
+<div>AVALA WORKSPACE</div>
+<div>👤 Profile</div>
+</div>
+
+<!-- CAMERA PANEL -->
+<div class="camera-panel">
+FWC_C<br>RNC_R<br>FNC<br>RNC_L<br>FWC_R<br>FWC_L<br>RNC_C
+</div>
+
+<!-- CANVAS -->
+<canvas id="canvas"></canvas>
+
+<!-- RIGHT PANEL -->
+<div id="sidePanel">
+<button onclick="goHome()">🏠 Home</button>
+<div id="annoList"></div>
+</div>
+
+<!-- TOOLS -->
+<div class="tools">
+<button onclick="mode='box'">2D BOX</button>
+<button onclick="mode='poly'">POLYLINE</button>
+<button onclick="mode='cuboid'">CUBOID</button>
+<button onclick="mode='calib'">CALIBRATION</button>
+</div>
+
+</body>
+</html>
