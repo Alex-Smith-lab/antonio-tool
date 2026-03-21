@@ -1,72 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Labeler - Workspace</title>
+<title>Login</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
 
 <link rel="stylesheet" href="css/styles.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
-<body oncontextmenu="return false;">
+<body style="display:flex;height:100vh;">
 
-<!-- LOGIN -->
-<div id="loginPage" class="auth-page">
-<h1 style="color:var(--purple)">a⌵ ANTONIO ANNOTATION</h1>
-<h2>Worker Portal</h2>
-<input id="userName" placeholder="Full Name">
-<input id="userEmail" placeholder="Email Address">
-<br>
-<button onclick="handleLogin()">Login / Start Session</button>
-<div id="waitMessage" class="wait-msg">Account pending admin approval...</div>
+<!-- LEFT IMAGE -->
+<div style="flex:1;background:url('https://mindkosh.com/blog/2d-and-3d-data-annotation/') center/cover;"></div>
+
+<!-- RIGHT LOGIN -->
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+<h1 style="color:#7b2ff7;">Cuboid Annotation</h1>
+
+<input id="name" placeholder="Full Name"><br><br>
+<input id="email" placeholder="Email"><br><br>
+
+<button onclick="login()">Login</button>
+
+<button onclick="toggleTheme()">🌗 Toggle Theme</button>
 </div>
-
-<!-- TOP NAV -->
-<div id="topNav">
-<div>a⌵ WORKSPACE</div>
-<div class="profile-area">
-<button class="spreadsheet-btn">Earnings: $<span id="balance">0.00</span></button>
-<div id="workerProfile"></div>
-<button onclick="logout()">Logout</button>
-</div>
-</div>
-
-<!-- DASHBOARD -->
-<div id="dashboard">
-<h2 id="greet"></h2>
-<p id="seasonalMsg"></p>
-<div id="tasks" class="task-grid"></div>
-</div>
-
-<!-- WORKSPACE -->
-<div id="workspacePage">
-<div id="workzone"><canvas id="canvas"></canvas></div>
-
-<div id="sidePanel">
-<div>
-<span>LATEST LABELS</span>
-<button onclick="closeWorkspace()">SAVE & EXIT</button>
-</div>
-
-<div id="annoList"></div>
-<button onclick="deleteBox()">DELETE BOX</button>
-<button onclick="submitForReview()">SUBMIT</button>
-</div>
-
-<div id="labelPopup"></div>
-</div>
-
-<div class="bottom-bar" id="footerBar">
-<div id="footerWorker"></div>
-<div>● SUPABASE CONNECTED</div>
-</div>
-
-<!-- JS FILES -->
-<script src="js/supabaseClient.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/dashboard.js"></script>
-<script src="js/workspace.js"></script>
-<script src="js/main.js"></script>
 
 </body>
 </html>
