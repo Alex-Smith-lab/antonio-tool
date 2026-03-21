@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -31,15 +31,12 @@ color:var(--text);
 overflow:hidden;
 }
 
-/* PAGES */
 .page{display:none;height:100vh;}
 .active{display:flex}
 
-/* LOGIN */
 #login{display:flex;}
 .left{
 flex:1;
-/* ✅ YOUR IMAGE INSERTED */
 background:url('/mnt/data/e4484700-4f14-4ebe-9401-95226336af8c.png') center/cover no-repeat;
 }
 .right{
@@ -50,7 +47,6 @@ justify-content:center;
 align-items:center;
 }
 
-/* DASHBOARD */
 #dashboard{flex-direction:column;}
 .topbar{
 height:60px;
@@ -68,7 +64,6 @@ margin:10px 0;
 border-radius:8px;
 }
 
-/* WORKSPACE */
 #workspace{position:relative;}
 canvas{
 position:absolute;
@@ -120,13 +115,11 @@ padding:10px;
 <div>🏢 Company</div>
 <div onclick="logout()">👤 Profile</div>
 </div>
-
 <div class="tasks" id="tasks"></div>
 </div>
 
 <!-- WORKSPACE -->
 <div id="workspace" class="page">
-
 <div class="topbar">
 <div>🧠 Workspace</div>
 <div onclick="back()">⬅ Back</div>
@@ -143,7 +136,6 @@ FWC_C<br>RNC_R<br>FNC<br>RNC_L<br>FWC_R<br>FWC_L<br>RNC_C
 <b>Annotations</b>
 <div id="annoList"></div>
 </div>
-
 </div>
 
 <script>
@@ -163,12 +155,8 @@ let drawing=false, startX,startY;
 // 🧠 AUTO SAVE
 async function autoSave(){
 if(!taskId) return;
-await sb.from("ant_tasks").update({
-annotations: boxes
-}).eq("id", taskId);
+await sb.from("ant_tasks").update({annotations: boxes}).eq("id", taskId);
 }
-
-// AUTO SAVE EVERY 5s
 setInterval(autoSave,5000);
 
 // PAGE SWITCH
@@ -182,28 +170,33 @@ function toggleTheme(){
 document.body.classList.toggle("light");
 }
 
-// LOGIN
+// LOGIN FIXED
 async function login(){
-const email=document.getElementById("email").value;
-const name=document.getElementById("name").value;
+const email=document.getElementById("email").value.trim();
+const name=document.getElementById("name").value.trim();
 
-let {data}=await sb.from("ant_users").select("*").eq("email",email).single();
+if(!email || !name){ alert("Enter name and email"); return; }
 
-if(!data){
-await sb.from("ant_users").insert([{email,name,status:"approved"}]);
-data={email,name};
+let { data: userData, error } = await sb.from("ant_users").select("*").eq("email", email);
+
+if(error){ console.error(error); alert("Supabase error"); return; }
+
+if(!userData || userData.length===0){
+let { data: newUser, error: insertError } = await sb.from("ant_users").insert([{email,name,status:"approved"}]).select().single();
+if(insertError){ console.error(insertError); alert("Error creating user"); return; }
+user = newUser;
+}else{
+user = userData[0];
 }
 
-user=data;
 loadTasks();
 show("dashboard");
 }
 
 // LOAD TASKS
 async function loadTasks(){
-const {data}=await sb.from("ant_tasks").select("*");
-
-document.getElementById("tasks").innerHTML=data.map(t=>`
+const { data } = await sb.from("ant_tasks").select("*");
+document.getElementById("tasks").innerHTML = data.map(t=>`
 <div class="card">
 Task ${t.id}
 <button onclick="openTask('${t.id}')">Start</button>
@@ -218,11 +211,10 @@ show("workspace");
 canvas=document.getElementById("canvas");
 ctx=canvas.getContext("2d");
 
-const {data}=await sb.from("ant_tasks").select("*").eq("id",id).single();
+const { data: taskData } = await sb.from("ant_tasks").select("*").eq("id",id).single();
+boxes = taskData.annotations || [];
 
-boxes = data.annotations || [];
-
-img.src=data.imgdata;
+img.src=taskData.imgdata;
 img.onload=draw;
 
 // ZOOM
@@ -232,7 +224,7 @@ scale*=e.deltaY<0?1.1:0.9;
 draw();
 };
 
-// DRAW
+// DRAW BOXES
 canvas.onmousedown=e=>{
 drawing=true;
 startX=(e.clientX-offsetX)/scale;
@@ -240,7 +232,7 @@ startY=(e.clientY-offsetY)/scale;
 };
 
 canvas.onmouseup=e=>{
-if(!drawing)return;
+if(!drawing) return;
 drawing=false;
 
 let endX=(e.clientX-offsetX)/scale;
@@ -250,7 +242,7 @@ let endY=(e.clientY-offsetY)/scale;
 endX=Math.round(endX/10)*10;
 endY=Math.round(endY/10)*10;
 
-// 🔥 TRUE ROTATION PARAM
+// 🔥 TRUE ROTATION
 boxes.push({
 x:startX,y:startY,
 w:endX-startX,h:endY-startY,
@@ -278,7 +270,6 @@ ctx.scale(scale,scale);
 ctx.drawImage(img,0,0);
 
 boxes.forEach(b=>{
-
 let dx=b.d*Math.cos(b.angle);
 let dy=b.d*Math.sin(b.angle);
 
@@ -312,8 +303,7 @@ ctx.restore();
 
 // LIST
 function updateList(){
-document.getElementById("annoList").innerHTML=
-boxes.map((b,i)=>`Box ${i+1}`).join("<br>");
+document.getElementById("annoList").innerHTML = boxes.map((b,i)=>`Box ${i+1}`).join("<br>");
 }
 
 function back(){show("dashboard")}
