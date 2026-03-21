@@ -1,47 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>TM Admin - Control Center</title>
-    <link rel="stylesheet" href="admin-style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
-    <div id="auth-gate" class="auth-overlay">
-        <div class="auth-box">
-            <h1 class="logo">TM <span>ADMIN</span></h1>
-            <input type="text" id="adminEmailInput" placeholder="Admin Email">
-            <button class="btn purple" onclick="checkAuth()">Login</button>
-        </div>
-    </div>
+<meta charset="UTF-8">
+<title>Antonio Annotation</title>
 
-    <div id="admin-content" style="display:none; height: 100vh; width: 100vw; display: flex;">
-        <div class="sidebar">
-            <h3 class="logo">TM <span>DASHBOARD</span></h3>
-            <button class="tab-btn active" onclick="showTab('approvals',this)">Staff Management</button>
-            <button class="tab-btn" onclick="showTab('tasks',this)">Assign Task</button>
-        </div>
-        <div class="main">
-            <div id="approvals" class="panel tab">
-                <h2>Coworker Management</h2>
-                <table>
-                    <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
-                    <tbody id="userTable"></tbody>
-                </table>
-            </div>
-            <div id="tasks" class="panel tab" style="display:none">
-                <h2>Deploy New Task</h2>
-                <input type="file" id="taskFile">
-                <select id="workerList"></select>
-                <select id="toolType">
-                    <option>2D Box</option><option>3D Cuboid</option>
-                    <option>Lidar</option><option>Polygon</option>
-                </select>
-                <button class="btn green" onclick="sendTask()">Deploy</button>
-            </div>
-        </div>
-    </div>
-    <script src="admin-auth.js"></script>
-    <script src="admin-core.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body oncontextmenu="return false;">
+
+<!-- LOGIN -->
+<div id="loginPage" class="auth-page">
+<h1>a⌵ ANTONIO ANNOTATION</h1>
+<h2>Worker Portal</h2>
+
+<input id="userName" placeholder="Full Name">
+<input id="userEmail" placeholder="Email">
+
+<button onclick="handleLogin()">Login / Start Session</button>
+
+<div id="waitMessage">Pending admin approval...</div>
+</div>
+
+<!-- TOP NAV -->
+<div id="topNav">
+<div>a⌵ WORKSPACE</div>
+
+<div class="profile-area">
+<button>Earnings: $<span id="balance">0.00</span></button>
+<div id="workerProfile"></div>
+<button onclick="logout()">Logout</button>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+<h2 id="greet"></h2>
+<p id="seasonalMsg"></p>
+<div id="tasks" class="task-grid"></div>
+</div>
+
+<!-- WORKSPACE -->
+<div id="workspacePage">
+<canvas id="canvas"></canvas>
+<div id="sidePanel">
+<div id="annoList"></div>
+<button onclick="deleteBox()">DELETE</button>
+<button onclick="submitForReview()">SUBMIT</button>
+</div>
+</div>
+
+<script src="js/supabaseClient.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/workspace.js"></script>
+
 </body>
 </html>
