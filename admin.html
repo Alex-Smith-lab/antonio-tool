@@ -2,247 +2,305 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Admin + Workspace (FULL SYSTEM)</title>
+<title>Admin - Management</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{margin:0;background:#0b0b0b;color:white;font-family:sans-serif;overflow:hidden}
-#topbar{
-position:fixed;top:0;left:0;right:0;height:50px;
-background:#111;display:flex;align-items:center;
-padding:0 15px;z-index:10;border-bottom:1px solid #222;
+body {
+background:#0b0b0b;
+color:white;
+font-family:sans-serif;
+margin:0;
+display:flex;
+height:100vh;
+overflow:hidden;
+font-size:12px;
 }
-#canvas{position:absolute;top:50px;left:0}
-.btn{background:#7b2ff7;border:none;color:white;padding:6px 10px;margin-right:5px;cursor:pointer;border-radius:5px}
+
+.sidebar {
+width:180px;
+background:black;
+padding:15px;
+border-right:1px solid #222;
+display:flex;
+flex-direction:column;
+overflow-y:auto;
+}
+
+.tab-btn {
+width:100%;
+padding:10px;
+margin-bottom:8px;
+background:none;
+border:none;
+color:#999;
+text-align:left;
+cursor:pointer;
+border-radius:6px;
+font-size:12px;
+}
+.tab-btn.active { background:#7b2ff7; color:white; }
+
+.main {
+flex:1;
+padding:20px;
+overflow:auto;
+}
+
+table {
+width:100%;
+min-width:800px;
+border-collapse:collapse;
+margin-top:15px;
+}
+
+td, th {
+padding:10px;
+border-bottom:1px solid #222;
+font-size:11px;
+white-space:nowrap;
+}
+
+.panel {
+background:#161616;
+padding:15px;
+border-radius:10px;
+margin-bottom:20px;
+}
+
+.btn {
+padding:6px 10px;
+border:none;
+border-radius:4px;
+cursor:pointer;
+font-size:11px;
+}
+.green{background:#00c853;color:white;}
+.red{background:#ff4444;color:white;}
+.blue{background:#007bff;color:white;}
+.purple{background:#7b2ff7;color:white;}
+
+input, select {
+padding:8px;
+background:#222;
+color:white;
+border:1px solid #444;
+margin:5px 0;
+width:100%;
+max-width:250px;
+}
 </style>
 </head>
 
 <body>
 
-<div id="topbar">
-<button class="btn" onclick="mode='box'">📦 Box</button>
-<button class="btn" onclick="mode='cuboid'">🧊 Cuboid</button>
-<button class="btn" onclick="save()">💾 Save</button>
-<button class="btn" onclick="loadTask()">🔄 Load</button>
+<!-- AUTH -->
+<div id="auth-gate" style="position:fixed; inset:0; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+<h1 style="color:#7b2ff7;">Admin Verification</h1>
+<input type="text" id="adminEmailInput" placeholder="Enter Admin Email">
+<button class="btn purple" onclick="checkAuth()">Login</button>
 </div>
 
-<canvas id="canvas"></canvas>
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h3 style="color:#7b2ff7;">ADMIN</h3>
+<button class="tab-btn active" onclick="showTab('approvals',this)">Staff</button>
+<button class="tab-btn" onclick="showTab('tasks',this)">Tasks</button>
+<button class="tab-btn" onclick="showTab('firstpass_inbox',this)">Inbox</button>
+<button class="tab-btn" onclick="showTab('supervision',this)">Supervision</button>
+<button class="tab-btn" onclick="showTab('admin_access',this)">Admins</button>
+<button class="tab-btn" onclick="showTab('export',this)">Export</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<div id="approvals" class="panel tab">
+<h2>Coworkers</h2>
+<table>
+<thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
+<tbody id="userTable"></tbody>
+</table>
+</div>
+
+<div id="tasks" class="panel tab" style="display:none">
+<h2>Assign Task</h2>
+<input type="file" id="taskFile">
+<select id="workerList"></select>
+<select id="taskPhase">
+<option value="1st Pass">1st Pass</option>
+<option value="Review">Review</option>
+</select>
+<button class="btn green" onclick="sendTask()">Send</button>
+</div>
+
+<div id="firstpass_inbox" class="panel tab" style="display:none">
+<h2>Inbox</h2>
+<table>
+<thead><tr><th>ID</th><th>User</th><th>Boxes</th><th>Assign</th></tr></thead>
+<tbody id="inboxTable"></tbody>
+</table>
+</div>
+
+<div id="supervision" class="panel tab" style="display:none">
+<h2>Supervision</h2>
+<table>
+<thead><tr><th>ID</th><th>Phase</th><th>User</th><th>Status</th></tr></thead>
+<tbody id="supervisionTable"></tbody>
+</table>
+</div>
+
+<div id="admin_access" class="panel tab" style="display:none">
+<h2>Admins</h2>
+<input type="text" id="newAdminEmail">
+<button onclick="grantAdmin()">Add</button>
+<table>
+<tbody id="adminTable"></tbody>
+</table>
+</div>
+
+<div id="export" class="panel tab" style="display:none">
+<h2>Export</h2>
+<button onclick="exportToCSV()">Download</button>
+<table>
+<tbody id="exportTable"></tbody>
+</table>
+</div>
+
+</div>
 
 <script>
-// ✅ SUPABASE
-const sb = supabase.createClient(
-"https://qhftvfatzsogxbbqzxry.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w"
-);
+// ✅ FIXED SUPABASE INIT
+const SUPABASE_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnR2ZmF0enNvZ3hiYnF6eHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3Nzk5MjEsImV4cCI6MjA4ODM1NTkyMX0.A9jvgex5vX1uuGCrzK78yjPGGDBnXLVjK4lOGP0vk0w";
 
-// 🎯 STATE
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let boxes = [];
-let mode = "box";
+// STATE
+let allUsers = [], allTasks = [], allAdmins = [];
+const MASTER_ADMIN = "antonymbali96@gmail.com";
 
-let scale = 1;
-let offsetX = 0, offsetY = 0;
+// AUTH
+async function checkAuth(){
+const email = document.getElementById("adminEmailInput").value.trim().toLowerCase();
 
-let isDrawing = false;
-let startX, startY;
+const { data, error } = await sb.from("ant_admins").select("email").eq("email", email);
 
-let img = new Image();
-let taskId = localStorage.getItem("taskId") || 1;
+if(error){ alert("Connection error"); return; }
 
-// 🧠 SMART SNAP
-function snap(val){
-return Math.round(val / 10) * 10;
-}
-
-// 🧊 DRAW CUBOID
-function drawCuboid(x,y,w,h){
-let depth = 20;
-
-// front
-ctx.strokeRect(x,y,w,h);
-
-// back
-ctx.strokeRect(x+depth,y-depth,w,h);
-
-// connect lines
-ctx.beginPath();
-ctx.moveTo(x,y);
-ctx.lineTo(x+depth,y-depth);
-
-ctx.moveTo(x+w,y);
-ctx.lineTo(x+w+depth,y-depth);
-
-ctx.moveTo(x,y+h);
-ctx.lineTo(x+depth,y+h-depth);
-
-ctx.moveTo(x+w,y+h);
-ctx.lineTo(x+w+depth,y+h-depth);
-
-ctx.stroke();
-}
-
-// 🎨 DRAW
-function draw(){
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-ctx.save();
-ctx.translate(offsetX, offsetY);
-ctx.scale(scale, scale);
-
-ctx.drawImage(img,0,0);
-
-// draw annotations
-boxes.forEach(b=>{
-ctx.strokeStyle = b.type === "cuboid" ? "orange" : "lime";
-
-if(b.type === "cuboid"){
-drawCuboid(b.x,b.y,b.w,b.h);
+if(email === MASTER_ADMIN || (data && data.length)){
+document.getElementById("auth-gate").style.display="none";
+initRealtime();
+loadData();
 }else{
-ctx.strokeRect(b.x,b.y,b.w,b.h);
+alert("Access denied");
 }
-});
-
-ctx.restore();
 }
 
-// 🖱 EVENTS
-canvas.onmousedown = (e)=>{
-isDrawing = true;
-startX = (e.offsetX - offsetX)/scale;
-startY = (e.offsetY - offsetY)/scale;
+// REALTIME FIX (NO DUPLICATE CHANNELS)
+let channel;
+function initRealtime(){
+if(channel) return;
+
+channel = sb.channel('live')
+.on('postgres_changes',{event:'*',schema:'public'},()=>loadData())
+.subscribe();
+}
+
+// TABS
+function showTab(id,btn){
+document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
+document.getElementById(id).style.display="block";
+document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+btn.classList.add("active");
+}
+
+// LOAD DATA (SAFE)
+async function loadData(){
+const { data: users } = await sb.from("ant_users").select("*");
+const { data: tasks } = await sb.from("ant_tasks").select("*");
+const { data: admins } = await sb.from("ant_admins").select("*");
+
+allUsers = users || [];
+allTasks = tasks || [];
+allAdmins = admins || [];
+
+document.getElementById("userTable").innerHTML = allUsers.map(u=>`
+<tr>
+<td>${u.name||''}</td>
+<td>${u.email}</td>
+<td>${u.status||''}</td>
+<td>
+<button onclick="approve('${u.email}')">✔</button>
+<button onclick="removeUser('${u.email}')">✖</button>
+</td>
+</tr>`).join("");
+
+document.getElementById("workerList").innerHTML =
+allUsers.filter(u=>u.status==="approved")
+.map(u=>`<option value="${u.email}">${u.name}</option>`).join("");
+
+document.getElementById("inboxTable").innerHTML =
+allTasks.filter(t=>t.completed)
+.map(t=>`<tr><td>${t.id}</td><td>${t.assignedto}</td><td>${t.annotations?.length||0}</td><td>-</td></tr>`).join("");
+
+document.getElementById("supervisionTable").innerHTML =
+allTasks.map(t=>`<tr><td>${t.id}</td><td>${t.phase}</td><td>${t.assignedto}</td><td>${t.completed?'Done':'Working'}</td></tr>`).join("");
+
+document.getElementById("adminTable").innerHTML =
+allAdmins.map(a=>`<tr><td>${a.email}</td></tr>`).join("");
+
+document.getElementById("exportTable").innerHTML =
+allTasks.map(t=>`<tr><td>${t.id}</td><td>${t.assignedto}</td><td>${t.phase}</td></tr>`).join("");
+}
+
+// ACTIONS
+async function approve(email){
+await sb.from("ant_users").update({status:"approved"}).eq("email",email);
+loadData();
+}
+
+async function removeUser(email){
+await sb.from("ant_users").delete().eq("email",email);
+loadData();
+}
+
+async function sendTask(){
+const file = document.getElementById("taskFile").files[0];
+if(!file) return alert("Select file");
+
+const reader = new FileReader();
+reader.onload = async e=>{
+await sb.from("ant_tasks").insert([{
+id: Date.now(),
+imgdata: e.target.result,
+assignedto: document.getElementById("workerList").value,
+phase: document.getElementById("taskPhase").value,
+completed:false,
+annotations:[]
+}]);
+alert("Task sent");
+loadData();
 };
-
-canvas.onmousemove = (e)=>{
-if(!isDrawing) return;
-draw();
-
-let x = (e.offsetX - offsetX)/scale;
-let y = (e.offsetY - offsetY)/scale;
-
-let w = x - startX;
-let h = y - startY;
-
-ctx.strokeStyle="yellow";
-
-// SNAP ENABLED
-let sx = snap(startX);
-let sy = snap(startY);
-let sw = snap(w);
-let sh = snap(h);
-
-if(mode === "cuboid"){
-drawCuboid(sx,sy,sw,sh);
-}else{
-ctx.strokeRect(sx,sy,sw,sh);
-}
-};
-
-canvas.onmouseup = (e)=>{
-isDrawing = false;
-
-let x = (e.offsetX - offsetX)/scale;
-let y = (e.offsetY - offsetY)/scale;
-
-let w = x - startX;
-let h = y - startY;
-
-// SNAP FINAL
-boxes.push({
-x: snap(startX),
-y: snap(startY),
-w: snap(w),
-h: snap(h),
-type: mode
-});
-
-draw();
-};
-
-// 🔍 ZOOM
-canvas.onwheel = (e)=>{
-e.preventDefault();
-scale *= e.deltaY < 0 ? 1.1 : 0.9;
-draw();
-};
-
-// 🖐 PAN
-let dragging=false;
-canvas.oncontextmenu = ()=>false;
-
-canvas.onmousedown = (e)=>{
-if(e.button === 2){
-dragging = true;
-return;
-}
-isDrawing = true;
-startX = (e.offsetX - offsetX)/scale;
-startY = (e.offsetY - offsetY)/scale;
-};
-
-canvas.onmousemove = (e)=>{
-if(dragging){
-offsetX += e.movementX;
-offsetY += e.movementY;
-draw();
-return;
+reader.readAsDataURL(file);
 }
 
-if(!isDrawing) return;
-draw();
-
-let x = (e.offsetX - offsetX)/scale;
-let y = (e.offsetY - offsetY)/scale;
-
-let w = x - startX;
-let h = y - startY;
-
-let sx = snap(startX);
-let sy = snap(startY);
-let sw = snap(w);
-let sh = snap(h);
-
-ctx.strokeStyle="yellow";
-
-if(mode === "cuboid"){
-drawCuboid(sx,sy,sw,sh);
-}else{
-ctx.strokeRect(sx,sy,sw,sh);
-}
-};
-
-canvas.onmouseup = ()=>{isDrawing=false; dragging=false};
-
-// 💾 SAVE
-async function save(){
-await sb.from("ant_tasks")
-.update({ annotations: boxes, completed:true })
-.eq("id", taskId);
-
-alert("Saved!");
+async function grantAdmin(){
+const email = document.getElementById("newAdminEmail").value;
+if(email) await sb.from("ant_admins").insert([{email}]);
+loadData();
 }
 
-// 🔄 LOAD
-async function loadTask(){
-const { data } = await sb.from("ant_tasks")
-.select("*").eq("id", taskId).single();
-
-if(!data) return alert("No task");
-
-img.src = data.imgdata;
-boxes = data.annotations || [];
-
-img.onload = draw;
+function exportToCSV(){
+let csv="id,user,phase\n";
+allTasks.forEach(t=>csv+=`${t.id},${t.assignedto},${t.phase}\n`);
+const blob=new Blob([csv]);
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="tasks.csv";
+a.click();
 }
-
-// INIT
-loadTask();
-
 </script>
 
 </body>
