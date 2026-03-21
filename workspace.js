@@ -1,62 +1,72 @@
-let activeId = null;
+const taskId = localStorage.getItem("taskId");
+
+let canvas, ctx;
+let scale = 1, offsetX = 0, offsetY = 0;
+let isDragging = false;
 let boxes = [];
-let canvas, ctx, img = new Image();
+let mode = "box";
 
-async function openWork(id){
-activeId = id;
-
-dashboard.style.display = "none";
-workspacePage.style.display = "block";
-
+window.onload = async () => {
 canvas = document.getElementById("canvas");
 ctx = canvas.getContext("2d");
 
-const { data } = await sb
-.from("ant_tasks")
-.select("*")
-.eq("id", id)
-.single();
+resize();
 
-boxes = data.annotations || [];
+const { data } = await sb.from("ant_tasks")
+.select("*").eq("id", taskId).single();
 
+const img = new Image();
 img.src = data.imgdata;
 
-img.onload = () => draw();
-}
+img.onload = () => {
+draw(img);
+};
 
-function draw(){
+canvas.onwheel = (e)=>{
+scale *= e.deltaY < 0 ? 1.1 : 0.9;
+draw(img);
+};
+
+canvas.onmousedown = (e)=>{
+isDragging = true;
+};
+
+canvas.onmousemove = (e)=>{
+if(isDragging){
+offsetX += e.movementX;
+offsetY += e.movementY;
+draw(img);
+}
+};
+
+canvas.onmouseup = ()=> isDragging=false;
+};
+
+function draw(img){
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 ctx.clearRect(0,0,canvas.width,canvas.height);
+
+ctx.save();
+ctx.translate(offsetX, offsetY);
+ctx.scale(scale, scale);
+
 ctx.drawImage(img,0,0);
 
 boxes.forEach(b=>{
-ctx.strokeStyle = "lime";
+ctx.strokeStyle="lime";
 ctx.strokeRect(b.x,b.y,b.w,b.h);
 });
+
+ctx.restore();
 }
 
-async function saveProgress(){
-await sb.from("ant_tasks")
-.update({ annotations: boxes })
-.eq("id", activeId);
+function goHome(){
+window.location.href = "dashboard.html";
 }
 
-async function submitForReview(){
-await sb.from("ant_tasks")
-.update({
-completed: true,
-phase: "1st Pass"
-})
-.eq("id", activeId);
-
-alert("Submitted!");
-location.reload();
-}
-
-function deleteBox(){
-boxes.pop();
-draw();
-saveProgress();
+function resize(){
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 }
