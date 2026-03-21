@@ -1,39 +1,231 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Login - Antanna Annotation</title>
+<script>
+const SUPABASE_URL = "https://qhftvfatzsogxbbqzxry.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_KEY"; // keep yours here
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
-<script src="js/auth.js"></script>
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-<link rel="stylesheet" href="css/styles.css">
-</head>
+let allTasks = [], allUsers = [], allAdmins = [];
+const MASTER_ADMIN = "antonymbali96@gmail.com";
 
-<body class="login-body">
+async function checkAuth() {
+    const input = document.getElementById("adminEmailInput").value.toLowerCase().trim();
 
-<div class="login-container">
+    const { data: admins } = await sb
+        .from("ant_admins")
+        .select("email")
+        .eq("email", input);
 
-<!-- LEFT IMAGE -->
-<div class="login-left">
-<img src="assets/cuboid.jpg" alt="cuboid">
-</div>
+    if (input === MASTER_ADMIN || (admins && admins.length > 0)) {
+        document.getElementById("auth-gate").style.display = "none";
+        initRealtime();
+        loadData();
+    } else {
+        alert("Access Denied.");
+    }
+}
 
-<!-- RIGHT FORM -->
-<div class="login-right">
-<h1>a⌵ ANNOTATION</h1>
-<p>Worker Portal</p>
+function initRealtime() {
+    sb.channel('admin-sync')
+    .on('postgres_changes', { event: '*', schema: 'public' }, () => loadData())
+    .subscribe();
+}
 
-<input id="name" placeholder="Full Name">
-<input id="email" placeholder="Email">
+function showTab(id, btn) {
+    document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
+    document.getElementById(id).style.display = "block";
 
-<button onclick="login()">LOGIN</button>
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
 
-<div id="wait"></div>
-</div>
+    loadData();
+}
 
-</div>
+async function loadData() {
+    const { data: users } = await sb.from("ant_users").select("*");
+    const { data: tasks } = await sb.from("ant_tasks").select("*").order('created_at', { ascending: false });
+    const { data: admins } = await sb.from("ant_admins").select("*");
 
-</body>
-</html>
+    allUsers = users || [];
+    allTasks = tasks || [];
+    allAdmins = admins || [];
+
+    const approved = allUsers.filter(u => u.status === "approved");
+
+    // Worker dropdown
+    document.getElementById("workerList").innerHTML =
+        `<option value="UNASSIGNED">-- MASS ASSIGN --</option>` +
+        approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("");
+
+    // USERS
+    document.getElementById("userTable").innerHTML = allUsers.map(u => `
+    <tr>
+    <td>${u.name}</td>
+    <td>${u.email}</td>
+    <td style="color:${u.status === 'pending' ? 'orange' : '#00ff88'}">${u.status}</td>
+    <td>
+    <button class="btn green" onclick="updateUserStatus('${u.email}','approved')">Approve</button>
+    <button class="btn red" onclick="deleteUser('${u.email}')">Remove</button>
+    </td>
+    </tr>
+    `).join("");
+
+    // ADMINS
+    document.getElementById("adminTable").innerHTML =
+        `<tr><td>${MASTER_ADMIN}</td><td>Master</td><td>-</td></tr>` +
+        allAdmins.map(a => `
+        <tr>
+        <td>${a.email}</td>
+        <td>Registered</td>
+        <td><button class="btn red" onclick="removeAdmin('${a.email}')">Remove</button></td>
+        </tr>`).join("");
+
+    // INBOX
+    document.getElementById("inboxTable").innerHTML = allTasks
+    .filter(t => t.phase === '1st Pass' && t.completed)
+    .map(t => `
+    <tr>
+    <td>${t.id}</td>
+    <td>${t.assignedto}</td>
+    <td>${(t.boxes?.length || 0) + (t.cuboids?.length || 0)}</td>
+    <td>
+    <select id="rev-${t.id}">
+    ${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}
+    </select>
+    </td>
+    <td><button class="btn purple" onclick="assignReview('${t.id}')">Assign</button></td>
+    </tr>
+    `).join("");
+
+    // SUPERVISION
+    document.getElementById("supervisionTable").innerHTML = allTasks.map(t => `
+    <tr>
+    <td>${t.id}</td>
+    <td>${t.phase}</td>
+    <td>${t.assignedto}</td>
+    <td>${t.completed ? '✅ Done' : '⏳ Working'}</td>
+    <td>
+    <select onchange="reassignTask('${t.id}', this.value)">
+    <option value="">Reassign</option>
+    ${approved.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}
+    </select>
+    </td>
+    <td>
+    <button class="btn blue" onclick="viewWork('${t.id}')">View</button>
+    <button class="btn red" onclick="deleteTask('${t.id}')">Del</button>
+    </td>
+    </tr>
+    `).join("");
+
+    // EXPORT
+    document.getElementById("exportTable").innerHTML = allTasks.map(t => `
+    <tr>
+    <td>${t.id}</td>
+    <td>${t.assignedto}</td>
+    <td>${t.phase}</td>
+    <td>
+    <a href="workspace.html?taskId=${t.id}" target="_blank" style="color:#7b2ff7;">Open 🔗</a>
+    </td>
+    </tr>
+    `).join("");
+}
+
+// TASK CREATE
+async function sendTask() {
+    const file = document.getElementById("taskFile").files[0];
+    const worker = document.getElementById("workerList").value;
+    const phase = document.getElementById("taskPhase").value;
+
+    if (!file) return alert("Select file");
+
+    const reader = new FileReader();
+
+    reader.onload = async e => {
+        await sb.from("ant_tasks").insert([{
+            id: Date.now(),
+            imgdata: e.target.result,
+            assignedto: worker,
+            phase: phase,
+            completed: false,
+
+            // 🔥 NEW STRUCTURE
+            boxes: [],
+            cuboids: []
+        }]);
+
+        alert("Task Sent!");
+        loadData();
+    };
+
+    reader.readAsDataURL(file);
+}
+
+// ACTIONS
+async function reassignTask(id, email) {
+    if (!email) return;
+    await sb.from("ant_tasks").update({ assignedto: email }).eq("id", id);
+    loadData();
+}
+
+async function deleteTask(id) {
+    if (confirm("Delete task?"))
+        await sb.from("ant_tasks").delete().eq("id", id);
+    loadData();
+}
+
+async function updateUserStatus(email, status) {
+    await sb.from("ant_users").update({ status }).eq("email", email);
+    loadData();
+}
+
+async function deleteUser(email) {
+    if (confirm("Delete user?"))
+        await sb.from("ant_users").delete().eq("email", email);
+    loadData();
+}
+
+async function grantAdmin() {
+    const email = document.getElementById("newAdminEmail").value.trim();
+    if (email)
+        await sb.from("ant_admins").insert([{ email }]);
+    loadData();
+}
+
+async function removeAdmin(email) {
+    await sb.from("ant_admins").delete().eq("email", email);
+    loadData();
+}
+
+async function assignReview(taskId) {
+    const rev = document.getElementById(`rev-${taskId}`).value;
+
+    await sb.from("ant_tasks").update({
+        assignedto: rev,
+        phase: 'Review',
+        completed: false
+    }).eq("id", taskId);
+
+    loadData();
+}
+
+// OPEN WORKSPACE
+function viewWork(id) {
+    window.open(`workspace.html?taskId=${id}`, '_blank');
+}
+
+// EXPORT
+function exportToCSV() {
+    let csv = "Task ID,Worker,Phase\n";
+    allTasks.forEach(t => {
+        csv += `${t.id},${t.assignedto},${t.phase}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = "report.csv";
+    a.click();
+}
+
+// AUTO REFRESH
+setInterval(loadData, 30000);
+</script>
