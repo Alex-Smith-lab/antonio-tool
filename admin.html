@@ -1,62 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Antonio Annotation</title>
+<title>Login - Antanna Annotation</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
 
 <link rel="stylesheet" href="css/styles.css">
 </head>
 
-<body oncontextmenu="return false;">
+<body class="login-body">
 
-<!-- LOGIN -->
-<div id="loginPage" class="auth-page">
-<h1>a⌵ ANTONIO ANNOTATION</h1>
-<h2>Worker Portal</h2>
+<div class="login-container">
 
-<input id="userName" placeholder="Full Name">
-<input id="userEmail" placeholder="Email">
-
-<button onclick="handleLogin()">Login / Start Session</button>
-
-<div id="waitMessage">Pending admin approval...</div>
+<!-- LEFT IMAGE -->
+<div class="login-left">
+<img src="assets/cuboid.jpg" alt="cuboid">
 </div>
 
-<!-- TOP NAV -->
-<div id="topNav">
-<div>a⌵ WORKSPACE</div>
+<!-- RIGHT FORM -->
+<div class="login-right">
+<h1>a⌵ ANNOTATION</h1>
+<p>Worker Portal</p>
 
-<div class="profile-area">
-<button>Earnings: $<span id="balance">0.00</span></button>
-<div id="workerProfile"></div>
-<button onclick="logout()">Logout</button>
-</div>
-</div>
+<input id="name" placeholder="Full Name">
+<input id="email" placeholder="Email">
 
-<!-- DASHBOARD -->
-<div id="dashboard">
-<h2 id="greet"></h2>
-<p id="seasonalMsg"></p>
-<div id="tasks" class="task-grid"></div>
+<button onclick="login()">LOGIN</button>
+
+<div id="wait"></div>
 </div>
 
-<!-- WORKSPACE -->
-<div id="workspacePage">
-<canvas id="canvas"></canvas>
-<div id="sidePanel">
-<div id="annoList"></div>
-<button onclick="deleteBox()">DELETE</button>
-<button onclick="submitForReview()">SUBMIT</button>
 </div>
-</div>
-
-<script src="js/supabaseClient.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/dashboard.js"></script>
-<script src="js/workspace.js"></script>
 
 </body>
 </html>
